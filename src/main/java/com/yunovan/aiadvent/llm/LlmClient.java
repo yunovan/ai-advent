@@ -17,7 +17,11 @@ public class LlmClient {
         this.properties = properties;
         RestClient.Builder builder = restClientBuilder.baseUrl(properties.baseUrl());
         if (properties.hasApiKey()) {
-            builder = builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey());
+            builder = builder
+                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
+                    .defaultHeader("HTTP-Referer", "https://github.com/yunovan/ai-advent")
+                    .defaultHeader("X-Title", "AI Advent")
+                    .defaultHeader("X-OpenRouter-Title", "AI Advent");
         }
         this.restClient = builder.build();
     }
@@ -28,7 +32,7 @@ public class LlmClient {
         }
         if (!properties.hasApiKey()) {
             throw new LlmException(
-                    "LLM API key is missing. Set LLM_API_KEY or OPENAI_API_KEY before sending a request.");
+                    "LLM API key is missing. Set LLM_API_KEY or OPENROUTER_API_KEY in .env before sending a request.");
         }
 
         ChatCompletionRequest request = ChatCompletionRequest.userPrompt(properties.model(), prompt.trim());

@@ -20,7 +20,7 @@
 2. получает ответ;
 3. выводит его в консоль (CLI) и в простой веб-интерфейс.
 
-Провайдер — любой OpenAI-compatible endpoint (`/v1/chat/completions`): OpenAI, Groq, Together, Ollama и т.д.
+Провайдер по умолчанию — [OpenRouter](https://openrouter.ai/) (`https://openrouter.ai/api/v1/chat/completions`). Формат тот же, что у OpenAI, поэтому модель можно сменить строкой `LLM_MODEL`.
 
 ### Что показать на видео
 
@@ -67,43 +67,30 @@
 copy .env.example .env
 ```
 
-Откройте `.env` и впишите ключ:
+Откройте `.env` и впишите ключ OpenRouter:
 
 ```
-LLM_API_KEY=sk-your-key
+LLM_API_KEY=sk-or-v1-your-key
 ```
 
 2. В IntelliJ: **Run → Edit Configurations → AiAdventApplication → Environment variables**  
-   `LLM_API_KEY=sk-your-key`  
+   `LLM_API_KEY=sk-or-v1-your-key`  
    Это пишется в `.idea/workspace.xml`, он тоже не в git.
 
 3. Переменная окружения в терминале:
 
 ```bash
-export LLM_API_KEY=sk-your-key
+export LLM_API_KEY=sk-or-v1-your-key
 # либо
-export OPENAI_API_KEY=sk-your-key
+export OPENROUTER_API_KEY=sk-or-v1-your-key
 ```
 
-По желанию:
+Модель по желанию (каталог: https://openrouter.ai/models):
 
-```bash
-export LLM_BASE_URL=https://api.openai.com/v1
-export LLM_MODEL=gpt-4o-mini
 ```
-
-Другие провайдеры:
-
-```bash
-# Groq
-export LLM_BASE_URL=https://api.groq.com/openai/v1
-export LLM_MODEL=llama-3.1-8b-instant
-export LLM_API_KEY=gsk-your-key
-
-# Ollama локально
-export LLM_BASE_URL=http://localhost:11434/v1
-export LLM_MODEL=llama3.2
-export LLM_API_KEY=ollama
+LLM_MODEL=openai/gpt-4o-mini
+# дешевле / бесплатный роутер:
+# LLM_MODEL=openrouter/free
 ```
 
 Тесты:
@@ -144,7 +131,7 @@ curl -s http://localhost:8080/api/day1/chat \
 | Файл | Роль |
 |---|---|
 | `llm/LlmClient.java` | HTTP-запрос к LLM и разбор ответа |
-| `llm/LlmProperties.java` | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` |
+| `llm/LlmProperties.java` | `LLM_API_KEY` / `OPENROUTER_API_KEY`, URL и модель |
 | `day01/Day01CliRunner.java` | вывод в консоль при `--prompt` |
 | `day01/Day01ChatController.java` | `GET/POST /api/day1/chat` |
 | `static/index.html` | простая форма в браузере |

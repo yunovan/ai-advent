@@ -37,7 +37,7 @@ class Day01ChatControllerTest {
                         .content("{\"prompt\":\"Привет\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.prompt").value("Привет"))
-                .andExpect(jsonPath("$.model").value("gpt-4o-mini"))
+                .andExpect(jsonPath("$.model").value("openai/gpt-4o-mini"))
                 .andExpect(jsonPath("$.content").value("Ответ модели"));
     }
 

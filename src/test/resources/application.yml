@@ -1,4 +1,4 @@
 llm:
   api-key: test-key
-  base-url: https://api.openai.com/v1
-  model: gpt-4o-mini
+  base-url: https://openrouter.ai/api/v1
+  model: openai/gpt-4o-mini
