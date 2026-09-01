@@ -15,4 +15,5 @@ bin/
 .DS_Store
 .env
 .env.local
+application-local.yml
 *.iml

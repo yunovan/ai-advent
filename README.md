@@ -4,7 +4,7 @@
 
 Стек на весь челлендж:
 
-- Java 21
+- Java 21+ (JDK 25 в IntelliJ подходит)
 - Spring Boot 4.1
 - Gradle (wrapper)
 - тесты на каждую задачу
@@ -20,7 +20,7 @@
 2. получает ответ;
 3. выводит его в консоль (CLI) и в простой веб-интерфейс.
 
-Провайдер — любой OpenAI-compatible endpoint (`/v1/chat/completions`): OpenAI, Groq, Together, Ollama и т.д.
+Провайдер по умолчанию — [OpenRouter](https://openrouter.ai/) (`https://openrouter.ai/api/v1/chat/completions`). Формат тот же, что у OpenAI, поэтому модель можно сменить строкой `LLM_MODEL`.
 
 ### Что показать на видео
 
@@ -30,7 +30,7 @@
    «День 1: первый запрос к LLM через API. Отправляем промпт, получаем ответ, печатаем его.»
 
 2. **Стек**  
-   Открыть `build.gradle.kts`: Java 21, Spring Boot, Gradle.
+   Открыть `build.gradle.kts`: Java 21+, Spring Boot, Gradle.
 
 3. **Код запроса**  
    Открыть `LlmClient`: `POST {baseUrl}/chat/completions`, заголовок `Authorization: Bearer …`, тело с `model` и `messages`.
@@ -48,33 +48,49 @@
 
 ### Как запустить
 
-Ключ API:
+Нужен JDK 21 или новее. Сборку делает тот JDK, которым запущена Gradle, а не отдельный JDK 21.
+
+В IntelliJ IDEA:
+
+1. **File → Settings → Build, Execution, Deployment → Build Tools → Gradle**
+2. **Gradle JVM** = ваш Project SDK (`openjdk-25`)
+3. Gradle-окно → кнопка **Reload All Gradle Projects**
+4. Запуск: `AiAdventApplication` или задача `bootRun`
+
+Если видите `Cannot find a Java installation ... languageVersion=21` — Gradle ищет именно JDK 21. Этот репозиторий так больше не настроен: достаточно JDK 25.
+
+Ключ API **не коммитим**. Любой из способов:
+
+1. Файл `.env` в корне проекта (уже в `.gitignore`):
 
 ```bash
-export LLM_API_KEY=sk-your-key
+copy .env.example .env
+```
+
+Откройте `.env` и впишите ключ OpenRouter:
+
+```
+LLM_API_KEY=sk-or-v1-your-key
+```
+
+2. В IntelliJ: **Run → Edit Configurations → AiAdventApplication → Environment variables**  
+   `LLM_API_KEY=sk-or-v1-your-key`  
+   Это пишется в `.idea/workspace.xml`, он тоже не в git.
+
+3. Переменная окружения в терминале:
+
+```bash
+export LLM_API_KEY=sk-or-v1-your-key
 # либо
-export OPENAI_API_KEY=sk-your-key
+export OPENROUTER_API_KEY=sk-or-v1-your-key
 ```
 
-По желанию:
+Модель по желанию (каталог: https://openrouter.ai/models):
 
-```bash
-export LLM_BASE_URL=https://api.openai.com/v1
-export LLM_MODEL=gpt-4o-mini
 ```
-
-Другие провайдеры:
-
-```bash
-# Groq
-export LLM_BASE_URL=https://api.groq.com/openai/v1
-export LLM_MODEL=llama-3.1-8b-instant
-export LLM_API_KEY=gsk-your-key
-
-# Ollama локально
-export LLM_BASE_URL=http://localhost:11434/v1
-export LLM_MODEL=llama3.2
-export LLM_API_KEY=ollama
+LLM_MODEL=openai/gpt-4o-mini
+# дешевле / бесплатный роутер:
+# LLM_MODEL=openrouter/free
 ```
 
 Тесты:
@@ -115,7 +131,7 @@ curl -s http://localhost:8080/api/day1/chat \
 | Файл | Роль |
 |---|---|
 | `llm/LlmClient.java` | HTTP-запрос к LLM и разбор ответа |
-| `llm/LlmProperties.java` | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` |
+| `llm/LlmProperties.java` | `LLM_API_KEY` / `OPENROUTER_API_KEY`, URL и модель |
 | `day01/Day01CliRunner.java` | вывод в консоль при `--prompt` |
 | `day01/Day01ChatController.java` | `GET/POST /api/day1/chat` |
 | `static/index.html` | простая форма в браузере |
