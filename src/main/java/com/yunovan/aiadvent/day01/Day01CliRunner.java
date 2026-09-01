@@ -24,6 +24,10 @@ public class Day01CliRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        if ("2".equals(firstOption(args, "day"))) {
+            return;
+        }
+
         String prompt = firstOption(args, "prompt");
         if (prompt == null || prompt.isBlank()) {
             log.info("Day 1 web UI: http://localhost:8080  |  API: POST /api/day1/chat");
