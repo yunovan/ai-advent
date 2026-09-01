@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 1</title>
+    <title>AI Advent — День 2</title>
     <style>
         :root {
             color-scheme: dark;
@@ -23,7 +23,7 @@
             color: var(--text);
         }
         main {
-            max-width: 720px;
+            max-width: 980px;
             margin: 0 auto;
             padding: 48px 20px;
         }
@@ -66,7 +66,7 @@
             font-size: 16px;
         }
         textarea {
-            min-height: 110px;
+            min-height: 90px;
             padding: 12px;
             border-radius: 10px;
             border: 1px solid var(--line);
@@ -86,9 +86,28 @@
             cursor: pointer;
         }
         button:disabled { opacity: 0.6; cursor: wait; }
-        pre {
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
             margin-top: 16px;
-            min-height: 80px;
+        }
+        @media (max-width: 800px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .col h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+        .meta {
+            color: var(--muted);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+        }
+        pre {
+            min-height: 140px;
             padding: 12px;
             border-radius: 10px;
             background: #0d121c;
@@ -101,47 +120,74 @@
 </head>
 <body>
 <main>
-        <nav class="nav">
-            <a href="/">День 1</a>
-            <a href="/day2.html">День 2</a>
-        </nav>
-        <span class="badge">AI Advent · Day 1</span>
-    <h1>Первый запрос к LLM</h1>
-    <p class="lead">Минимальный агент: отправить промпт в API, получить ответ и показать его здесь.</p>
+    <nav class="nav">
+        <a href="/">День 1</a>
+        <a href="/day2.html">День 2</a>
+    </nav>
+    <span class="badge">AI Advent · Day 2</span>
+    <h1>Формат ответа</h1>
+    <p class="lead">Один и тот же промпт: сначала без ограничений, затем с форматом, лимитом длины и stop sequence.</p>
     <div class="card">
-        <label for="prompt">Промпт</label>
-        <textarea id="prompt">Привет! Кто ты и что умеешь в одном предложении?</textarea>
-        <button id="send" type="button">Отправить в LLM</button>
-        <pre id="output">Ответ появится здесь.</pre>
+        <label for="prompt">Один запрос</label>
+        <textarea id="prompt">Расскажи, что такое искусственный интеллект и зачем он нужен</textarea>
+        <button id="send" type="button">Сравнить ответы</button>
+        <div class="grid">
+            <div class="col">
+                <h2>Без ограничений</h2>
+                <div class="meta" id="freeMeta">Только user prompt, без max_tokens и stop.</div>
+                <pre id="free">Ответ появится здесь.</pre>
+            </div>
+            <div class="col">
+                <h2>С ограничениями</h2>
+                <div class="meta" id="limitedMeta">Формат: 3 пункта. max_tokens=80. stop=<<<END>>></div>
+                <pre id="limited">Ответ появится здесь.</pre>
+            </div>
+        </div>
     </div>
 </main>
 <script>
     const promptEl = document.getElementById("prompt");
-    const outputEl = document.getElementById("output");
     const sendEl = document.getElementById("send");
+    const freeEl = document.getElementById("free");
+    const limitedEl = document.getElementById("limited");
+    const freeMetaEl = document.getElementById("freeMeta");
+    const limitedMetaEl = document.getElementById("limitedMeta");
 
     sendEl.addEventListener("click", async () => {
         const prompt = promptEl.value.trim();
         if (!prompt) {
-            outputEl.textContent = "Введите промпт.";
+            freeEl.textContent = "Введите промпт.";
+            limitedEl.textContent = "";
             return;
         }
         sendEl.disabled = true;
-        outputEl.textContent = "Жду ответ модели...";
+        freeEl.textContent = "Жду ответ модели...";
+        limitedEl.textContent = "Жду ответ модели...";
         try {
-            const response = await fetch("/api/day1/chat", {
+            const response = await fetch("/api/day2/compare", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                outputEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                const error = data.error || data.detail || data.message || ("HTTP " + response.status);
+                freeEl.textContent = error;
+                limitedEl.textContent = error;
                 return;
             }
-            outputEl.textContent = (data.model ? "[" + data.model + "]\n\n" : "") + data.content;
+            const free = data.unconstrained || {};
+            const limited = data.constrained || {};
+            freeMetaEl.textContent = (data.model ? data.model + " · " : "")
+                + (free.words || 0) + " слов · finish_reason=" + (free.finishReason || "—");
+            limitedMetaEl.textContent = "max_tokens=" + limited.maxTokens
+                + " · stop=" + ((limited.stop || []).join(", ") || "—")
+                + " · " + (limited.words || 0) + " слов · finish_reason=" + (limited.finishReason || "—");
+            freeEl.textContent = free.content || "";
+            limitedEl.textContent = limited.content || "";
         } catch (error) {
-            outputEl.textContent = "Не удалось выполнить запрос: " + error;
+            freeEl.textContent = "Не удалось выполнить запрос: " + error;
+            limitedEl.textContent = "";
         } finally {
             sendEl.disabled = false;
         }

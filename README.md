@@ -147,3 +147,59 @@ curl -s http://localhost:8080/api/day1/chat \
 - контекст Spring поднимается.
 
 Дальше каждый день — новый пакет `dayNN`, тесты и секция в этом README со сценарием видео.
+
+---
+
+## День 2. Формат ответа
+
+Один и тот же пользовательский запрос отправляется дважды:
+
+1. **без ограничений** — только `messages` с ролью `user`;
+2. **с контролем ответа**:
+   - явное описание формата (system prompt: ровно 3 нумерованных пункта);
+   - ограничение длины (`max_tokens=80` + «не больше 40 слов»);
+   - условие завершения: инструкция и stop sequence `<<<END>>>`.
+
+Сравните длину, структуру и `finish_reason`.
+
+### Что показать на видео
+
+1. **Задача дня**  
+   «День 2: один промпт — два вызова API. Сначала свободный ответ, потом формат, лимит и stop.»
+
+2. **Код контроля**  
+   Открыть `Day02Constraints` и `LlmClient.complete(CompletionCommand)`: в JSON уходят `max_tokens` и `stop`.
+
+3. **Сравнение**  
+   Браузер http://localhost:8080/day2.html → один промпт → «Сравнить ответы». Слева длинный текст, справа три коротких пункта.
+
+4. **CLI (по желанию)**  
+
+```bash
+./gradlew bootRun --args="--day=2 --prompt=Расскажи, что такое искусственный интеллект --cli"
+```
+
+5. **Тесты**  
+   `./gradlew test` — проверяется, что во второй вызов реально попадают system / max_tokens / stop.
+
+### Запуск дня 2
+
+Веб: http://localhost:8080/day2.html (ссылка «День 2» на главной).
+
+API:
+
+```bash
+curl -s http://localhost:8080/api/day2/compare \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Расскажи, что такое искусственный интеллект и зачем он нужен"}'
+```
+
+### Как устроен код дня 2
+
+| Файл | Роль |
+|---|---|
+| `day02/Day02Constraints.java` | формат, max_tokens, stop sequence |
+| `day02/Day02CompareService.java` | два вызова с одним промптом |
+| `day02/Day02CompareController.java` | `GET/POST /api/day2/compare` |
+| `static/day2.html` | два столбца: без / с ограничениями |
+| `llm/CompletionCommand.java` | параметры запроса к LLM |

@@ -10,6 +10,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -92,5 +93,41 @@ class LlmClientTest {
         assertThatThrownBy(() -> clientWithoutKey.complete("Hello"))
                 .isInstanceOf(LlmException.class)
                 .hasMessageContaining("API key");
+    }
+
+    @Test
+    void completeSendsFormatLengthAndStopControls() {
+        server.expect(requestTo("https://openrouter.ai/api/v1/chat/completions"))
+                .andExpect(method(POST))
+                .andExpect(content().json("""
+                        {
+                          "model":"openai/gpt-4o-mini",
+                          "messages":[
+                            {"role":"system","content":"Be short."},
+                            {"role":"user","content":"Hello"}
+                          ],
+                          "max_tokens":80,
+                          "stop":["<<<END>>>"]
+                        }
+                        """))
+                .andRespond(withSuccess(
+                        """
+                        {
+                          "choices": [
+                            {
+                              "finish_reason": "stop",
+                              "message": {"role": "assistant", "content": "1. One"}
+                            }
+                          ]
+                        }
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        LlmReply reply = llmClient.complete(
+                new CompletionCommand("Hello", "Be short.", 80, List.of("<<<END>>>")));
+
+        assertThat(reply.content()).isEqualTo("1. One");
+        assertThat(reply.finishReason()).isEqualTo("stop");
+        server.verify();
     }
 }
