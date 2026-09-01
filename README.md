@@ -59,7 +59,25 @@
 
 Если видите `Cannot find a Java installation ... languageVersion=21` — Gradle ищет именно JDK 21. Этот репозиторий так больше не настроен: достаточно JDK 25.
 
-Ключ API:
+Ключ API **не коммитим**. Любой из способов:
+
+1. Файл `.env` в корне проекта (уже в `.gitignore`):
+
+```bash
+copy .env.example .env
+```
+
+Откройте `.env` и впишите ключ:
+
+```
+LLM_API_KEY=sk-your-key
+```
+
+2. В IntelliJ: **Run → Edit Configurations → AiAdventApplication → Environment variables**  
+   `LLM_API_KEY=sk-your-key`  
+   Это пишется в `.idea/workspace.xml`, он тоже не в git.
+
+3. Переменная окружения в терминале:
 
 ```bash
 export LLM_API_KEY=sk-your-key
