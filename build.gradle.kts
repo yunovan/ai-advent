@@ -9,9 +9,14 @@ version = "0.1.0-SNAPSHOT"
 description = "AI Advent: Java + Spring Boot agents challenge"
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    // Bytecode 21, without pinning a JDK 21 toolchain.
+    // IDEA with JDK 25 (or any 21+) can import and run the project.
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(21)
 }
 
 repositories {

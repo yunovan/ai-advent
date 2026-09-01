@@ -4,7 +4,7 @@
 
 Стек на весь челлендж:
 
-- Java 21
+- Java 21+ (JDK 25 в IntelliJ подходит)
 - Spring Boot 4.1
 - Gradle (wrapper)
 - тесты на каждую задачу
@@ -30,7 +30,7 @@
    «День 1: первый запрос к LLM через API. Отправляем промпт, получаем ответ, печатаем его.»
 
 2. **Стек**  
-   Открыть `build.gradle.kts`: Java 21, Spring Boot, Gradle.
+   Открыть `build.gradle.kts`: Java 21+, Spring Boot, Gradle.
 
 3. **Код запроса**  
    Открыть `LlmClient`: `POST {baseUrl}/chat/completions`, заголовок `Authorization: Bearer …`, тело с `model` и `messages`.
@@ -47,6 +47,17 @@
    Коротко: `./gradlew test` — HTTP к модели мокается, живой ключ для тестов не нужен.
 
 ### Как запустить
+
+Нужен JDK 21 или новее. Сборку делает тот JDK, которым запущена Gradle, а не отдельный JDK 21.
+
+В IntelliJ IDEA:
+
+1. **File → Settings → Build, Execution, Deployment → Build Tools → Gradle**
+2. **Gradle JVM** = ваш Project SDK (`openjdk-25`)
+3. Gradle-окно → кнопка **Reload All Gradle Projects**
+4. Запуск: `AiAdventApplication` или задача `bootRun`
+
+Если видите `Cannot find a Java installation ... languageVersion=21` — Gradle ищет именно JDK 21. Этот репозиторий так больше не настроен: достаточно JDK 25.
 
 Ключ API:
 
