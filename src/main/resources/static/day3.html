@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 2</title>
+    <title>AI Advent — День 3</title>
     <style>
         :root {
             color-scheme: dark;
@@ -23,7 +23,7 @@
             color: var(--text);
         }
         main {
-            max-width: 980px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 48px 20px;
         }
@@ -92,7 +92,7 @@
             gap: 16px;
             margin-top: 16px;
         }
-        @media (max-width: 800px) {
+        @media (max-width: 900px) {
             .grid { grid-template-columns: 1fr; }
         }
         .col h2 {
@@ -107,15 +107,16 @@
             white-space: pre-wrap;
         }
         pre {
-            min-height: 140px;
+            min-height: 120px;
             padding: 12px;
             border-radius: 10px;
             background: #0d121c;
             border: 1px solid var(--line);
             white-space: pre-wrap;
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 14px;
+            font-size: 13px;
         }
+        pre.small { min-height: 60px; font-size: 12px; color: var(--muted); }
     </style>
 </head>
 <body>
@@ -125,23 +126,34 @@
         <a href="/day2.html">День 2</a>
         <a href="/day3.html">День 3</a>
     </nav>
-    <span class="badge">AI Advent · Day 2</span>
-    <h1>Формат ответа</h1>
-    <p class="lead">Один и тот же промпт: сначала без ограничений, затем с форматом, лимитом длины и stop sequence.</p>
+    <span class="badge">AI Advent · Day 3</span>
+    <h1>Разные способы рассуждения</h1>
+    <p class="lead">Одна задача — четыре вызова API. Для демо стоит классическая ловушка: правильный ответ 5 рублей, импульс часто даёт 10.</p>
     <div class="card">
-        <label for="prompt">Один запрос</label>
-        <textarea id="prompt">Расскажи, что такое искусственный интеллект и зачем он нужен</textarea>
-        <button id="send" type="button">Сравнить ответы</button>
+        <label for="prompt">Задача</label>
+        <textarea id="prompt">Бита и мяч вместе стоят 110 рублей. Бита стоит на 100 рублей дороже мяча. Сколько стоит мяч?</textarea>
+        <button id="send" type="button">Решить четырьмя способами</button>
         <div class="grid">
             <div class="col">
-                <h2>Без ограничений</h2>
-                <div class="meta" id="freeMeta">Только user prompt, без max_tokens и stop.</div>
-                <pre id="free">Ответ появится здесь.</pre>
+                <h2>1. Прямой ответ</h2>
+                <div class="meta">Без дополнительных инструкций</div>
+                <pre id="direct">Ответ появится здесь.</pre>
             </div>
             <div class="col">
-                <h2>С ограничениями</h2>
-                <div class="meta" id="limitedMeta">Формат: 3 пункта. max_tokens=80. stop=<<<END>>></div>
-                <pre id="limited">Ответ появится здесь.</pre>
+                <h2>2. Решай пошагово</h2>
+                <div class="meta">К задаче добавлена инструкция</div>
+                <pre id="step">Ответ появится здесь.</pre>
+            </div>
+            <div class="col">
+                <h2>3. Сначала промпт</h2>
+                <div class="meta" id="metaLabel">Модель составляет промпт, затем решает по нему</div>
+                <pre class="small" id="generated">Сгенерированный промпт появится здесь.</pre>
+                <pre id="meta">Ответ появится здесь.</pre>
+            </div>
+            <div class="col">
+                <h2>4. Группа экспертов</h2>
+                <div class="meta">Аналитик, инженер, критик — в одном промпте</div>
+                <pre id="experts">Ответ появится здесь.</pre>
             </div>
         </div>
     </div>
@@ -149,46 +161,48 @@
 <script>
     const promptEl = document.getElementById("prompt");
     const sendEl = document.getElementById("send");
-    const freeEl = document.getElementById("free");
-    const limitedEl = document.getElementById("limited");
-    const freeMetaEl = document.getElementById("freeMeta");
-    const limitedMetaEl = document.getElementById("limitedMeta");
+    const fields = {
+        direct: document.getElementById("direct"),
+        step: document.getElementById("step"),
+        generated: document.getElementById("generated"),
+        meta: document.getElementById("meta"),
+        experts: document.getElementById("experts")
+    };
+
+    function setAll(text) {
+        fields.direct.textContent = text;
+        fields.step.textContent = text;
+        fields.generated.textContent = text;
+        fields.meta.textContent = text;
+        fields.experts.textContent = text;
+    }
 
     sendEl.addEventListener("click", async () => {
         const prompt = promptEl.value.trim();
         if (!prompt) {
-            freeEl.textContent = "Введите промпт.";
-            limitedEl.textContent = "Введите промпт.";
+            setAll("Введите задачу.");
             return;
         }
         sendEl.disabled = true;
-        freeEl.textContent = "Жду ответ модели...";
-        limitedEl.textContent = "Жду ответ модели...";
+        setAll("Жду четыре ответа модели...");
         try {
-            const response = await fetch("/api/day2/compare", {
+            const response = await fetch("/api/day3/compare", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                const error = data.error || data.detail || data.message || ("HTTP " + response.status);
-                freeEl.textContent = error;
-                limitedEl.textContent = error;
+                setAll(data.error || data.detail || data.message || ("HTTP " + response.status));
                 return;
             }
-            const free = data.unconstrained || {};
-            const limited = data.constrained || {};
-            freeMetaEl.textContent = (data.model ? data.model + " · " : "")
-                + (free.words || 0) + " слов · finish_reason=" + (free.finishReason || "—");
-            limitedMetaEl.textContent = "max_tokens=" + limited.maxTokens
-                + " · stop=" + ((limited.stop || []).join(", ") || "—")
-                + " · " + (limited.words || 0) + " слов · finish_reason=" + (limited.finishReason || "—");
-            freeEl.textContent = free.content || "";
-            limitedEl.textContent = limited.content || "";
+            fields.direct.textContent = (data.direct && data.direct.content) || "";
+            fields.step.textContent = (data.stepByStep && data.stepByStep.content) || "";
+            fields.generated.textContent = (data.metaPrompt && data.metaPrompt.generatedPrompt) || "";
+            fields.meta.textContent = (data.metaPrompt && data.metaPrompt.content) || "";
+            fields.experts.textContent = (data.experts && data.experts.content) || "";
         } catch (error) {
-            freeEl.textContent = "Не удалось выполнить запрос: " + error;
-            limitedEl.textContent = "";
+            setAll("Не удалось выполнить запрос: " + error);
         } finally {
             sendEl.disabled = false;
         }
