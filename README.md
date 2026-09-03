@@ -260,3 +260,64 @@ curl -s http://localhost:8080/api/day3/compare \
 | `day03/Day03ReasoningService.java` | 5 вызовов API на одну задачу |
 | `day03/Day03CompareController.java` | `GET/POST /api/day3/compare` |
 | `static/day3.html` | четыре карточки сравнения |
+
+---
+
+## День 4. Температура
+
+Один и тот же промпт уходит в API трижды:
+
+- `temperature = 0`
+- `temperature = 0.7`
+- `temperature = 1.2`
+
+Сравните ответы по точности, креативности и разнообразию. Для видео по умолчанию: «столица Франции» (точность) + слоган (креативность).
+
+Выводы, которые можно озвучить:
+
+- **0** — факты, код, классификация; мало разнообразия
+- **0.7** — обычный диалог и объяснения
+- **1.2** — идеи и слоганы; факты лучше перепроверить
+
+### Что показать на видео
+
+1. **Задача дня**  
+   «День 4: один промпт, три температуры. Смотрим, где модель точная, а где изобретает.»
+
+2. **Код**  
+   `CompletionCommand.withTemperature` и поле `temperature` в `ChatCompletionRequest`.
+
+3. **Сравнение**  
+   http://localhost:8080/day4.html → «Сравнить температуры». Три столбца и блок выводов внизу.
+
+4. **CLI**
+
+```bash
+./gradlew bootRun --args="--day=4 --cli"
+```
+
+5. **Тесты**  
+   Проверяется, что в API уходят 0 / 0.7 / 1.2.
+
+### Запуск дня 4
+
+Веб: http://localhost:8080/day4.html
+
+API:
+
+```bash
+curl -s http://localhost:8080/api/day4/compare \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Назови столицу Франции. Затем придумай необычный слоган для туристического плаката этого города."}'
+```
+
+Три запроса к LLM.
+
+### Как устроен код дня 4
+
+| Файл | Роль |
+|---|---|
+| `day04/Day04Temperatures.java` | значения 0 / 0.7 / 1.2 и выводы |
+| `day04/Day04TemperatureService.java` | три вызова с разной temperature |
+| `day04/Day04TemperatureController.java` | `GET/POST /api/day4/compare` |
+| `static/day4.html` | три столбца + выводы |

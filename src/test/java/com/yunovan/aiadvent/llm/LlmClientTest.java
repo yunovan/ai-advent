@@ -130,4 +130,27 @@ class LlmClientTest {
         assertThat(reply.finishReason()).isEqualTo("stop");
         server.verify();
     }
+
+    @Test
+    void completeSendsTemperature() {
+        server.expect(requestTo("https://openrouter.ai/api/v1/chat/completions"))
+                .andExpect(method(POST))
+                .andExpect(content().json("""
+                        {
+                          "model":"openai/gpt-4o-mini",
+                          "messages":[{"role":"user","content":"Hello"}],
+                          "temperature":0.7
+                        }
+                        """))
+                .andRespond(withSuccess(
+                        """
+                        {"choices":[{"message":{"role":"assistant","content":"Hi"},"finish_reason":"stop"}]}
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        LlmReply reply = llmClient.complete(CompletionCommand.withTemperature("Hello", 0.7));
+
+        assertThat(reply.content()).isEqualTo("Hi");
+        server.verify();
+    }
 }
