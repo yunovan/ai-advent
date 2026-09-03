@@ -23,12 +23,14 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 @RestClientTest(LlmClient.class)
-@EnableConfigurationProperties(LlmProperties.class)
+@EnableConfigurationProperties({LlmProperties.class, LlmHttpProperties.class})
 @TestPropertySource(
         properties = {
             "llm.api-key=test-key",
             "llm.base-url=https://openrouter.ai/api/v1",
-            "llm.model=openai/gpt-4o-mini"
+            "llm.model=openai/gpt-4o-mini",
+            "llm.http.customize-client=false",
+            "llm.http.max-attempts=1"
         })
 class LlmClientTest {
 
@@ -88,7 +90,10 @@ class LlmClientTest {
     @Test
     void completeRejectsMissingApiKey() {
         LlmClient clientWithoutKey =
-                new LlmClient(RestClient.builder(), new LlmProperties("", "https://openrouter.ai/api/v1", "openai/gpt-4o-mini"));
+                new LlmClient(
+                        RestClient.builder(),
+                        new LlmProperties("", "https://openrouter.ai/api/v1", "openai/gpt-4o-mini"),
+                        LlmHttpProperties.disabled());
 
         assertThatThrownBy(() -> clientWithoutKey.complete("Hello"))
                 .isInstanceOf(LlmException.class)

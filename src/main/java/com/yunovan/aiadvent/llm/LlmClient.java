@@ -14,10 +14,16 @@ public class LlmClient {
 
     private final RestClient restClient;
     private final LlmProperties properties;
+    private final LlmHttpProperties httpProperties;
 
-    public LlmClient(RestClient.Builder restClientBuilder, LlmProperties properties) {
+    public LlmClient(RestClient.Builder restClientBuilder, LlmProperties properties, LlmHttpProperties httpProperties) {
         this.properties = properties;
+        this.httpProperties = httpProperties == null ? LlmHttpProperties.disabled() : httpProperties;
         RestClient.Builder builder = restClientBuilder.baseUrl(properties.baseUrl());
+        if (this.httpProperties.customizeClient()) {
+            builder = builder.requestFactory(LlmHttpClientFactory.jdkHttp11(
+                    this.httpProperties.connectTimeoutOrDefault(), this.httpProperties.readTimeoutOrDefault()));
+        }
         if (properties.hasApiKey()) {
             builder = builder
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
@@ -49,22 +55,44 @@ public class LlmClient {
 
         ChatCompletionRequest request = ChatCompletionRequest.of(
                 properties.model(), messages, command.maxTokens(), command.stop(), command.temperature());
-        try {
-            ChatCompletionResponse response = restClient.post()
-                    .uri("/chat/completions")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(request)
-                    .retrieve()
-                    .body(ChatCompletionResponse.class);
-            if (response == null) {
-                throw new LlmException("LLM returned an empty response");
+
+        int attempts = httpProperties.attempts();
+        RestClientException lastIoError = null;
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            try {
+                ChatCompletionResponse response = restClient.post()
+                        .uri("/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(request)
+                        .retrieve()
+                        .body(ChatCompletionResponse.class);
+                if (response == null) {
+                    throw new LlmException("LLM returned an empty response");
+                }
+                return response.requiredReply();
+            } catch (RestClientResponseException ex) {
+                throw new LlmException(
+                        "LLM API error %s: %s".formatted(ex.getStatusCode().value(), responseBody(ex)), ex);
+            } catch (RestClientException ex) {
+                lastIoError = ex;
+                if (!LlmIoErrors.isRetryable(ex) || attempt == attempts) {
+                    break;
+                }
+                sleepBeforeRetry(attempt);
             }
-            return response.requiredReply();
-        } catch (RestClientResponseException ex) {
-            throw new LlmException(
-                    "LLM API error %s: %s".formatted(ex.getStatusCode().value(), responseBody(ex)), ex);
-        } catch (RestClientException ex) {
-            throw new LlmException("Failed to call LLM API: " + ex.getMessage(), ex);
+        }
+        throw new LlmException(
+                "Failed to call LLM API after %s attempt(s): %s"
+                        .formatted(attempts, LlmIoErrors.describe(lastIoError)),
+                lastIoError);
+    }
+
+    private static void sleepBeforeRetry(int attempt) {
+        try {
+            Thread.sleep(300L * attempt);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new LlmException("LLM request interrupted", interrupted);
         }
     }
 
