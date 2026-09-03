@@ -48,7 +48,7 @@ public class LlmClient {
         messages.add(new ChatCompletionRequest.Message("user", command.prompt().trim()));
 
         ChatCompletionRequest request = ChatCompletionRequest.of(
-                properties.model(), messages, command.maxTokens(), command.stop());
+                properties.model(), messages, command.maxTokens(), command.stop(), command.temperature());
         try {
             ChatCompletionResponse response = restClient.post()
                     .uri("/chat/completions")

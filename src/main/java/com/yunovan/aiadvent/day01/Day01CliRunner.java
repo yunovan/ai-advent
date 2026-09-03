@@ -24,7 +24,9 @@ public class Day01CliRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if ("2".equals(firstOption(args, "day")) || "3".equals(firstOption(args, "day"))) {
+        if ("2".equals(firstOption(args, "day"))
+                || "3".equals(firstOption(args, "day"))
+                || "4".equals(firstOption(args, "day"))) {
             return;
         }
 
