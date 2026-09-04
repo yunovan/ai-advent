@@ -158,4 +158,39 @@ class LlmClientTest {
         assertThat(reply.content()).isEqualTo("Hi");
         server.verify();
     }
+
+    @Test
+    void completeUsesCommandModelAndParsesUsage() {
+        server.expect(requestTo("https://openrouter.ai/api/v1/chat/completions"))
+                .andExpect(method(POST))
+                .andExpect(content().json("""
+                        {
+                          "model":"meta-llama/llama-3.2-3b-instruct",
+                          "messages":[{"role":"user","content":"Hello"}]
+                        }
+                        """))
+                .andRespond(withSuccess(
+                        """
+                        {
+                          "choices":[{"message":{"role":"assistant","content":"Hi small"},"finish_reason":"stop"}],
+                          "usage":{
+                            "prompt_tokens":8,
+                            "completion_tokens":4,
+                            "total_tokens":12,
+                            "cost":0.00015
+                          }
+                        }
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        LlmReply reply = llmClient.complete(CompletionCommand.withModel("Hello", "meta-llama/llama-3.2-3b-instruct"));
+
+        assertThat(reply.content()).isEqualTo("Hi small");
+        assertThat(reply.promptTokens()).isEqualTo(8);
+        assertThat(reply.completionTokens()).isEqualTo(4);
+        assertThat(reply.totalTokens()).isEqualTo(12);
+        assertThat(reply.costUsd()).isEqualByComparingTo("0.00015");
+        assertThat(reply.elapsedMs()).isGreaterThanOrEqualTo(0L);
+        server.verify();
+    }
 }
