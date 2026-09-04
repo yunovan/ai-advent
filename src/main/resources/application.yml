@@ -19,3 +19,8 @@ llm:
     read-timeout: 120s
     max-attempts: 3
 
+day5:
+  weak-model: ${DAY5_WEAK_MODEL:meta-llama/llama-3.2-3b-instruct}
+  medium-model: ${DAY5_MEDIUM_MODEL:qwen/qwen-2.5-7b-instruct}
+  strong-model: ${DAY5_STRONG_MODEL:meta-llama/llama-3.3-70b-instruct}
+

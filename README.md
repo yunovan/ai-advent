@@ -323,3 +323,76 @@ curl -s http://localhost:8080/api/day4/compare \
 | `day04/Day04TemperatureService.java` | три вызова с разной temperature |
 | `day04/Day04TemperatureController.java` | `GET/POST /api/day4/compare` |
 | `static/day4.html` | три столбца + выводы |
+
+---
+
+## День 5. Версии моделей
+
+Один и тот же промпт уходит в три модели разной «силы» — по аналогии с началом, серединой и концом [списка Hugging Face](https://huggingface.co/models?sort=downloads): маленькая, средняя, большая.
+
+По умолчанию (через OpenRouter, веса на Hugging Face):
+
+| Класс | OpenRouter id | Параметры | Карточка |
+|---|---|---|---|
+| Слабая | `meta-llama/llama-3.2-3b-instruct` | 3B | [HF](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct) · [OpenRouter](https://openrouter.ai/meta-llama/llama-3.2-3b-instruct) |
+| Средняя | `qwen/qwen-2.5-7b-instruct` | 7B | [HF](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct) · [OpenRouter](https://openrouter.ai/qwen/qwen-2.5-7b-instruct) |
+| Сильная | `meta-llama/llama-3.3-70b-instruct` | 70B | [HF](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) · [OpenRouter](https://openrouter.ai/meta-llama/llama-3.3-70b-instruct) |
+
+Каталоги: [OpenRouter models](https://openrouter.ai/models), [Hugging Face models](https://huggingface.co/models?sort=downloads).
+
+Для каждого ответа приложение показывает:
+
+- время (мс, включая ретраи HTTP);
+- токены (`prompt` / `completion` / `total` из `usage`);
+- стоимость USD (`usage.cost` у OpenRouter, если провайдер её вернул).
+
+Выводы, которые можно озвучить:
+
+- **слабая** — быстрее и дешевле, ответ короче, чаще промахи в фактах и арифметике;
+- **средняя** — баланс качества, скорости и цены;
+- **сильная** — обычно точнее и полнее, дольше и дороже (больше параметров и токенов).
+
+Модели можно сменить в `.env`: `DAY5_WEAK_MODEL`, `DAY5_MEDIUM_MODEL`, `DAY5_STRONG_MODEL`.
+
+### Что показать на видео
+
+1. **Задача дня**  
+   «День 5: один промпт на слабой, средней и сильной модели. Сравниваем качество, скорость и цену.»
+
+2. **Код**  
+   `CompletionCommand.withModel` — в `chat/completions` уходит разный `model`. `LlmReply` читает `usage` и засекает время.
+
+3. **Сравнение**  
+   http://localhost:8080/day5.html → «Сравнить модели». Три столбца: ответ + мс / токены / $. Внизу вывод и ссылки на карточки моделей.
+
+4. **CLI**
+
+```bash
+./gradlew bootRun --args="--day=5 --cli"
+```
+
+5. **Тесты**  
+   Проверяется, что в API уходят три разных `model`, а `usage` и время попадают в ответ.
+
+### Запуск дня 5
+
+Веб: http://localhost:8080/day5.html
+
+API:
+
+```bash
+curl -s http://localhost:8080/api/day5/compare \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Объясни, почему у самолёта крыло имеет профиль (сверху изогнуто), а не плоскую пластину. Затем посчитай 17 × 24. Ответ на 5–7 предложений."}'
+```
+
+Три запроса к LLM, ответ приходит не сразу.
+
+### Как устроен код дня 5
+
+| Файл | Роль |
+|---|---|
+| `day05/Day5Models.java` | id моделей по умолчанию, ссылки, текст вывода |
+| `day05/Day05CompareService.java` | три вызова с разным `model` |
+| `day05/Day05CompareController.java` | `GET/POST /api/day5/compare` |
+| `static/day5.html` | три столбца + замеры + ссылки |

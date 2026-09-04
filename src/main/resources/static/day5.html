@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 4</title>
+    <title>AI Advent — День 5</title>
     <style>
         :root {
             color-scheme: dark;
@@ -100,10 +100,12 @@
             margin: 0 0 8px;
             font-size: 18px;
         }
-        .meta {
+        .meta, .links a {
             color: var(--muted);
             font-family: ui-sans-serif, system-ui, sans-serif;
             font-size: 12px;
+        }
+        .meta {
             margin-bottom: 8px;
             white-space: pre-wrap;
         }
@@ -124,6 +126,13 @@
             font-size: 14px;
             white-space: pre-wrap;
         }
+        .links {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+        }
+        .links a { color: var(--accent); }
     </style>
 </head>
 <body>
@@ -135,42 +144,56 @@
         <a href="/day4.html">День 4</a>
         <a href="/day5.html">День 5</a>
     </nav>
-    <span class="badge">AI Advent · Day 4</span>
-    <h1>Температура</h1>
-    <p class="lead">Один промпт при temperature 0, 0.7 и 1.2. Смотрите точность (столица), креативность (слоган) и насколько ответы разъезжаются.</p>
+    <span class="badge">AI Advent · Day 5</span>
+    <h1>Версии моделей</h1>
+    <p class="lead">Один промпт на слабой (Llama 3.2 3B), средней (Qwen 2.5 7B) и сильной (Llama 3.3 70B) модели. Смотрите время, токены, стоимость и качество ответа.</p>
     <div class="card">
         <label for="prompt">Промпт</label>
-        <textarea id="prompt">Назови столицу Франции. Затем придумай необычный слоган для туристического плаката этого города.</textarea>
-        <button id="send" type="button">Сравнить температуры</button>
+        <textarea id="prompt">Объясни, почему у самолёта крыло имеет профиль (сверху изогнуто), а не плоскую пластину. Затем посчитай 17 × 24. Ответ на 5–7 предложений.</textarea>
+        <button id="send" type="button">Сравнить модели</button>
         <div class="grid">
             <div class="col">
-                <h2>temperature = 0</h2>
-                <div class="meta" id="meta0">Точность · мало разнообразия</div>
+                <h2>Слабая · 3B</h2>
+                <div class="meta" id="meta0">Быстро и дёшево</div>
                 <pre id="out0">Ответ появится здесь.</pre>
             </div>
             <div class="col">
-                <h2>temperature = 0.7</h2>
-                <div class="meta" id="meta7">Баланс</div>
-                <pre id="out7">Ответ появится здесь.</pre>
+                <h2>Средняя · 7B</h2>
+                <div class="meta" id="meta1">Баланс</div>
+                <pre id="out1">Ответ появится здесь.</pre>
             </div>
             <div class="col">
-                <h2>temperature = 1.2</h2>
-                <div class="meta" id="meta12">Креативность · риск ошибок</div>
-                <pre id="out12">Ответ появится здесь.</pre>
+                <h2>Сильная · 70B</h2>
+                <div class="meta" id="meta2">Качество · дороже</div>
+                <pre id="out2">Ответ появится здесь.</pre>
             </div>
         </div>
         <pre class="conclusions" id="conclusions">Выводы появятся вместе с ответами.</pre>
+        <div class="links" id="links"></div>
     </div>
 </main>
 <script>
     const promptEl = document.getElementById("prompt");
     const sendEl = document.getElementById("send");
-    const outs = [document.getElementById("out0"), document.getElementById("out7"), document.getElementById("out12")];
-    const metas = [document.getElementById("meta0"), document.getElementById("meta7"), document.getElementById("meta12")];
+    const outs = [document.getElementById("out0"), document.getElementById("out1"), document.getElementById("out2")];
+    const metas = [document.getElementById("meta0"), document.getElementById("meta1"), document.getElementById("meta2")];
     const conclusionsEl = document.getElementById("conclusions");
+    const linksEl = document.getElementById("links");
 
     function setAll(text) {
         outs.forEach((el) => el.textContent = text);
+    }
+
+    function renderLinks(links) {
+        linksEl.innerHTML = "";
+        (links || []).forEach((link) => {
+            const a = document.createElement("a");
+            a.href = link.url;
+            a.target = "_blank";
+            a.rel = "noreferrer";
+            a.textContent = link.title;
+            linksEl.appendChild(a);
+        });
     }
 
     sendEl.addEventListener("click", async () => {
@@ -180,10 +203,11 @@
             return;
         }
         sendEl.disabled = true;
-        setAll("Жду три ответа модели...");
-        conclusionsEl.textContent = "Считаю...";
+        setAll("Жду три ответа моделей...");
+        conclusionsEl.textContent = "Считаю время, токены и стоимость...";
+        linksEl.innerHTML = "";
         try {
-            const response = await fetch("/api/day4/compare", {
+            const response = await fetch("/api/day5/compare", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt })
@@ -195,12 +219,18 @@
                 conclusionsEl.textContent = error;
                 return;
             }
-            (data.samples || []).forEach((sample, index) => {
+            (data.runs || []).forEach((run, index) => {
                 if (!outs[index]) return;
-                metas[index].textContent = (sample.words || 0) + " слов · " + (sample.bestFor || "");
-                outs[index].textContent = sample.content || "";
+                metas[index].textContent =
+                    (run.model || "") + "\n" +
+                    (run.elapsedMs || 0) + " мс · " +
+                    (run.totalTokens == null ? "токены н/д" : run.totalTokens + " tok") + " · " +
+                    (run.costLabel || "н/д") + " · " +
+                    (run.words || 0) + " слов";
+                outs[index].textContent = run.content || "";
             });
-            conclusionsEl.textContent = data.conclusions || "";
+            conclusionsEl.textContent = data.conclusion || "";
+            renderLinks(data.links);
         } catch (error) {
             setAll("Не удалось выполнить запрос: " + error);
         } finally {

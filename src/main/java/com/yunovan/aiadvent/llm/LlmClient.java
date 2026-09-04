@@ -54,8 +54,9 @@ public class LlmClient {
         messages.add(new ChatCompletionRequest.Message("user", command.prompt().trim()));
 
         ChatCompletionRequest request = ChatCompletionRequest.of(
-                properties.model(), messages, command.maxTokens(), command.stop(), command.temperature());
+                resolvedModel(command), messages, command.maxTokens(), command.stop(), command.temperature());
 
+        long startedNanos = System.nanoTime();
         int attempts = httpProperties.attempts();
         RestClientException lastIoError = null;
         for (int attempt = 1; attempt <= attempts; attempt++) {
@@ -69,7 +70,8 @@ public class LlmClient {
                 if (response == null) {
                     throw new LlmException("LLM returned an empty response");
                 }
-                return response.requiredReply();
+                long elapsedMs = Math.max(0L, (System.nanoTime() - startedNanos) / 1_000_000L);
+                return response.requiredReply().withElapsedMs(elapsedMs);
             } catch (RestClientResponseException ex) {
                 throw new LlmException(
                         "LLM API error %s: %s".formatted(ex.getStatusCode().value(), responseBody(ex)), ex);
@@ -85,6 +87,13 @@ public class LlmClient {
                 "Failed to call LLM API after %s attempt(s): %s"
                         .formatted(attempts, LlmIoErrors.describe(lastIoError)),
                 lastIoError);
+    }
+
+    private String resolvedModel(CompletionCommand command) {
+        if (command.model() != null && !command.model().isBlank()) {
+            return command.model().trim();
+        }
+        return properties.model();
     }
 
     private static void sleepBeforeRetry(int attempt) {

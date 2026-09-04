@@ -3,6 +3,7 @@ package com.yunovan.aiadvent.llm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -33,5 +34,18 @@ class ChatCompletionResponseTest {
         assertThatThrownBy(response::requiredContent)
                 .isInstanceOf(LlmException.class)
                 .hasMessageContaining("empty");
+    }
+
+    @Test
+    void requiredReplyReadsUsageAndCost() {
+        ChatCompletionResponse response = new ChatCompletionResponse(
+                List.of(new ChatCompletionResponse.Choice(
+                        new ChatCompletionResponse.Message("assistant", "Hi"), "stop")),
+                new ChatCompletionResponse.Usage(3, 5, 8, new BigDecimal("0.000012")));
+
+        LlmReply reply = response.requiredReply();
+        assertThat(reply.content()).isEqualTo("Hi");
+        assertThat(reply.totalTokens()).isEqualTo(8);
+        assertThat(reply.costUsd()).isEqualByComparingTo("0.000012");
     }
 }
