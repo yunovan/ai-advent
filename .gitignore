@@ -17,3 +17,5 @@ bin/
 .env.local
 application-local.yml
 *.iml
+
+data/

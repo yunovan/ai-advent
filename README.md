@@ -452,3 +452,94 @@ curl -s http://localhost:8080/api/day6/chat \
 | `day06/Day06AgentController.java` | `GET/POST /api/day6/chat` |
 | `day06/Day06CliRunner.java` | CLI-режим `--day=6` |
 | `static/day6.html` | простой чат с метаданными ответа |
+
+---
+
+## День 7. Сохранение контекста
+
+Агент из дня 6 научился **помнить диалог между запусками**:
+
+1. история диалога (`role` + `content`) сохраняется в **JSON-файл** на диске;
+2. при старте агент **загружает историю обратно**;
+3. продолжает беседу так, будто и не выключался.
+
+Сохранение вынесено в отдельное хранилище `ConversationStore` (интерфейс + файловая реализация на Jackson). Агент (`ContextualChatAgent`) при каждом запросе: загружает сессию → добавляет новое сообщение пользователя → отправляет в LLM всю историю целиком → добавляет ответ ассистента → сохраняет обратно. Для каждого диалога — своя сессия `sessionId` (по умолчанию `default`), история в отдельном файле сессии.
+
+Формат файла (`data/day7-conversations/<sessionId>.json`):
+
+```json
+{
+  "sessionId": "default",
+  "createdAt": "2026-09-08T10:00:00Z",
+  "messages": [
+    { "role": "system", "content": "Ты — AI-агент с памятью..." },
+    { "role": "user", "content": "Привет, меня зовут Ася." },
+    { "role": "assistant", "content": "Приятно познакомиться, Ася!" }
+  ]
+}
+```
+
+Размер истории ограничен `DAY7_MAX_MESSAGES` (по умолчанию 40): со временем отбрасываются самые старые сообщения, системный промпт остаётся.
+
+### Что показать на видео
+
+1. **Задача дня**  
+   «День 7: агент сохраняет контекст. Говорим ему что-то → перезапускаем приложение → он помнит, о чём шла речь.»
+
+2. **Код**  
+   `ConversationStore` + `FileConversationStore` (JSON на диске), `ContextualChatAgent.ask(sessionId, request)` — загрузка истории, вызов LLM со всей историей, сохранение. `LlmClient.complete(command, messages)` теперь умеет отправлять произвольный список сообщений.
+
+3. **Веб**  
+   http://localhost:8080/day7.html → напишите агенту в одном запуске → перезапустите приложение → откройте страницу заново и спросите «Как меня зовут?» — агент вспомнит. Внизу видна вся история диалога и счётчик сообщений.
+
+4. **CLI**
+
+```bash
+# запуск 1: агенту сообщают факт
+./gradlew bootRun --args="--day=7 --prompt=\"Привет, меня зовут Ася\" --cli"
+
+# перезапуск: агент помнит
+./gradlew bootRun --args="--day=7 --prompt=\"Как меня зовут?\" --cli"
+
+# сброс истории конкретной сессии
+./gradlew bootRun --args="--day=7 --reset --cli"
+```
+
+5. **Тесты**  
+   Проверяется round-trip «сохранить → прочитать» хранилища, что агент переживает «перезапуск» (новый экземпляр на том же хранилище помнит прошлые сообщения), сброс сессии и обработка пустого запроса.
+
+### Запуск дня 7
+
+Веб: http://localhost:8080/day7.html
+
+API:
+
+```bash
+curl -s http://localhost:8080/api/day7/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"default","request":"Привет, меня зовут Ася"}'
+```
+
+Сброс истории:
+
+```bash
+curl -s http://localhost:8080/api/day7/reset \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"default"}'
+```
+
+### Как устроен код дня 7
+
+| Файл | Роль |
+|---|---|
+| `agent/ConversationMessage.java` | сообщение диалога: `role` + `content` |
+| `agent/Conversation.java` | сессия: `sessionId`, `createdAt`, список сообщений |
+| `agent/ConversationalAgent.java` | интерфейс: `ask(sessionId, request)` + `reset(sessionId)` |
+| `agent/ConversationReply.java` | результат: ответ + вся история + метрики |
+| `agent/ContextualChatAgent.java` | агент с памятью: загрузка, вызов LLM, сохранение, тримминг |
+| `agent/store/ConversationStore.java` | интерфейс хранилища истории |
+| `agent/store/FileConversationStore.java` | JSON-хранилище на диске (Jackson), по файлу на сессию |
+| `day07/Day7Properties.java` | `day7.data-dir`, `day7.max-messages` |
+| `day07/Day07ConversationController.java` | `GET/POST /api/day7/chat`, `/api/day7/reset` |
+| `day07/Day07CliRunner.java` | CLI-режим `--day=7` |
+| `static/day7.html` | чат с историей и кнопкой сброса |

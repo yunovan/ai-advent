@@ -42,16 +42,25 @@ public class LlmClient {
         if (command == null || command.prompt() == null || command.prompt().isBlank()) {
             throw new LlmException("Prompt must not be blank");
         }
-        if (!properties.hasApiKey()) {
-            throw new LlmException(
-                    "LLM API key is missing. Set LLM_API_KEY or OPENROUTER_API_KEY in .env before sending a request.");
-        }
-
         List<ChatCompletionRequest.Message> messages = new ArrayList<>();
         if (command.systemPrompt() != null && !command.systemPrompt().isBlank()) {
             messages.add(new ChatCompletionRequest.Message("system", command.systemPrompt().trim()));
         }
         messages.add(new ChatCompletionRequest.Message("user", command.prompt().trim()));
+        return complete(command, messages);
+    }
+
+    public LlmReply complete(CompletionCommand command, List<ChatCompletionRequest.Message> messages) {
+        if (command == null) {
+            throw new LlmException("Command must not be null");
+        }
+        if (messages == null || messages.isEmpty()) {
+            throw new LlmException("At least one message is required");
+        }
+        if (!properties.hasApiKey()) {
+            throw new LlmException(
+                    "LLM API key is missing. Set LLM_API_KEY or OPENROUTER_API_KEY in .env before sending a request.");
+        }
 
         ChatCompletionRequest request = ChatCompletionRequest.of(
                 resolvedModel(command), messages, command.maxTokens(), command.stop(), command.temperature());

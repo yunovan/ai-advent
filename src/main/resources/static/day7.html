@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 7</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #10131a;
+            --card: #1a2030;
+            --line: #2c3548;
+            --text: #eef2ff;
+            --muted: #9aa6bf;
+            --accent: #7aa2ff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Georgia, "Times New Roman", serif;
+            background: radial-gradient(circle at top, #1d2740, var(--bg) 55%);
+            color: var(--text);
+        }
+        main {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 48px 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .nav {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 14px;
+        }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        textarea, button, pre {
+            width: 100%;
+            font-size: 16px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        .row textarea {
+            min-height: 100px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            resize: vertical;
+        }
+        button {
+            margin-top: 12px;
+            margin-right: 8px;
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #0d1320;
+            font-weight: 700;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            cursor: pointer;
+        }
+        button.secondary { background: #2c3548; color: var(--text); }
+        button:disabled { opacity: 0.6; cursor: wait; }
+        input.session {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+        .transcript {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .msg {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            white-space: pre-wrap;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .msg .who {
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .msg.user { background: #16203a; }
+        .msg.assistant { background: #121826; }
+        .msg.system { background: #10131a; color: var(--muted); font-style: italic; }
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+        }
+        .hint {
+            margin-top: 10px;
+            color: var(--muted);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+        }
+        .hint code {
+            background: #121826;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 1px 6px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/">День 1</a>
+        <a href="/day2.html">День 2</a>
+        <a href="/day3.html">День 3</a>
+        <a href="/day4.html">День 4</a>
+        <a href="/day5.html">День 5</a>
+        <a href="/day6.html">День 6</a>
+        <a href="/day7.html">День 7</a>
+    </nav>
+    <span class="badge">AI Advent · Day 7</span>
+    <h1>Сохранение контекста</h1>
+    <p class="lead">Агент хранит историю диалога в JSON-файле на диске и загружает её обратно при перезапуске. Продолжите беседу — и агент будет помнить, что было «до перезагрузки».</p>
+    <div class="card">
+        <label for="session">Сессия диалога</label>
+        <input class="session" id="session" type="text" value="default" spellcheck="false">
+        <div class="row">
+            <textarea id="request">Привет! Запомни моё имя — меня зовут Ася.</textarea>
+            <button id="send" type="button">Спросить</button>
+        </div>
+        <div class="hint">Подсказка для проверки: скажите агенту что-то в одном запуске (<code>./gradlew bootRun --args="--day=7 --prompt="Привет, меня зовут Ася" --cli"</code>), потом перезапустите и спросите <code>--prompt="Как меня зовут?"</code> — агент вспомнит.</div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0;">
+        <div class="transcript" id="transcript"></div>
+        <div class="meta" id="meta"></div>
+        <button class="secondary" id="reset" type="button">Сбросить историю сессии</button>
+    </div>
+</main>
+<script>
+    const sessionEl = document.getElementById("session");
+    const requestEl = document.getElementById("request");
+    const transcriptEl = document.getElementById("transcript");
+    const metaEl = document.getElementById("meta");
+    const sendEl = document.getElementById("send");
+    const resetEl = document.getElementById("reset");
+
+    function appendMessage(role, content) {
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        const who = document.createElement("div");
+        who.className = "who";
+        who.textContent = role === "user" ? "вы" : role === "assistant" ? "агент" : "система";
+        const body = document.createElement("div");
+        body.textContent = content;
+        div.appendChild(who);
+        div.appendChild(body);
+        transcriptEl.appendChild(div);
+    }
+
+    function renderHistory(history) {
+        transcriptEl.innerHTML = "";
+        (history || []).forEach((m) => appendMessage(m.role, m.content));
+    }
+
+    async function send() {
+        const request = requestEl.value.trim();
+        if (!request) return;
+        const sessionId = sessionEl.value.trim() || "default";
+        sendEl.disabled = true;
+        metaEl.textContent = "Агент думает...";
+        try {
+            const response = await fetch("/api/day7/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId, request })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                return;
+            }
+            renderHistory(data.history);
+            metaEl.textContent =
+                "session: " + data.sessionId + " · " +
+                data.messageCount + " сообщений · " +
+                (data.model ? data.model + " · " : "") +
+                (data.elapsedMs || 0) + " мс · " +
+                (data.totalTokens == null ? "токены н/д" : data.totalTokens + " tok") +
+                (data.costUsd == null ? "" : " · $" + data.costUsd) +
+                " · история сохранена на диск";
+        } catch (error) {
+            metaEl.textContent = "Не удалось выполнить запрос: " + error;
+        } finally {
+            sendEl.disabled = false;
+        }
+    }
+
+    async function reset() {
+        const sessionId = sessionEl.value.trim() || "default";
+        resetEl.disabled = true;
+        try {
+            const response = await fetch("/api/day7/reset", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                return;
+            }
+            renderHistory([]);
+            metaEl.textContent = data.message || "История удалена";
+        } catch (error) {
+            metaEl.textContent = "Не удалось выполнить запрос: " + error;
+        } finally {
+            resetEl.disabled = false;
+        }
+    }
+
+    sendEl.addEventListener("click", send);
+    resetEl.addEventListener("click", reset);
+</script>
+</body>
+</html>
