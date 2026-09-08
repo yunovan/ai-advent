@@ -94,15 +94,30 @@ class ContextualChatAgentTest {
     private FileConversationStore store() {
         return new FileConversationStore(
                 JsonMapper.builder().build(),
-                new Day7Properties(tempDir.toString(), 40));
+                new Day7Properties(tempDir.toString()));
     }
 
     private ContextualChatAgent newAgent() {
         return new ContextualChatAgent(
                 llmClient,
                 new LlmProperties("key", "https://openrouter.ai/api/v1", "gpt-4o-mini"),
-                new Day7Properties(tempDir.toString(), 40),
                 store());
+    }
+
+    @Test
+    void historyGrowsWithoutLimitAcrossManyAsks() {
+        ContextualChatAgent agent = newAgent();
+        when(llmClient.complete(any(CompletionCommand.class), any())).thenReturn(reply("и снова привет"));
+        for (int i = 1; i <= 5; i++) {
+            agent.ask("default", "вопрос номер " + i);
+        }
+
+        ConversationReply reply = agent.ask("default", "вопрос номер 6");
+
+        assertThat(reply.messageCount()).isEqualTo(1 + 2 * 6);
+        assertThat(reply.messages()).extracting(ConversationMessage::content)
+                .contains("вопрос номер 1", "вопрос номер 2", "вопрос номер 6");
+        assertThat(store().load("default").messages()).hasSize(1 + 2 * 6);
     }
 
     private static LlmReply reply(String content) {

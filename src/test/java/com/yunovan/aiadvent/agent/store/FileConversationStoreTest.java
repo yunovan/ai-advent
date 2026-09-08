@@ -18,7 +18,7 @@ class FileConversationStoreTest {
     Path tempDir;
 
     private FileConversationStore store() {
-        return new FileConversationStore(JsonMapper.builder().build(), new Day7Properties(tempDir.toString(), 40));
+        return new FileConversationStore(JsonMapper.builder().build(), new Day7Properties(tempDir.toString()));
     }
 
     @Test

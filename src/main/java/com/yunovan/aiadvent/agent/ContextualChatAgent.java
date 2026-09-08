@@ -1,7 +1,6 @@
 package com.yunovan.aiadvent.agent;
 
 import com.yunovan.aiadvent.agent.store.ConversationStore;
-import com.yunovan.aiadvent.day07.Day7Properties;
 import com.yunovan.aiadvent.llm.ChatCompletionRequest;
 import com.yunovan.aiadvent.llm.CompletionCommand;
 import com.yunovan.aiadvent.llm.LlmClient;
@@ -21,14 +20,12 @@ public class ContextualChatAgent implements ConversationalAgent {
 
     private final LlmClient llmClient;
     private final LlmProperties properties;
-    private final Day7Properties day7Properties;
     private final ConversationStore store;
 
     public ContextualChatAgent(
-            LlmClient llmClient, LlmProperties properties, Day7Properties day7Properties, ConversationStore store) {
+            LlmClient llmClient, LlmProperties properties, ConversationStore store) {
         this.llmClient = llmClient;
         this.properties = properties;
-        this.day7Properties = day7Properties;
         this.store = store;
     }
 
@@ -51,20 +48,19 @@ public class ContextualChatAgent implements ConversationalAgent {
                 CompletionCommand.unconstrained(trimmed), toChatMessages(messages));
 
         messages.add(ConversationMessage.assistant(reply.content()));
-        List<ConversationMessage> kept = trim(messages, day7Properties.maxMessages());
-        store.save(conversation.withMessages(kept));
+        store.save(conversation.withMessages(messages));
 
         return new ConversationReply(
                 sid,
                 reply.content(),
                 properties.model(),
-                kept.size(),
+                messages.size(),
                 reply.promptTokens(),
                 reply.completionTokens(),
                 reply.totalTokens(),
                 reply.costUsd(),
                 reply.elapsedMs(),
-                List.copyOf(kept));
+                List.copyOf(messages));
     }
 
     @Override
@@ -84,19 +80,5 @@ public class ContextualChatAgent implements ConversationalAgent {
         return messages.stream()
                 .map(message -> new ChatCompletionRequest.Message(message.role(), message.content()))
                 .toList();
-    }
-
-    private static List<ConversationMessage> trim(List<ConversationMessage> messages, int maxMessages) {
-        if (maxMessages <= 0 || messages.size() <= maxMessages) {
-            return messages;
-        }
-        boolean hasSystem = "system".equals(messages.get(0).role());
-        int room = maxMessages - (hasSystem ? 1 : 0);
-        List<ConversationMessage> kept = new ArrayList<>();
-        if (hasSystem) {
-            kept.add(messages.get(0));
-        }
-        kept.addAll(messages.subList(messages.size() - room, messages.size()));
-        return kept;
     }
 }

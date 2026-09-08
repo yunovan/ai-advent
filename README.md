@@ -479,7 +479,7 @@ curl -s http://localhost:8080/api/day6/chat \
 }
 ```
 
-Размер истории ограничен `DAY7_MAX_MESSAGES` (по умолчанию 40): со временем отбрасываются самые старые сообщения, системный промпт остаётся.
+История хранится целиком и **не ограничена по количеству вопросов**: каждый ответ добавляет в файл сессии ещё одно сообщение, и при следующем запросе LLM получает весь диалог от начала до конца. Сбросить историю можно в любой момент — через кнопку на странице, API `/api/day7/reset` или флаг `--reset` CLI.
 
 ### Что показать на видео
 
@@ -506,7 +506,7 @@ curl -s http://localhost:8080/api/day6/chat \
 ```
 
 5. **Тесты**  
-   Проверяется round-trip «сохранить → прочитать» хранилища, что агент переживает «перезапуск» (новый экземпляр на том же хранилище помнит прошлые сообщения), сброс сессии и обработка пустого запроса.
+   Проверяется round-trip «сохранить → прочитать» хранилища, что агент переживает «перезапуск» (новый экземпляр на том же хранилище помнит прошлые сообщения), сброс сессии, обработка пустого запроса и то, что история растёт без ограничений — после шести вопросов в ней 13 сообщений, ни одно не потеряно.
 
 ### Запуск дня 7
 
@@ -536,10 +536,10 @@ curl -s http://localhost:8080/api/day7/reset \
 | `agent/Conversation.java` | сессия: `sessionId`, `createdAt`, список сообщений |
 | `agent/ConversationalAgent.java` | интерфейс: `ask(sessionId, request)` + `reset(sessionId)` |
 | `agent/ConversationReply.java` | результат: ответ + вся история + метрики |
-| `agent/ContextualChatAgent.java` | агент с памятью: загрузка, вызов LLM, сохранение, тримминг |
+| `agent/ContextualChatAgent.java` | агент с памятью: загрузка, вызов LLM со всей историей, сохранение |
 | `agent/store/ConversationStore.java` | интерфейс хранилища истории |
 | `agent/store/FileConversationStore.java` | JSON-хранилище на диске (Jackson), по файлу на сессию |
-| `day07/Day7Properties.java` | `day7.data-dir`, `day7.max-messages` |
+| `day07/Day7Properties.java` | `day7.data-dir` |
 | `day07/Day07ConversationController.java` | `GET/POST /api/day7/chat`, `/api/day7/reset` |
 | `day07/Day07CliRunner.java` | CLI-режим `--day=7` |
 | `static/day7.html` | чат с историей и кнопкой сброса |
