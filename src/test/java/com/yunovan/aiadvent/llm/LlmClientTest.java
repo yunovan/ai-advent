@@ -160,6 +160,45 @@ class LlmClientTest {
     }
 
     @Test
+    void completeSendsProvidedMessageHistory() {
+        server.expect(requestTo("https://openrouter.ai/api/v1/chat/completions"))
+                .andExpect(method(POST))
+                .andExpect(content().json("""
+                        {
+                          "model":"openai/gpt-4o-mini",
+                          "messages":[
+                            {"role":"system","content":"Ты помнишь диалог."},
+                            {"role":"user","content":"Меня зовут Ася"},
+                            {"role":"assistant","content":"Приятно познакомиться, Ася!"},
+                            {"role":"user","content":"Как меня зовут?"}
+                          ]
+                        }
+                        """))
+                .andRespond(withSuccess(
+                        """
+                        {"choices":[{"message":{"role":"assistant","content":"Ася!"},"finish_reason":"stop"}]}
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        LlmReply reply = llmClient.complete(
+                CompletionCommand.unconstrained("Как меня зовут?"),
+                List.of(
+                        new ChatCompletionRequest.Message("system", "Ты помнишь диалог."),
+                        new ChatCompletionRequest.Message("user", "Меня зовут Ася"),
+                        new ChatCompletionRequest.Message("assistant", "Приятно познакомиться, Ася!"),
+                        new ChatCompletionRequest.Message("user", "Как меня зовут?")));
+
+        assertThat(reply.content()).isEqualTo("Ася!");
+        server.verify();
+    }
+
+    @Test
+    void completeRejectsEmptyMessageList() {
+        assertThatThrownBy(() -> llmClient.complete(CompletionCommand.unconstrained("Hello"), List.of()))
+                .isInstanceOf(LlmException.class);
+    }
+
+    @Test
     void completeUsesCommandModelAndParsesUsage() {
         server.expect(requestTo("https://openrouter.ai/api/v1/chat/completions"))
                 .andExpect(method(POST))
