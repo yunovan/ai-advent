@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 4</title>
+    <title>AI Advent — День 6</title>
     <style>
         :root {
             color-scheme: dark;
@@ -23,7 +23,7 @@
             color: var(--text);
         }
         main {
-            max-width: 1100px;
+            max-width: 720px;
             margin: 0 auto;
             padding: 48px 20px;
         }
@@ -67,7 +67,7 @@
             font-size: 16px;
         }
         textarea {
-            min-height: 90px;
+            min-height: 110px;
             padding: 12px;
             border-radius: 10px;
             border: 1px solid var(--line);
@@ -87,42 +87,22 @@
             cursor: pointer;
         }
         button:disabled { opacity: 0.6; cursor: wait; }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 16px;
-            margin-top: 16px;
-        }
-        @media (max-width: 900px) {
-            .grid { grid-template-columns: 1fr; }
-        }
-        .col h2 {
-            margin: 0 0 8px;
-            font-size: 18px;
-        }
-        .meta {
-            color: var(--muted);
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            font-size: 12px;
-            margin-bottom: 8px;
-            white-space: pre-wrap;
-        }
         pre {
-            min-height: 140px;
+            margin-top: 16px;
+            min-height: 80px;
             padding: 12px;
             border-radius: 10px;
             background: #0d121c;
             border: 1px solid var(--line);
             white-space: pre-wrap;
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 13px;
+            font-size: 14px;
         }
-        .conclusions {
-            margin-top: 16px;
+        .meta {
+            margin-top: 8px;
             color: var(--muted);
             font-family: ui-sans-serif, system-ui, sans-serif;
-            font-size: 14px;
-            white-space: pre-wrap;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -136,74 +116,51 @@
         <a href="/day5.html">День 5</a>
         <a href="/day6.html">День 6</a>
     </nav>
-    <span class="badge">AI Advent · Day 4</span>
-    <h1>Температура</h1>
-    <p class="lead">Один промпт при temperature 0, 0.7 и 1.2. Смотрите точность (столица), креативность (слоган) и насколько ответы разъезжаются.</p>
+    <span class="badge">AI Advent · Day 6</span>
+    <h1>Первый агент</h1>
+    <p class="lead">Агент как отдельная сущность: принимает запрос, сам отправляет его в LLM через API и возвращает ответ.</p>
     <div class="card">
-        <label for="prompt">Промпт</label>
-        <textarea id="prompt">Назови столицу Франции. Затем придумай необычный слоган для туристического плаката этого города.</textarea>
-        <button id="send" type="button">Сравнить температуры</button>
-        <div class="grid">
-            <div class="col">
-                <h2>temperature = 0</h2>
-                <div class="meta" id="meta0">Точность · мало разнообразия</div>
-                <pre id="out0">Ответ появится здесь.</pre>
-            </div>
-            <div class="col">
-                <h2>temperature = 0.7</h2>
-                <div class="meta" id="meta7">Баланс</div>
-                <pre id="out7">Ответ появится здесь.</pre>
-            </div>
-            <div class="col">
-                <h2>temperature = 1.2</h2>
-                <div class="meta" id="meta12">Креативность · риск ошибок</div>
-                <pre id="out12">Ответ появится здесь.</pre>
-            </div>
-        </div>
-        <pre class="conclusions" id="conclusions">Выводы появятся вместе с ответами.</pre>
+        <label for="request">Запрос агенту</label>
+        <textarea id="request">Привет! Проверь, что ты работаешь: ответь одним предложением, кто ты и какую задачу решаешь.</textarea>
+        <button id="send" type="button">Спросить агента</button>
+        <pre id="output">Ответ агента появится здесь.</pre>
+        <div class="meta" id="meta"></div>
     </div>
 </main>
 <script>
-    const promptEl = document.getElementById("prompt");
+    const requestEl = document.getElementById("request");
+    const outputEl = document.getElementById("output");
+    const metaEl = document.getElementById("meta");
     const sendEl = document.getElementById("send");
-    const outs = [document.getElementById("out0"), document.getElementById("out7"), document.getElementById("out12")];
-    const metas = [document.getElementById("meta0"), document.getElementById("meta7"), document.getElementById("meta12")];
-    const conclusionsEl = document.getElementById("conclusions");
-
-    function setAll(text) {
-        outs.forEach((el) => el.textContent = text);
-    }
 
     sendEl.addEventListener("click", async () => {
-        const prompt = promptEl.value.trim();
-        if (!prompt) {
-            setAll("Введите промпт.");
+        const request = requestEl.value.trim();
+        if (!request) {
+            outputEl.textContent = "Введите запрос.";
             return;
         }
         sendEl.disabled = true;
-        setAll("Жду три ответа модели...");
-        conclusionsEl.textContent = "Считаю...";
+        outputEl.textContent = "Агент думает...";
+        metaEl.textContent = "";
         try {
-            const response = await fetch("/api/day4/compare", {
+            const response = await fetch("/api/day6/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt })
+                body: JSON.stringify({ request })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                const error = data.error || data.detail || data.message || ("HTTP " + response.status);
-                setAll(error);
-                conclusionsEl.textContent = error;
+                outputEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
                 return;
             }
-            (data.samples || []).forEach((sample, index) => {
-                if (!outs[index]) return;
-                metas[index].textContent = (sample.words || 0) + " слов · " + (sample.bestFor || "");
-                outs[index].textContent = sample.content || "";
-            });
-            conclusionsEl.textContent = data.conclusions || "";
+            outputEl.textContent = data.content || "";
+            metaEl.textContent =
+                (data.model ? "model: " + data.model + " · " : "") +
+                (data.elapsedMs || 0) + " мс · " +
+                (data.totalTokens == null ? "токены н/д" : data.totalTokens + " tok") +
+                (data.costUsd == null ? "" : " · $" + data.costUsd);
         } catch (error) {
-            setAll("Не удалось выполнить запрос: " + error);
+            outputEl.textContent = "Не удалось выполнить запрос: " + error;
         } finally {
             sendEl.disabled = false;
         }

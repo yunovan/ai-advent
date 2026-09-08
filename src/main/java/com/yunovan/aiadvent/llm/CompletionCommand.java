@@ -30,4 +30,8 @@ public record CompletionCommand(
     public static CompletionCommand withModel(String prompt, String model) {
         return new CompletionCommand(prompt, null, null, null, null, model);
     }
+
+    public CompletionCommand withSystemPrompt(String systemPrompt) {
+        return new CompletionCommand(prompt, systemPrompt, maxTokens, stop, temperature, model);
+    }
 }
