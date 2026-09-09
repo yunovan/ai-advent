@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 8</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #10131a;
+            --card: #1a2030;
+            --line: #2c3548;
+            --text: #eef2ff;
+            --muted: #9aa6bf;
+            --accent: #7aa2ff;
+            --danger: #ff8d8d;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Georgia, "Times New Roman", serif;
+            background: radial-gradient(circle at top, #1d2740, var(--bg) 55%);
+            color: var(--text);
+        }
+        main {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 48px 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .nav {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 14px;
+        }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        textarea, button, pre {
+            width: 100%;
+            font-size: 16px;
+        }
+        input.session, input.limit {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        .row textarea {
+            min-height: 90px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            resize: vertical;
+        }
+        button {
+            margin-top: 12px;
+            margin-right: 8px;
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #0d1320;
+            font-weight: 700;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            cursor: pointer;
+        }
+        button.secondary { background: #2c3548; color: var(--text); }
+        button:disabled { opacity: 0.6; cursor: wait; }
+        .transcript {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .msg {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            white-space: pre-wrap;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .msg .who {
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .msg.user { background: #16203a; }
+        .msg.assistant { background: #121826; }
+        .msg.system { background: #10131a; color: var(--muted); font-style: italic; }
+        .tokens {
+            margin-top: 8px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .banner {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--danger);
+            background: #2a1620;
+            color: var(--danger);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .hint {
+            margin-top: 10px;
+            color: var(--muted);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+        }
+        .hint code {
+            background: #121826;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 1px 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid var(--line);
+            padding: 6px 8px;
+            text-align: right;
+        }
+        th { color: var(--muted); font-weight: 600; }
+        td { color: var(--text); }
+        .bar {
+            height: 6px;
+            border-radius: 3px;
+            background: #0e1420;
+            overflow: hidden;
+        }
+        .bar>div {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent);
+        }
+        .bar>div.danger { background: var(--danger); }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/">День 1</a>
+        <a href="/day2.html">День 2</a>
+        <a href="/day3.html">День 3</a>
+        <a href="/day4.html">День 4</a>
+        <a href="/day5.html">День 5</a>
+        <a href="/day6.html">День 6</a>
+        <a href="/day7.html">День 7</a>
+        <a href="/day8.html">День 8</a>
+    </nav>
+    <span class="badge">AI Advent · Day 8</span>
+    <h1>Работа с токенами</h1>
+    <p class="lead">Агент считает токены: запроса, всей истории диалога и ответа модели, а также оценивает стоимость. Понизьте «контекстный лимит», чтобы увидеть, что происходит, когда диалог превышает окно модели.</p>
+    <div class="card">
+        <div class="grid2">
+            <div>
+                <label for="session">Сессия диалога</label>
+                <input class="session" id="session" type="text" value="default" spellcheck="false">
+            </div>
+            <div>
+                <label for="limit">Контекстный лимит модели (токены)</label>
+                <input class="limit" id="limit" type="number" value="128000" min="10" step="10">
+            </div>
+        </div>
+        <div class="row">
+            <textarea id="request">Привет! Меня зовут Ася.</textarea>
+            <button id="send" type="button">Спросить</button>
+        </div>
+        <div class="bar" id="usageBar"><div id="usageFill" style="width:0%"></div></div>
+        <div class="banner" id="banner"></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0;">
+        <div class="transcript" id="transcript"></div>
+        <div class="meta" id="meta"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="secondary" id="stats" type="button">Статистика сессии (рост токенов/цены)</button>
+            <button class="secondary" id="reset" type="button">Сбросить историю сессии</button>
+        </div>
+        <div id="statsBlock"></div>
+    </div>
+    <div class="hint">Подсказки для видео: 1) короткий диалог — 1–2 вопроса; 2) длинный — пришлите несколько длинных сообщений и откройте «Статистику сессии»; 3) переполнение — поставьте лимит, например <code>60</code>, и задавайте вопросы, пока агент не скажет, что диалог превысил окно модели. CLI: <code>./gradlew bootRun --args="--day=8 --prompt="Привет, меня зовут Ася" --cli"</code>, статистика: <code>--day=8 --table</code>, маленький лимит: <code>--day=8 --limit=60</code>.</div>
+</main>
+<script>
+    const sessionEl = document.getElementById("session");
+    const limitEl = document.getElementById("limit");
+    const requestEl = document.getElementById("request");
+    const transcriptEl = document.getElementById("transcript");
+    const metaEl = document.getElementById("meta");
+    const bannerEl = document.getElementById("banner");
+    const usageFill = document.getElementById("usageFill");
+    const sendEl = document.getElementById("send");
+    const resetEl = document.getElementById("reset");
+    const statsEl = document.getElementById("stats");
+    const statsBlock = document.getElementById("statsBlock");
+    let currentLimit = 128000;
+
+    function appendMessage(role, content, tokensText) {
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        const who = document.createElement("div");
+        who.className = "who";
+        who.textContent = role === "user" ? "вы" : role === "assistant" ? "агент" : "система";
+        const body = document.createElement("div");
+        body.textContent = content;
+        div.appendChild(who);
+        div.appendChild(body);
+        if (tokensText) {
+            const tokens = document.createElement("div");
+            tokens.className = "tokens";
+            tokens.textContent = tokensText;
+            div.appendChild(tokens);
+        }
+        transcriptEl.appendChild(div);
+    }
+
+    function renderHistory(history) {
+        transcriptEl.innerHTML = "";
+        (history || []).forEach((m) => appendMessage(m.role, m.content));
+    }
+
+    function renderUsage(promptTokens, limit) {
+        currentLimit = limit;
+        limitEl.value = limit;
+        const percent = Math.min(100, Math.round(promptTokens * 100 / limit));
+        usageFill.style.width = percent + "%";
+        usageFill.parentElement.title = promptTokens + " / " + limit + " токенов (" + percent + "%)";
+        usageFill.setAttribute("class", percent >= 80 ? "danger" : "");
+    }
+
+    async function send() {
+        const request = requestEl.value.trim();
+        if (!request) return;
+        const sessionId = sessionEl.value.trim() || "default";
+        const contextLimit = parseInt(limitEl.value, 10) || null;
+        sendEl.disabled = true;
+        bannerEl.style.display = "none";
+        metaEl.textContent = "Агент думает...";
+        try {
+            const response = await fetch("/api/day8/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId, request, contextLimit })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                return;
+            }
+            renderHistory(data.history);
+            renderUsage(data.promptTokens || 0, data.contextLimit || 128000);
+            if (data.exceeded) {
+                bannerEl.style.display = "block";
+                bannerEl.textContent = data.content || "Диалог превысил контекстное окно модели.";
+                metaEl.textContent =
+                    "session: " + data.sessionId + " · " +
+                    "запрос ~" + data.requestTokens + " tok · " +
+                    "история ~" + data.historyTokens + " tok · " +
+                    "промпт ~" + data.promptTokens + " tok из лимита " + data.contextLimit +
+                    " · LLM не вызывается";
+            } else {
+                metaEl.textContent =
+                    "session: " + data.sessionId + " · " +
+                    (data.model ? data.model + " · " : "") +
+                    (data.elapsedMs || 0) + " мс ·\n" +
+                    "токены: запрос ~" + data.requestTokens +
+                    " · история ~" + data.historyTokens +
+                    " · промпт ~" + data.promptTokens +
+                    " · ответ ~" + data.responseTokens + "\n" +
+                    "реальные (prompt/completion): " + (data.realPromptTokens == null ? "н/д" : data.realPromptTokens)
+                    + " / " + (data.realCompletionTokens == null ? "н/д" : data.realCompletionTokens) + "\n" +
+                    "реальная стоимость ответа: " + (data.realCostUsd == null ? "н/д" : "$" + data.realCostUsd) + "\n" +
+                    "оценка: ход ~" + (data.estimatedTurnCostUsd == null ? "н/д" : "$" + data.estimatedTurnCostUsd)
+                    + " · всего диалог ~" + (data.estimatedCumulativeCostUsd == null ? "н/д" : "$" + data.estimatedCumulativeCostUsd);
+            }
+        } catch (error) {
+            metaEl.textContent = "Не удалось выполнить запрос: " + error;
+        } finally {
+            sendEl.disabled = false;
+        }
+    }
+
+    async function reset() {
+        const sessionId = sessionEl.value.trim() || "default";
+        resetEl.disabled = true;
+        try {
+            const response = await fetch("/api/day8/reset", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                return;
+            }
+            renderHistory([]);
+            bannerEl.style.display = "none";
+            usageFill.style.width = "0%";
+            usageFill.setAttribute("class", "");
+            statsBlock.innerHTML = "";
+            metaEl.textContent = data.message || "История удалена";
+        } catch (error) {
+            metaEl.textContent = "Не удалось выполнить запрос: " + error;
+        } finally {
+            resetEl.disabled = false;
+        }
+    }
+
+    async function stats() {
+        const sessionId = sessionEl.value.trim() || "default";
+        statsEl.disabled = true;
+        statsBlock.innerHTML = "Загрузка...";
+        try {
+            const response = await fetch("/api/day8/metrics?sessionId=" + encodeURIComponent(sessionId));
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                statsBlock.innerHTML = "Ошибка: " + (data.error || data.message || response.status);
+                return;
+            }
+            let html = "<table><tr><th>#</th><th>промпт, tok</th><th>ответ, tok</th><th>сумма, tok</th><th>стоимость хода</th><th>сумма, $</th></tr>";
+            (data.turns || []).forEach((t) => {
+                html += "<tr><td>" + t.turn + "</td><td>" + t.promptTokens + "</td><td>" + t.responseTokens
+                    + "</td><td>" + t.cumulativeTokens + "</td><td>$ " + t.turnCostUsd + "</td><td>$ " + t.cumulativeCostUsd + "</td></tr>";
+            });
+            html += "</table>";
+            html += "<div class='meta'>Всего токенов в диалоге: " + data.totalTokens
+                + " · суммарная стоимость ~$ " + data.totalCostUsd + "</div>";
+            statsBlock.innerHTML = html;
+        } catch (error) {
+            statsBlock.innerHTML = "Не удалось загрузить статистику: " + error;
+        } finally {
+            statsEl.disabled = false;
+        }
+    }
+
+    sendEl.addEventListener("click", send);
+    resetEl.addEventListener("click", reset);
+    statsEl.addEventListener("click", stats);
+</script>
+</body>
+</html>

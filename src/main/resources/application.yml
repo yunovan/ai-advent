@@ -27,3 +27,8 @@ day5:
 day7:
   data-dir: ${DAY7_DATA_DIR:data/day7-conversations}
 
+day8:
+  context-limit: ${DAY8_CONTEXT_LIMIT:128000}
+  input-price: ${DAY8_INPUT_PRICE:0.15}
+  output-price: ${DAY8_OUTPUT_PRICE:0.60}
+
