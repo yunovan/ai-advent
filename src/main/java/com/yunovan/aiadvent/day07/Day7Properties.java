@@ -3,12 +3,12 @@ package com.yunovan.aiadvent.day07;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "day7")
-public record Day7Properties(String dataDir) {
+public record Day7Properties(String dialogDir) {
 
-    public static final String DEFAULT_DATA_DIR = "data/day7-conversations";
+    public static final String DEFAULT_DIALOG_DIR = "data/day7-dialogs";
 
     public Day7Properties {
-        dataDir = valueOr(dataDir, DEFAULT_DATA_DIR);
+        dialogDir = valueOr(dialogDir, DEFAULT_DIALOG_DIR);
     }
 
     private static String valueOr(String value, String fallback) {

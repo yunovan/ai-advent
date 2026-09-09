@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record Day08GrowthReport(
-        String sessionId,
+        String dialogId,
         long contextLimit,
         BigDecimal inputPriceUsdPerM,
         BigDecimal outputPriceUsdPerM,

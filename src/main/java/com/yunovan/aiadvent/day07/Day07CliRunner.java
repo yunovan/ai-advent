@@ -1,9 +1,6 @@
 package com.yunovan.aiadvent.day07;
 
 import com.yunovan.aiadvent.agent.ConversationMessage;
-import com.yunovan.aiadvent.agent.ConversationReply;
-import com.yunovan.aiadvent.agent.ConversationalAgent;
-import com.yunovan.aiadvent.agent.ContextualChatAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -17,58 +14,89 @@ public class Day07CliRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(Day07CliRunner.class);
 
-    private final ConversationalAgent agent;
+    private final Day07DialogService service;
     private final ApplicationContext applicationContext;
 
-    public Day07CliRunner(ConversationalAgent agent, ApplicationContext applicationContext) {
-        this.agent = agent;
+    public Day07CliRunner(Day07DialogService service, ApplicationContext applicationContext) {
+        this.service = service;
         this.applicationContext = applicationContext;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         if (!"7".equals(firstOption(args, "day"))) {
-            log.info("Day 7 web UI: http://localhost:8080/day7.html  |  API: POST /api/day7/chat");
+            log.info(
+                    "Day 7 web UI: http://localhost:8080/day7.html  |  API: POST /api/day7/dialogs");
             return;
         }
 
-        String sessionId = firstOption(args, "session");
-        if (sessionId != null && !sessionId.isBlank()) {
-            sessionId = ContextualChatAgent.normalize(sessionId);
-        } else {
-            sessionId = ContextualChatAgent.DEFAULT_SESSION_ID;
+        if (args.containsOption("start")) {
+            Day07StartResponse dialog = service.start();
+            System.out.println("Создан диалог: " + dialog.dialogId());
+            System.out.println("Память агента:");
+            printMemory(dialog.memory());
+            maybeExit(args);
+            return;
         }
 
-        if (args.containsOption("reset")) {
-            agent.reset(sessionId);
-            System.out.println("Диалог '" + sessionId + "' сброшен: история удалена.");
-            System.out.println("=== CLI: перезапустите с --prompt, чтобы начать заново ===");
+        if (args.containsOption("list")) {
+            System.out.println("=== Завершённые диалоги (память агента) ===");
+            for (Day07DialogSummary dialog : service.dialogs()) {
+                System.out.println("- [" + dialog.dialogId() + "] от " + dialog.finishedAt()
+                        + " (" + dialog.messageCount() + " сообщений)");
+                System.out.println("  " + dialog.summary());
+            }
+            maybeExit(args);
+            return;
+        }
+
+        String dialogId = firstOption(args, "dialog");
+        if (dialogId == null || dialogId.isBlank()) {
+            log.info("Day 7 CLI: --start | --list | --dialog=<id> --prompt=\"...\" | --dialog=<id> --finish");
+            return;
+        }
+
+        if (args.containsOption("finish")) {
+            Day07FinishResponse finished = service.finish(dialogId);
+            System.out.println("=== ДИАЛОГ ЗАВЕРШЁН '" + finished.dialogId() + "' ===");
+            System.out.println("Итог для памяти: " + finished.summary());
             maybeExit(args);
             return;
         }
 
         String request = firstOption(args, "prompt");
         if (request == null || request.isBlank()) {
-            log.info("Day 7 CLI: prompt is required (--prompt=\"...\") / --reset to clear history");
+            log.info("Day 7 CLI: prompt is required (--dialog=<id> --prompt=\"...\") / --finish / --start / --list");
             return;
         }
 
-        log.info("Day 7 CLI: continuing conversation '" + sessionId + "'");
-        ConversationReply reply = agent.ask(sessionId, request);
+        log.info("Day 7 CLI: sending request to dialog '" + dialogId + "'");
+        Day07ChatResponse response = service.chat(dialogId, request);
         System.out.println();
-        System.out.println("=== CONVERSATION '" + reply.sessionId() + "' (" + reply.messageCount() + " сообщений) ===");
-        for (ConversationMessage message : reply.messages()) {
+        System.out.println("=== DIALOG '" + response.dialogId() + "' (" + response.messageCount() + " сообщений) ===");
+        for (ConversationMessage message : response.history()) {
             System.out.println();
             System.out.println("[" + message.role() + "]");
             System.out.println(message.content());
         }
         System.out.println();
         System.out.println("=== AGENT REPLY ===");
-        System.out.println(reply.content());
-        System.out.println("model: " + reply.model() + " · " + reply.elapsedMs() + " мс · история сохранена на диск");
+        System.out.println(response.content());
+        System.out.println("model: " + response.model() + " · " + response.elapsedMs()
+                + " мс · диалог сохранён на диск → завершите: --dialog=" + response.dialogId() + " --finish");
         System.out.println("===================");
 
         maybeExit(args);
+    }
+
+    private static void printMemory(java.util.List<com.yunovan.aiadvent.agent.dialog.DialogMemory> memory) {
+        if (memory.isEmpty()) {
+            System.out.println("  (пусто — прошлых диалогов ещё нет)");
+            return;
+        }
+        for (com.yunovan.aiadvent.agent.dialog.DialogMemory item : memory) {
+            System.out.println("  - [" + item.dialogId() + "] " + item.summary());
+        }
     }
 
     private void maybeExit(ApplicationArguments args) {

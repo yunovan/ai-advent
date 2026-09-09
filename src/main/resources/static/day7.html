@@ -13,6 +13,7 @@
             --text: #eef2ff;
             --muted: #9aa6bf;
             --accent: #7aa2ff;
+            --ok: #7bd88f;
         }
         * { box-sizing: border-box; }
         body {
@@ -23,7 +24,7 @@
             color: var(--text);
         }
         main {
-            max-width: 760px;
+            max-width: 820px;
             margin: 0 auto;
             padding: 48px 20px;
         }
@@ -55,32 +56,6 @@
             border-radius: 16px;
             padding: 20px;
         }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            font-size: 13px;
-            color: var(--muted);
-        }
-        textarea, button, pre {
-            width: 100%;
-            font-size: 16px;
-        }
-        .row {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 12px;
-            align-items: end;
-        }
-        .row textarea {
-            min-height: 100px;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid var(--line);
-            background: #121826;
-            color: var(--text);
-            resize: vertical;
-        }
         button {
             margin-top: 12px;
             margin-right: 8px;
@@ -94,20 +69,22 @@
             cursor: pointer;
         }
         button.secondary { background: #2c3548; color: var(--text); }
-        button:disabled { opacity: 0.6; cursor: wait; }
-        input.session {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--line);
-            background: #121826;
-            color: var(--text);
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        .memory {
+            margin-top: 4px;
+            padding: 10px 14px;
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
             font-size: 13px;
-            margin-bottom: 14px;
+            color: var(--muted);
+            line-height: 1.6;
         }
+        .memory b { color: var(--ok); font-weight: 600; }
         .transcript {
             margin-top: 16px;
+            max-height: 46vh;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -130,18 +107,69 @@
         }
         .msg.user { background: #16203a; }
         .msg.assistant { background: #121826; }
-        .msg.system { background: #10131a; color: var(--muted); font-style: italic; }
+        .finished {
+            margin-top: 14px;
+            display: none;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--ok);
+            background: #0f2216;
+            color: var(--ok);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .inputRow {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+            margin-top: 14px;
+        }
+        .inputRow input {
+            width: 100%;
+            padding: 14px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            font-size: 16px;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        .inputRow input:focus { outline: 1px solid var(--accent); }
         .meta {
             margin-top: 12px;
             color: var(--muted);
             font-family: ui-sans-serif, system-ui, sans-serif;
             font-size: 12px;
+            line-height: 1.6;
         }
-        .hint {
+        .toggle {
+            margin-top: 14px;
+            text-align: left;
+            font-size: 13px;
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 12px;
+        }
+        #pastList { display: none; }
+        .past {
             margin-top: 10px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .past b { color: var(--accent); }
+        .hint {
+            margin-top: 12px;
             color: var(--muted);
             font-family: ui-sans-serif, system-ui, sans-serif;
             font-size: 12px;
+            line-height: 1.6;
         }
         .hint code {
             background: #121826;
@@ -164,29 +192,39 @@
         <a href="/day8.html">День 8</a>
     </nav>
     <span class="badge">AI Advent · Day 7</span>
-    <h1>Сохранение контекста</h1>
-    <p class="lead">Агент хранит историю диалога в JSON-файле на диске и загружает её обратно при перезапуске. Продолжите беседу — и агент будет помнить, что было «до перезагрузки».</p>
+    <h1>Диалоги и память</h1>
+    <p class="lead">Агент живёт диалогами. Завершённые диалоги получают краткий итог и попадают в долговременную память: следующий диалог помнит, о чём вы говорили раньше.</p>
     <div class="card">
-        <label for="session">Сессия диалога</label>
-        <input class="session" id="session" type="text" value="default" spellcheck="false">
-        <div class="row">
-            <textarea id="request">Привет! Запомни моё имя — меня зовут Ася.</textarea>
-            <button id="send" type="button">Спросить</button>
-        </div>
-        <div class="hint">Подсказка для проверки: скажите агенту что-то в одном запуске (<code>./gradlew bootRun --args="--day=7 --prompt="Привет, меня зовут Ася" --cli"</code>), потом перезапустите и спросите <code>--prompt="Как меня зовут?"</code> — агент вспомнит.</div>
-        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0;">
+        <div class="memory" id="memory">Память агента загружается…</div>
         <div class="transcript" id="transcript"></div>
+        <div class="finished" id="finished"></div>
+        <div class="inputRow">
+            <input id="request" type="text" placeholder="Напишите сообщение и нажмите Enter…" autocomplete="off">
+            <button id="send" type="button" disabled>Отправить</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="secondary" id="finish" type="button" disabled>Завершить диалог</button>
+            <button id="start" type="button">Начать диалог</button>
+            <button class="toggle" id="togglePast" type="button">Прошлые диалоги</button>
+        </div>
+        <div id="pastList"></div>
         <div class="meta" id="meta"></div>
-        <button class="secondary" id="reset" type="button">Сбросить историю сессии</button>
+        <div class="hint">Проверка памяти: в диалоге 1 спросите <code>Почему небо синее?</code> и нажмите «Завершить диалог», затем «Начать диалог» и спросите <code>О чём мы говорили раньше?</code> — агент вспомнит по итогу прошлого диалога. CLI: <code>./gradlew bootRun --args="--day=7 --start --cli"</code> → <code>--dialog=&lt;id&gt; --prompt="Почему небо синее?" --cli"</code> → <code>--dialog=&lt;id&gt; --finish --cli"</code>.</div>
     </div>
 </main>
 <script>
-    const sessionEl = document.getElementById("session");
-    const requestEl = document.getElementById("request");
+    const memoryEl = document.getElementById("memory");
     const transcriptEl = document.getElementById("transcript");
-    const metaEl = document.getElementById("meta");
+    const finishedEl = document.getElementById("finished");
+    const requestEl = document.getElementById("request");
     const sendEl = document.getElementById("send");
-    const resetEl = document.getElementById("reset");
+    const finishEl = document.getElementById("finish");
+    const startEl = document.getElementById("start");
+    const toggleEl = document.getElementById("togglePast");
+    const pastListEl = document.getElementById("pastList");
+    const metaEl = document.getElementById("meta");
+    const KEY = "ai-advent-day7-dialog";
+    let dialogId = localStorage.getItem(KEY);
 
     function appendMessage(role, content) {
         const div = document.createElement("div");
@@ -199,6 +237,7 @@
         div.appendChild(who);
         div.appendChild(body);
         transcriptEl.appendChild(div);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
     }
 
     function renderHistory(history) {
@@ -206,32 +245,91 @@
         (history || []).forEach((m) => appendMessage(m.role, m.content));
     }
 
+    function renderMemory(memory) {
+        if (!memory || memory.length === 0) {
+            memoryEl.innerHTML = "<b>Память пуста.</b> Завершите диалог — его итог добавится сюда.";
+        } else {
+            const items = memory.map((m) => "• [" + m.summary + "]").join("<br>");
+            memoryEl.innerHTML = "<b>Агент помнит " + memory.length + " прошл" + (memory.length === 1 ? "ый" : "ых") + " диалог"
+                + (memory.length === 1 ? "" : "а") + ":</b><br>" + items;
+        }
+    }
+
+    function renderFinished(finished) {
+        finishedEl.style.display = "block";
+        finishedEl.textContent = "Диалог завершён. Итог для памяти: " + (finished.summary || "без итога");
+    }
+
+    function setActive(active) {
+        sendEl.disabled = !active || !dialogId;
+        finishEl.disabled = !active || !dialogId;
+        requestEl.disabled = !active || !dialogId;
+        if (active) requestEl.focus();
+    }
+
+    async function refreshMemoryAndPast() {
+        const response = await fetch("/api/day7/dialogs").catch(() => null);
+        if (!response || !response.ok) return;
+        const dialogs = await response.json().catch(() => []);
+        renderMemory(dialogs);
+        pastListEl.innerHTML = "";
+        if (dialogs.length === 0) {
+            pastListEl.innerHTML = "<div class='past'>Прошлых завершённых диалогов пока нет.</div>";
+            return;
+        }
+        dialogs.forEach((d) => {
+            const div = document.createElement("div");
+            div.className = "past";
+            div.innerHTML = "<b>[" + d.dialogId + "]</b> от " + (d.finishedAt ? new Date(d.finishedAt).toLocaleString() : "?")
+                + " · " + d.messageCount + " сообщений<br>" + (d.summary || "без итога");
+            pastListEl.appendChild(div);
+        });
+    }
+
+    async function start() {
+        startEl.disabled = true;
+        metaEl.textContent = "Создаю диалог…";
+        try {
+            const response = await fetch("/api/day7/dialogs", { method: "POST" });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
+                return;
+            }
+            dialogId = data.dialogId;
+            localStorage.setItem(KEY, dialogId);
+            finishedEl.style.display = "none";
+            renderHistory([]);
+            metaEl.textContent = "Диалог " + dialogId + " · память: " + (data.memory || []).length + " прошлых диалогов";
+            setActive(true);
+        } catch (error) {
+            metaEl.textContent = "Не удалось создать диалог: " + error;
+        } finally {
+            startEl.disabled = false;
+        }
+    }
+
     async function send() {
         const request = requestEl.value.trim();
-        if (!request) return;
-        const sessionId = sessionEl.value.trim() || "default";
+        if (!request || !dialogId) return;
         sendEl.disabled = true;
-        metaEl.textContent = "Агент думает...";
+        metaEl.textContent = "Агент думает…";
         try {
-            const response = await fetch("/api/day7/chat", {
+            const response = await fetch("/api/day7/dialogs/" + encodeURIComponent(dialogId) + "/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sessionId, request })
+                body: JSON.stringify({ request })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
                 return;
             }
+            requestEl.value = "";
             renderHistory(data.history);
-            metaEl.textContent =
-                "session: " + data.sessionId + " · " +
-                data.messageCount + " сообщений · " +
-                (data.model ? data.model + " · " : "") +
-                (data.elapsedMs || 0) + " мс · " +
-                (data.totalTokens == null ? "токены н/д" : data.totalTokens + " tok") +
-                (data.costUsd == null ? "" : " · $" + data.costUsd) +
-                " · история сохранена на диск";
+            renderMemory(data.memory);
+            metaEl.textContent = (data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс"
+                + " · " + data.messageCount + " сообщений · сохранено на диск";
         } catch (error) {
             metaEl.textContent = "Не удалось выполнить запрос: " + error;
         } finally {
@@ -239,31 +337,59 @@
         }
     }
 
-    async function reset() {
-        const sessionId = sessionEl.value.trim() || "default";
-        resetEl.disabled = true;
+    async function finish() {
+        if (!dialogId) return;
+        finishEl.disabled = true;
+        metaEl.textContent = "Подвожу итог диалога…";
         try {
-            const response = await fetch("/api/day7/reset", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sessionId })
-            });
+            const response = await fetch("/api/day7/dialogs/" + encodeURIComponent(dialogId) + "/finish", { method: "POST" });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
                 return;
             }
-            renderHistory([]);
-            metaEl.textContent = data.message || "История удалена";
+            renderFinished(data);
+            dialogId = null;
+            localStorage.removeItem(KEY);
+            setActive(false);
+            metaEl.textContent = "Итог добавлен в память агента.";
+            await refreshMemoryAndPast();
         } catch (error) {
-            metaEl.textContent = "Не удалось выполнить запрос: " + error;
+            metaEl.textContent = "Не удалось завершить диалог: " + error;
         } finally {
-            resetEl.disabled = false;
+            finishEl.disabled = false;
         }
     }
 
     sendEl.addEventListener("click", send);
-    resetEl.addEventListener("click", reset);
+    finishEl.addEventListener("click", finish);
+    startEl.addEventListener("click", start);
+    requestEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); send(); }
+    });
+    toggleEl.addEventListener("click", () => {
+        pastListEl.style.display = pastListEl.style.display === "none" ? "block" : "none";
+    });
+
+    (async function init() {
+        await refreshMemoryAndPast();
+        if (dialogId) {
+            const response = await fetch("/api/day7/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
+            if (response && response.ok) {
+                const data = await response.json().catch(() => null);
+                if (data) {
+                    renderHistory(data.history);
+                    metaEl.textContent = "Диалог " + data.dialogId + " восстановлен из localStorage";
+                    setActive(true);
+                    return;
+                }
+            }
+            localStorage.removeItem(KEY);
+            dialogId = null;
+        }
+        setActive(false);
+        metaEl.textContent = "Нажмите «Начать диалог», чтобы начать беседу.";
+    })();
 </script>
 </body>
 </html>

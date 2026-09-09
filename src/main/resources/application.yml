@@ -25,9 +25,10 @@ day5:
   strong-model: ${DAY5_STRONG_MODEL:meta-llama/llama-3.3-70b-instruct}
 
 day7:
-  data-dir: ${DAY7_DATA_DIR:data/day7-conversations}
+  dialog-dir: ${DAY7_DIALOG_DIR:data/day7-dialogs}
 
 day8:
+  dialog-dir: ${DAY8_DIALOG_DIR:data/day8-dialogs}
   context-limit: ${DAY8_CONTEXT_LIMIT:128000}
   input-price: ${DAY8_INPUT_PRICE:0.15}
   output-price: ${DAY8_OUTPUT_PRICE:0.60}

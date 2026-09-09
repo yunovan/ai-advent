@@ -13,6 +13,7 @@
             --text: #eef2ff;
             --muted: #9aa6bf;
             --accent: #7aa2ff;
+            --ok: #7bd88f;
             --danger: #ff8d8d;
         }
         * { box-sizing: border-box; }
@@ -24,7 +25,7 @@
             color: var(--text);
         }
         main {
-            max-width: 780px;
+            max-width: 840px;
             margin: 0 auto;
             padding: 48px 20px;
         }
@@ -55,49 +56,6 @@
             border: 1px solid var(--line);
             border-radius: 16px;
             padding: 20px;
-            margin-bottom: 18px;
-        }
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            font-size: 13px;
-            color: var(--muted);
-        }
-        textarea, button, pre {
-            width: 100%;
-            font-size: 16px;
-        }
-        input.session, input.limit {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--line);
-            background: #121826;
-            color: var(--text);
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 13px;
-            margin-bottom: 12px;
-        }
-        .grid2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .row {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 12px;
-            align-items: end;
-        }
-        .row textarea {
-            min-height: 90px;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid var(--line);
-            background: #121826;
-            color: var(--text);
-            resize: vertical;
         }
         button {
             margin-top: 12px;
@@ -112,9 +70,57 @@
             cursor: pointer;
         }
         button.secondary { background: #2c3548; color: var(--text); }
-        button:disabled { opacity: 0.6; cursor: wait; }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input.limit {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        .memory {
+            margin-top: 4px;
+            padding: 10px 14px;
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .memory b { color: var(--ok); font-weight: 600; }
+        .bar {
+            margin-top: 12px;
+            height: 6px;
+            border-radius: 3px;
+            background: #0e1420;
+            overflow: hidden;
+        }
+        .bar>div {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent);
+        }
+        .bar>div.danger { background: var(--danger); }
+        .banner {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--danger);
+            background: #2a1620;
+            color: var(--danger);
+            font-size: 14px;
+            line-height: 1.5;
+        }
         .transcript {
             margin-top: 16px;
+            max-height: 42vh;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -137,24 +143,41 @@
         }
         .msg.user { background: #16203a; }
         .msg.assistant { background: #121826; }
-        .msg.system { background: #10131a; color: var(--muted); font-style: italic; }
         .tokens {
             margin-top: 8px;
             font-family: ui-sans-serif, system-ui, sans-serif;
             font-size: 12px;
             color: var(--muted);
         }
-        .banner {
-            display: none;
+        .finished {
             margin-top: 14px;
+            display: none;
             padding: 12px 14px;
             border-radius: 12px;
-            border: 1px solid var(--danger);
-            background: #2a1620;
-            color: var(--danger);
+            border: 1px solid var(--ok);
+            background: #0f2216;
+            color: var(--ok);
             font-size: 14px;
             line-height: 1.5;
         }
+        .inputRow {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+            margin-top: 14px;
+        }
+        .inputRow input {
+            width: 100%;
+            padding: 14px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            font-size: 16px;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        .inputRow input:focus { outline: 1px solid var(--accent); }
         .meta {
             margin-top: 12px;
             color: var(--muted);
@@ -162,24 +185,32 @@
             font-size: 12px;
             line-height: 1.6;
         }
-        .hint {
-            margin-top: 10px;
-            color: var(--muted);
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            font-size: 12px;
-        }
-        .hint code {
-            background: #121826;
+        .toggle {
+            margin-top: 14px;
+            text-align: left;
+            font-size: 13px;
+            background: transparent;
+            color: var(--accent);
             border: 1px solid var(--line);
-            border-radius: 6px;
-            padding: 1px 6px;
+            border-radius: 10px;
+            padding: 8px 12px;
         }
+        .past {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .past b { color: var(--accent); }
         table {
             width: 100%;
             border-collapse: collapse;
             font-family: ui-sans-serif, system-ui, sans-serif;
             font-size: 12px;
-            margin-top: 10px;
+            margin-top: 12px;
         }
         th, td {
             border: 1px solid var(--line);
@@ -188,18 +219,19 @@
         }
         th { color: var(--muted); font-weight: 600; }
         td { color: var(--text); }
-        .bar {
-            height: 6px;
-            border-radius: 3px;
-            background: #0e1420;
-            overflow: hidden;
+        .hint {
+            margin-top: 12px;
+            color: var(--muted);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
         }
-        .bar>div {
-            height: 100%;
-            border-radius: 3px;
-            background: var(--accent);
+        .hint code {
+            background: #121826;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 1px 6px;
         }
-        .bar>div.danger { background: var(--danger); }
     </style>
 </head>
 <body>
@@ -215,49 +247,50 @@
         <a href="/day8.html">День 8</a>
     </nav>
     <span class="badge">AI Advent · Day 8</span>
-    <h1>Работа с токенами</h1>
-    <p class="lead">Агент считает токены: запроса, всей истории диалога и ответа модели, а также оценивает стоимость. Понизьте «контекстный лимит», чтобы увидеть, что происходит, когда диалог превышает окно модели.</p>
+    <h1>Диалоги и токены</h1>
+    <p class="lead">Как день 7, но агент ещё считает токены запроса, диалога, памяти и ответа, оценочную стоимость и не даёт диалогу выйти за контекстное окно. Итоги завершённых диалогов остаются в памяти следующих.</p>
     <div class="card">
-        <div class="grid2">
-            <div>
-                <label for="session">Сессия диалога</label>
-                <input class="session" id="session" type="text" value="default" spellcheck="false">
-            </div>
-            <div>
-                <label for="limit">Контекстный лимит модели (токены)</label>
-                <input class="limit" id="limit" type="number" value="128000" min="10" step="10">
-            </div>
-        </div>
-        <div class="row">
-            <textarea id="request">Привет! Меня зовут Ася.</textarea>
-            <button id="send" type="button">Спросить</button>
-        </div>
+        <label for="limit">Контекстный лимит модели (токены)</label>
+        <input class="limit" id="limit" type="number" value="128000" min="10" step="10">
+        <div class="memory" id="memory">Память агента загружается…</div>
         <div class="bar" id="usageBar"><div id="usageFill" style="width:0%"></div></div>
         <div class="banner" id="banner"></div>
-        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0;">
         <div class="transcript" id="transcript"></div>
-        <div class="meta" id="meta"></div>
+        <div class="finished" id="finished"></div>
+        <div class="inputRow">
+            <input id="request" type="text" placeholder="Напишите сообщение и нажмите Enter…" autocomplete="off">
+            <button id="send" type="button" disabled>Отправить</button>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="secondary" id="stats" type="button">Статистика сессии (рост токенов/цены)</button>
-            <button class="secondary" id="reset" type="button">Сбросить историю сессии</button>
+            <button class="secondary" id="finish" type="button" disabled>Завершить диалог</button>
+            <button id="start" type="button">Начать диалог</button>
+            <button class="toggle" id="stats" type="button">Рост токенов/цены</button>
+            <button class="toggle" id="togglePast" type="button">Прошлые диалоги</button>
         </div>
         <div id="statsBlock"></div>
+        <div id="pastList"></div>
+        <div class="meta" id="meta"></div>
+        <div class="hint">Подсказки для видео: 1) короткий диалог — 1–2 вопроса; 2) длинный — несколько длинных сообщений и «Рост токенов/цены»; 3) переполнение — лимит, например <code>60</code>, и задавайте вопросы; 4) память — «Почему небо синее?» → «Завершить диалог» → «Начать диалог» → «О чём мы говорили раньше?». CLI: <code>./gradlew bootRun --args="--day=8 --start --cli"</code>, метрики: <code>--dialog=&lt;id&gt; --table</code>, маленький лимит: <code>--limit=60</code>.</div>
     </div>
-    <div class="hint">Подсказки для видео: 1) короткий диалог — 1–2 вопроса; 2) длинный — пришлите несколько длинных сообщений и откройте «Статистику сессии»; 3) переполнение — поставьте лимит, например <code>60</code>, и задавайте вопросы, пока агент не скажет, что диалог превысил окно модели. CLI: <code>./gradlew bootRun --args="--day=8 --prompt="Привет, меня зовут Ася" --cli"</code>, статистика: <code>--day=8 --table</code>, маленький лимит: <code>--day=8 --limit=60</code>.</div>
 </main>
 <script>
-    const sessionEl = document.getElementById("session");
     const limitEl = document.getElementById("limit");
-    const requestEl = document.getElementById("request");
+    const memoryEl = document.getElementById("memory");
     const transcriptEl = document.getElementById("transcript");
-    const metaEl = document.getElementById("meta");
+    const finishedEl = document.getElementById("finished");
     const bannerEl = document.getElementById("banner");
     const usageFill = document.getElementById("usageFill");
+    const requestEl = document.getElementById("request");
     const sendEl = document.getElementById("send");
-    const resetEl = document.getElementById("reset");
+    const finishEl = document.getElementById("finish");
+    const startEl = document.getElementById("start");
     const statsEl = document.getElementById("stats");
     const statsBlock = document.getElementById("statsBlock");
-    let currentLimit = 128000;
+    const toggleEl = document.getElementById("togglePast");
+    const pastListEl = document.getElementById("pastList");
+    const metaEl = document.getElementById("meta");
+    const KEY = "ai-advent-day8-dialog";
+    let dialogId = localStorage.getItem(KEY);
 
     function appendMessage(role, content, tokensText) {
         const div = document.createElement("div");
@@ -276,60 +309,130 @@
             div.appendChild(tokens);
         }
         transcriptEl.appendChild(div);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
     }
 
     function renderHistory(history) {
         transcriptEl.innerHTML = "";
-        (history || []).forEach((m) => appendMessage(m.role, m.content));
+        (history || []).forEach((m, i) => {
+            const tokensText = m.role === "user" && history[i + 1] && history[i + 1].role === "assistant"
+                ? "ход: запрос ~" + (estimatorOf(m.content)) + " tok" : null;
+            appendMessage(m.role, m.content, tokensText);
+        });
     }
 
-    function renderUsage(promptTokens, limit) {
-        currentLimit = limit;
+    function estimatorOf(text) {
+        return Math.max(1, Math.round([...text].reduce((t, ch) => t + (ch.codePointAt(0) < 128 ? 0.25 : 0.6), 0)));
+    }
+
+    function renderMemory(memory) {
+        if (!memory || memory.length === 0) {
+            memoryEl.innerHTML = "<b>Память пуста.</b> Завершите диалог — его итог добавится сюда.";
+        } else {
+            const items = memory.map((m) => "• [" + m.summary + "]").join("<br>");
+            memoryEl.innerHTML = "<b>Агент помнит " + memory.length + " прошл" + (memory.length === 1 ? "ый" : "ых") + " диалог"
+                + (memory.length === 1 ? "" : "а") + ":</b><br>" + items;
+        }
+    }
+
+    function renderUsage(promptTokens, contextTokens, limit) {
         limitEl.value = limit;
         const percent = Math.min(100, Math.round(promptTokens * 100 / limit));
         usageFill.style.width = percent + "%";
-        usageFill.parentElement.title = promptTokens + " / " + limit + " токенов (" + percent + "%)";
+        usageFill.parentElement.title = "промпт ~" + promptTokens + " (из них память ~" + contextTokens + ") / " + limit + " токенов (" + percent + "%)";
         usageFill.setAttribute("class", percent >= 80 ? "danger" : "");
+    }
+
+    function renderFinished(finished) {
+        finishedEl.style.display = "block";
+        finishedEl.textContent = "Диалог завершён. Итог для памяти: " + (finished.summary || "без итога");
+    }
+
+    function setActive(active) {
+        sendEl.disabled = !active || !dialogId;
+        finishEl.disabled = !active || !dialogId;
+        requestEl.disabled = !active || !dialogId;
+        if (active) requestEl.focus();
+    }
+
+    async function refreshMemoryAndPast() {
+        const response = await fetch("/api/day8/dialogs").catch(() => null);
+        if (!response || !response.ok) return;
+        const dialogs = await response.json().catch(() => []);
+        renderMemory(dialogs);
+        pastListEl.innerHTML = "";
+        if (dialogs.length === 0) {
+            pastListEl.innerHTML = "<div class='past'>Прошлых завершённых диалогов пока нет.</div>";
+            return;
+        }
+        dialogs.forEach((d) => {
+            const div = document.createElement("div");
+            div.className = "past";
+            div.innerHTML = "<b>[" + d.dialogId + "]</b> от " + (d.finishedAt ? new Date(d.finishedAt).toLocaleString() : "?")
+                + " · " + d.messageCount + " сообщений<br>" + (d.summary || "без итога");
+            pastListEl.appendChild(div);
+        });
+    }
+
+    async function start() {
+        startEl.disabled = true;
+        metaEl.textContent = "Создаю диалог…";
+        try {
+            const response = await fetch("/api/day8/dialogs", { method: "POST" });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
+                return;
+            }
+            dialogId = data.dialogId;
+            localStorage.setItem(KEY, dialogId);
+            finishedEl.style.display = "none";
+            bannerEl.style.display = "none";
+            renderHistory([]);
+            usageFill.style.width = "0%";
+            usageFill.setAttribute("class", "");
+            metaEl.textContent = "Диалог " + dialogId + " · память: " + (data.memory || []).length + " прошлых диалогов";
+            setActive(true);
+        } catch (error) {
+            metaEl.textContent = "Не удалось создать диалог: " + error;
+        } finally {
+            startEl.disabled = false;
+        }
     }
 
     async function send() {
         const request = requestEl.value.trim();
-        if (!request) return;
-        const sessionId = sessionEl.value.trim() || "default";
+        if (!request || !dialogId) return;
         const contextLimit = parseInt(limitEl.value, 10) || null;
         sendEl.disabled = true;
         bannerEl.style.display = "none";
-        metaEl.textContent = "Агент думает...";
+        metaEl.textContent = "Агент думает…";
         try {
-            const response = await fetch("/api/day8/chat", {
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sessionId, request, contextLimit })
+                body: JSON.stringify({ request, contextLimit })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
                 return;
             }
+            requestEl.value = "";
             renderHistory(data.history);
-            renderUsage(data.promptTokens || 0, data.contextLimit || 128000);
+            renderUsage(data.promptTokens || 0, data.contextTokens || 0, data.contextLimit || 128000);
+            renderMemory(data.memory);
             if (data.exceeded) {
                 bannerEl.style.display = "block";
                 bannerEl.textContent = data.content || "Диалог превысил контекстное окно модели.";
-                metaEl.textContent =
-                    "session: " + data.sessionId + " · " +
-                    "запрос ~" + data.requestTokens + " tok · " +
-                    "история ~" + data.historyTokens + " tok · " +
-                    "промпт ~" + data.promptTokens + " tok из лимита " + data.contextLimit +
-                    " · LLM не вызывается";
+                metaEl.textContent = "память ~" + data.contextTokens + " · запрос ~" + data.requestTokens
+                    + " · история ~" + data.historyTokens + " · промпт ~" + data.promptTokens
+                    + " из лимита " + data.contextLimit + " · LLM не вызывается";
             } else {
                 metaEl.textContent =
-                    "session: " + data.sessionId + " · " +
-                    (data.model ? data.model + " · " : "") +
-                    (data.elapsedMs || 0) + " мс ·\n" +
-                    "токены: запрос ~" + data.requestTokens +
-                    " · история ~" + data.historyTokens +
-                    " · промпт ~" + data.promptTokens +
+                    (data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс ·\n" +
+                    "токены: память ~" + data.contextTokens + " · запрос ~" + data.requestTokens +
+                    " · история ~" + data.historyTokens + " · промпт ~" + data.promptTokens +
                     " · ответ ~" + data.responseTokens + "\n" +
                     "реальные (prompt/completion): " + (data.realPromptTokens == null ? "н/д" : data.realPromptTokens)
                     + " / " + (data.realCompletionTokens == null ? "н/д" : data.realCompletionTokens) + "\n" +
@@ -344,39 +447,36 @@
         }
     }
 
-    async function reset() {
-        const sessionId = sessionEl.value.trim() || "default";
-        resetEl.disabled = true;
+    async function finish() {
+        if (!dialogId) return;
+        finishEl.disabled = true;
+        metaEl.textContent = "Подвожу итог диалога…";
         try {
-            const response = await fetch("/api/day8/reset", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sessionId })
-            });
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/finish", { method: "POST" });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                metaEl.textContent = data.error || data.detail || data.message || ("HTTP " + response.status);
+                metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
                 return;
             }
-            renderHistory([]);
-            bannerEl.style.display = "none";
-            usageFill.style.width = "0%";
-            usageFill.setAttribute("class", "");
-            statsBlock.innerHTML = "";
-            metaEl.textContent = data.message || "История удалена";
+            renderFinished(data);
+            dialogId = null;
+            localStorage.removeItem(KEY);
+            setActive(false);
+            metaEl.textContent = "Итог добавлен в память агента.";
+            await refreshMemoryAndPast();
         } catch (error) {
-            metaEl.textContent = "Не удалось выполнить запрос: " + error;
+            metaEl.textContent = "Не удалось завершить диалог: " + error;
         } finally {
-            resetEl.disabled = false;
+            finishEl.disabled = false;
         }
     }
 
     async function stats() {
-        const sessionId = sessionEl.value.trim() || "default";
+        if (!dialogId) return;
         statsEl.disabled = true;
-        statsBlock.innerHTML = "Загрузка...";
+        statsBlock.innerHTML = "Загрузка…";
         try {
-            const response = await fetch("/api/day8/metrics?sessionId=" + encodeURIComponent(sessionId));
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/metrics");
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
                 statsBlock.innerHTML = "Ошибка: " + (data.error || data.message || response.status);
@@ -388,8 +488,9 @@
                     + "</td><td>" + t.cumulativeTokens + "</td><td>$ " + t.turnCostUsd + "</td><td>$ " + t.cumulativeCostUsd + "</td></tr>";
             });
             html += "</table>";
-            html += "<div class='meta'>Всего токенов в диалоге: " + data.totalTokens
-                + " · суммарная стоимость ~$ " + data.totalCostUsd + "</div>";
+            html += "<div class='meta'>Всего токенов: " + data.totalTokens
+                + " · суммарная стоимость ~$ " + data.totalCostUsd
+                + " · лимит " + data.contextLimit + "</div>";
             statsBlock.innerHTML = html;
         } catch (error) {
             statsBlock.innerHTML = "Не удалось загрузить статистику: " + error;
@@ -399,8 +500,35 @@
     }
 
     sendEl.addEventListener("click", send);
-    resetEl.addEventListener("click", reset);
+    finishEl.addEventListener("click", finish);
+    startEl.addEventListener("click", start);
+    requestEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); send(); }
+    });
     statsEl.addEventListener("click", stats);
+    toggleEl.addEventListener("click", () => {
+        pastListEl.style.display = pastListEl.style.display === "none" ? "block" : "none";
+    });
+
+    (async function init() {
+        await refreshMemoryAndPast();
+        if (dialogId) {
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
+            if (response && response.ok) {
+                const data = await response.json().catch(() => null);
+                if (data) {
+                    renderHistory(data.history);
+                    metaEl.textContent = "Диалог " + data.dialogId + " восстановлен из localStorage";
+                    setActive(true);
+                    return;
+                }
+            }
+            localStorage.removeItem(KEY);
+            dialogId = null;
+        }
+        setActive(false);
+        metaEl.textContent = "Нажмите «Начать диалог», чтобы начать беседу.";
+    })();
 </script>
 </body>
 </html>
