@@ -3,14 +3,12 @@ package com.yunovan.aiadvent.day07;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "day7")
-public record Day7Properties(String dataDir, Integer maxMessages) {
+public record Day7Properties(String dialogDir) {
 
-    public static final String DEFAULT_DATA_DIR = "data/day7-conversations";
-    public static final int DEFAULT_MAX_MESSAGES = 40;
+    public static final String DEFAULT_DIALOG_DIR = "data/day7-dialogs";
 
     public Day7Properties {
-        dataDir = valueOr(dataDir, DEFAULT_DATA_DIR);
-        maxMessages = maxMessages == null || maxMessages <= 0 ? DEFAULT_MAX_MESSAGES : maxMessages;
+        dialogDir = valueOr(dialogDir, DEFAULT_DIALOG_DIR);
     }
 
     private static String valueOr(String value, String fallback) {

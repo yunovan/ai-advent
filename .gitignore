@@ -2,11 +2,7 @@
 build/
 out/
 bin/
-.idea/workspace.xml
-.idea/shelf/
-.idea/httpRequests/
-.idea/dataSources/
-.idea/dataSources.local.xml
+.idea/
 *.class
 *.jar
 !gradle/wrapper/gradle-wrapper.jar

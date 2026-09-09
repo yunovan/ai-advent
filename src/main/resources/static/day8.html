@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 7</title>
+    <title>AI Advent — День 8</title>
     <style>
         :root {
             color-scheme: dark;
@@ -14,6 +14,7 @@
             --muted: #9aa6bf;
             --accent: #7aa2ff;
             --ok: #7bd88f;
+            --danger: #ff8d8d;
         }
         * { box-sizing: border-box; }
         body {
@@ -24,7 +25,7 @@
             color: var(--text);
         }
         main {
-            max-width: 820px;
+            max-width: 840px;
             margin: 0 auto;
             padding: 48px 20px;
         }
@@ -70,6 +71,17 @@
         }
         button.secondary { background: #2c3548; color: var(--text); }
         button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input.limit {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #121826;
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
         .memory {
             margin-top: 4px;
             padding: 10px 14px;
@@ -81,9 +93,33 @@
             line-height: 1.6;
         }
         .memory b { color: var(--ok); font-weight: 600; }
+        .bar {
+            margin-top: 12px;
+            height: 6px;
+            border-radius: 3px;
+            background: #0e1420;
+            overflow: hidden;
+        }
+        .bar>div {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent);
+        }
+        .bar>div.danger { background: var(--danger); }
+        .banner {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--danger);
+            background: #2a1620;
+            color: var(--danger);
+            font-size: 14px;
+            line-height: 1.5;
+        }
         .transcript {
             margin-top: 16px;
-            max-height: 46vh;
+            max-height: 42vh;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -107,6 +143,12 @@
         }
         .msg.user { background: #16203a; }
         .msg.assistant { background: #121826; }
+        .tokens {
+            margin-top: 8px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            color: var(--muted);
+        }
         .finished {
             margin-top: 14px;
             display: none;
@@ -153,7 +195,6 @@
             border-radius: 10px;
             padding: 8px 12px;
         }
-        #pastList { display: none; }
         .past {
             margin-top: 10px;
             padding: 10px 14px;
@@ -164,6 +205,20 @@
             line-height: 1.6;
         }
         .past b { color: var(--accent); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 12px;
+            margin-top: 12px;
+        }
+        th, td {
+            border: 1px solid var(--line);
+            padding: 6px 8px;
+            text-align: right;
+        }
+        th { color: var(--muted); font-weight: 600; }
+        td { color: var(--text); }
         .hint {
             margin-top: 12px;
             color: var(--muted);
@@ -191,11 +246,15 @@
         <a href="/day7.html">День 7</a>
         <a href="/day8.html">День 8</a>
     </nav>
-    <span class="badge">AI Advent · Day 7</span>
-    <h1>Диалоги и память</h1>
-    <p class="lead">Агент живёт диалогами. Завершённые диалоги получают краткий итог и попадают в долговременную память: следующий диалог помнит, о чём вы говорили раньше.</p>
+    <span class="badge">AI Advent · Day 8</span>
+    <h1>Диалоги и токены</h1>
+    <p class="lead">Как день 7, но агент ещё считает токены запроса, диалога, памяти и ответа, оценочную стоимость и не даёт диалогу выйти за контекстное окно. Итоги завершённых диалогов остаются в памяти следующих.</p>
     <div class="card">
+        <label for="limit">Контекстный лимит модели (токены)</label>
+        <input class="limit" id="limit" type="number" value="128000" min="10" step="10">
         <div class="memory" id="memory">Память агента загружается…</div>
+        <div class="bar" id="usageBar"><div id="usageFill" style="width:0%"></div></div>
+        <div class="banner" id="banner"></div>
         <div class="transcript" id="transcript"></div>
         <div class="finished" id="finished"></div>
         <div class="inputRow">
@@ -205,28 +264,35 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="secondary" id="finish" type="button" disabled>Завершить диалог</button>
             <button id="start" type="button">Начать диалог</button>
+            <button class="toggle" id="stats" type="button">Рост токенов/цены</button>
             <button class="toggle" id="togglePast" type="button">Прошлые диалоги</button>
         </div>
+        <div id="statsBlock"></div>
         <div id="pastList"></div>
         <div class="meta" id="meta"></div>
-        <div class="hint">Проверка памяти: в диалоге 1 спросите <code>Почему небо синее?</code> и нажмите «Завершить диалог», затем «Начать диалог» и спросите <code>О чём мы говорили раньше?</code> — агент вспомнит по итогу прошлого диалога. CLI: <code>./gradlew bootRun --args="--day=7 --start --cli"</code> → <code>--dialog=&lt;id&gt; --prompt="Почему небо синее?" --cli"</code> → <code>--dialog=&lt;id&gt; --finish --cli"</code>.</div>
+        <div class="hint">Подсказки для видео: 1) короткий диалог — 1–2 вопроса; 2) длинный — несколько длинных сообщений и «Рост токенов/цены»; 3) переполнение — лимит, например <code>60</code>, и задавайте вопросы; 4) память — «Почему небо синее?» → «Завершить диалог» → «Начать диалог» → «О чём мы говорили раньше?». CLI: <code>./gradlew bootRun --args="--day=8 --start --cli"</code>, метрики: <code>--dialog=&lt;id&gt; --table</code>, маленький лимит: <code>--limit=60</code>.</div>
     </div>
 </main>
 <script>
+    const limitEl = document.getElementById("limit");
     const memoryEl = document.getElementById("memory");
     const transcriptEl = document.getElementById("transcript");
     const finishedEl = document.getElementById("finished");
+    const bannerEl = document.getElementById("banner");
+    const usageFill = document.getElementById("usageFill");
     const requestEl = document.getElementById("request");
     const sendEl = document.getElementById("send");
     const finishEl = document.getElementById("finish");
     const startEl = document.getElementById("start");
+    const statsEl = document.getElementById("stats");
+    const statsBlock = document.getElementById("statsBlock");
     const toggleEl = document.getElementById("togglePast");
     const pastListEl = document.getElementById("pastList");
     const metaEl = document.getElementById("meta");
-    const KEY = "ai-advent-day7-dialog";
+    const KEY = "ai-advent-day8-dialog";
     let dialogId = localStorage.getItem(KEY);
 
-    function appendMessage(role, content) {
+    function appendMessage(role, content, tokensText) {
         const div = document.createElement("div");
         div.className = "msg " + role;
         const who = document.createElement("div");
@@ -236,13 +302,27 @@
         body.textContent = content;
         div.appendChild(who);
         div.appendChild(body);
+        if (tokensText) {
+            const tokens = document.createElement("div");
+            tokens.className = "tokens";
+            tokens.textContent = tokensText;
+            div.appendChild(tokens);
+        }
         transcriptEl.appendChild(div);
         transcriptEl.scrollTop = transcriptEl.scrollHeight;
     }
 
     function renderHistory(history) {
         transcriptEl.innerHTML = "";
-        (history || []).forEach((m) => appendMessage(m.role, m.content));
+        (history || []).forEach((m, i) => {
+            const tokensText = m.role === "user" && history[i + 1] && history[i + 1].role === "assistant"
+                ? "ход: запрос ~" + (estimatorOf(m.content)) + " tok" : null;
+            appendMessage(m.role, m.content, tokensText);
+        });
+    }
+
+    function estimatorOf(text) {
+        return Math.max(1, Math.round([...text].reduce((t, ch) => t + (ch.codePointAt(0) < 128 ? 0.25 : 0.6), 0)));
     }
 
     function renderMemory(memory) {
@@ -253,6 +333,14 @@
             memoryEl.innerHTML = "<b>Агент помнит " + memory.length + " прошл" + (memory.length === 1 ? "ый" : "ых") + " диалог"
                 + (memory.length === 1 ? "" : "а") + ":</b><br>" + items;
         }
+    }
+
+    function renderUsage(promptTokens, contextTokens, limit) {
+        limitEl.value = limit;
+        const percent = Math.min(100, Math.round(promptTokens * 100 / limit));
+        usageFill.style.width = percent + "%";
+        usageFill.parentElement.title = "промпт ~" + promptTokens + " (из них память ~" + contextTokens + ") / " + limit + " токенов (" + percent + "%)";
+        usageFill.setAttribute("class", percent >= 80 ? "danger" : "");
     }
 
     function renderFinished(finished) {
@@ -268,7 +356,7 @@
     }
 
     async function refreshMemoryAndPast() {
-        const response = await fetch("/api/day7/dialogs").catch(() => null);
+        const response = await fetch("/api/day8/dialogs").catch(() => null);
         if (!response || !response.ok) return;
         const dialogs = await response.json().catch(() => []);
         renderMemory(dialogs);
@@ -290,7 +378,7 @@
         startEl.disabled = true;
         metaEl.textContent = "Создаю диалог…";
         try {
-            const response = await fetch("/api/day7/dialogs", { method: "POST" });
+            const response = await fetch("/api/day8/dialogs", { method: "POST" });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
                 metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
@@ -299,7 +387,10 @@
             dialogId = data.dialogId;
             localStorage.setItem(KEY, dialogId);
             finishedEl.style.display = "none";
+            bannerEl.style.display = "none";
             renderHistory([]);
+            usageFill.style.width = "0%";
+            usageFill.setAttribute("class", "");
             metaEl.textContent = "Диалог " + dialogId + " · память: " + (data.memory || []).length + " прошлых диалогов";
             setActive(true);
         } catch (error) {
@@ -312,13 +403,15 @@
     async function send() {
         const request = requestEl.value.trim();
         if (!request || !dialogId) return;
+        const contextLimit = parseInt(limitEl.value, 10) || null;
         sendEl.disabled = true;
+        bannerEl.style.display = "none";
         metaEl.textContent = "Агент думает…";
         try {
-            const response = await fetch("/api/day7/dialogs/" + encodeURIComponent(dialogId) + "/chat", {
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ request })
+                body: JSON.stringify({ request, contextLimit })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -327,9 +420,26 @@
             }
             requestEl.value = "";
             renderHistory(data.history);
+            renderUsage(data.promptTokens || 0, data.contextTokens || 0, data.contextLimit || 128000);
             renderMemory(data.memory);
-            metaEl.textContent = (data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс"
-                + " · " + data.messageCount + " сообщений · сохранено на диск";
+            if (data.exceeded) {
+                bannerEl.style.display = "block";
+                bannerEl.textContent = data.content || "Диалог превысил контекстное окно модели.";
+                metaEl.textContent = "память ~" + data.contextTokens + " · запрос ~" + data.requestTokens
+                    + " · история ~" + data.historyTokens + " · промпт ~" + data.promptTokens
+                    + " из лимита " + data.contextLimit + " · LLM не вызывается";
+            } else {
+                metaEl.textContent =
+                    (data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс ·\n" +
+                    "токены: память ~" + data.contextTokens + " · запрос ~" + data.requestTokens +
+                    " · история ~" + data.historyTokens + " · промпт ~" + data.promptTokens +
+                    " · ответ ~" + data.responseTokens + "\n" +
+                    "реальные (prompt/completion): " + (data.realPromptTokens == null ? "н/д" : data.realPromptTokens)
+                    + " / " + (data.realCompletionTokens == null ? "н/д" : data.realCompletionTokens) + "\n" +
+                    "реальная стоимость ответа: " + (data.realCostUsd == null ? "н/д" : "$" + data.realCostUsd) + "\n" +
+                    "оценка: ход ~" + (data.estimatedTurnCostUsd == null ? "н/д" : "$" + data.estimatedTurnCostUsd)
+                    + " · всего диалог ~" + (data.estimatedCumulativeCostUsd == null ? "н/д" : "$" + data.estimatedCumulativeCostUsd);
+            }
         } catch (error) {
             metaEl.textContent = "Не удалось выполнить запрос: " + error;
         } finally {
@@ -342,7 +452,7 @@
         finishEl.disabled = true;
         metaEl.textContent = "Подвожу итог диалога…";
         try {
-            const response = await fetch("/api/day7/dialogs/" + encodeURIComponent(dialogId) + "/finish", { method: "POST" });
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/finish", { method: "POST" });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
                 metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
@@ -361,12 +471,41 @@
         }
     }
 
+    async function stats() {
+        if (!dialogId) return;
+        statsEl.disabled = true;
+        statsBlock.innerHTML = "Загрузка…";
+        try {
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/metrics");
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                statsBlock.innerHTML = "Ошибка: " + (data.error || data.message || response.status);
+                return;
+            }
+            let html = "<table><tr><th>#</th><th>промпт, tok</th><th>ответ, tok</th><th>сумма, tok</th><th>стоимость хода</th><th>сумма, $</th></tr>";
+            (data.turns || []).forEach((t) => {
+                html += "<tr><td>" + t.turn + "</td><td>" + t.promptTokens + "</td><td>" + t.responseTokens
+                    + "</td><td>" + t.cumulativeTokens + "</td><td>$ " + t.turnCostUsd + "</td><td>$ " + t.cumulativeCostUsd + "</td></tr>";
+            });
+            html += "</table>";
+            html += "<div class='meta'>Всего токенов: " + data.totalTokens
+                + " · суммарная стоимость ~$ " + data.totalCostUsd
+                + " · лимит " + data.contextLimit + "</div>";
+            statsBlock.innerHTML = html;
+        } catch (error) {
+            statsBlock.innerHTML = "Не удалось загрузить статистику: " + error;
+        } finally {
+            statsEl.disabled = false;
+        }
+    }
+
     sendEl.addEventListener("click", send);
     finishEl.addEventListener("click", finish);
     startEl.addEventListener("click", start);
     requestEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter") { e.preventDefault(); send(); }
     });
+    statsEl.addEventListener("click", stats);
     toggleEl.addEventListener("click", () => {
         pastListEl.style.display = pastListEl.style.display === "none" ? "block" : "none";
     });
@@ -374,7 +513,7 @@
     (async function init() {
         await refreshMemoryAndPast();
         if (dialogId) {
-            const response = await fetch("/api/day7/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
+            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
             if (response && response.ok) {
                 const data = await response.json().catch(() => null);
                 if (data) {
