@@ -15,6 +15,7 @@ import com.yunovan.aiadvent.llm.LlmReply;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -178,7 +179,11 @@ public class Day08DialogService {
         if (dialog == null) {
             throw new DialogNotFoundException(dialogId);
         }
-        long contextTokens = estimator.estimate(dialogContext.systemPrompt(previousDialogs(dialogId)));
+        List<Dialog> finished = store.finishedDialogs();
+        List<Dialog> previous = finished.stream()
+                .filter(d -> !d.id().equals(dialogId))
+                .toList();
+        long contextTokens = estimator.estimate(dialogContext.systemPrompt(previous));
         List<Day08GrowthTurn> turns = new ArrayList<>();
         long running = contextTokens;
         BigDecimal cumulative = BigDecimal.ZERO;
@@ -201,6 +206,12 @@ public class Day08DialogService {
                     turnCount, promptTokens, responseTokens, running, turnCost, cumulative));
         }
 
+        List<Day08DialogComparison> comparisons = previous.stream()
+                .filter(d -> d.finishedAt() != null)
+                .sorted(Comparator.comparing(Dialog::finishedAt))
+                .map(d -> comparisonFor(d, finished))
+                .toList();
+
         return new Day08GrowthReport(
                 dialog.id(),
                 day8Properties.contextLimit(),
@@ -208,7 +219,40 @@ public class Day08DialogService {
                 day8Properties.outputPrice(),
                 running,
                 cumulative,
-                List.copyOf(turns));
+                List.copyOf(turns),
+                List.copyOf(comparisons));
+    }
+
+    private Day08DialogComparison comparisonFor(Dialog previous, List<Dialog> finished) {
+        List<Dialog> memoryBefore = finished.stream()
+                .filter(d -> !d.id().equals(previous.id()))
+                .filter(d -> d.finishedAt() != null
+                        && previous.finishedAt() != null
+                        && d.finishedAt().isBefore(previous.finishedAt()))
+                .toList();
+        long running = estimator.estimate(dialogContext.systemPrompt(memoryBefore));
+        BigDecimal cumulative = BigDecimal.ZERO;
+        int turnCount = 0;
+        for (int i = 0; i + 1 < previous.messages().size(); i += 2) {
+            ConversationMessage user = previous.messages().get(i);
+            ConversationMessage assistant = previous.messages().get(i + 1);
+            if (!"user".equals(user.role()) || !"assistant".equals(assistant.role())) {
+                continue;
+            }
+            turnCount++;
+            long userTokens = estimator.estimate(user.content());
+            long responseTokens = estimator.estimate(assistant.content());
+            cumulative = cumulative.add(estimatedTurnCost(running + userTokens, responseTokens));
+            running += userTokens + responseTokens;
+        }
+        return new Day08DialogComparison(
+                previous.id(),
+                previous.finishedAt(),
+                previous.summary(),
+                previous.messages().size(),
+                turnCount,
+                running,
+                cumulative);
     }
 
     private List<Dialog> previousDialogs(String dialogId) {

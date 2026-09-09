@@ -172,6 +172,40 @@ class Day08DialogServiceTest {
         assertThat(second.cumulativeCostUsd()).isGreaterThan(report.turns().get(0).cumulativeCostUsd());
         assertThat(report.totalTokens()).isPositive();
         assertThat(report.totalCostUsd()).isPositive();
+        assertThat(report.previousDialogs()).isEmpty();
+    }
+
+    @Test
+    void metricsReportIncludesPreviousDialogsForComparison() {
+        when(llmClient.complete(any(CompletionCommand.class), any())).thenReturn(reply("Короткий ответ здесь"));
+        when(summarizer.summarize(any())).thenReturn("Итог про небо.");
+        setup(128_000L);
+
+        Dialog first = store.create();
+        service.chat(first.id(), "Первый вопрос дня", null);
+        service.chat(first.id(), "Второй вопрос подлиннее", null);
+        service.finish(first.id());
+
+        Dialog second = store.create();
+        service.chat(second.id(), "Единственный вопрос второго диалога", null);
+        service.finish(second.id());
+
+        Day08GrowthReport report = service.metrics(current.id());
+
+        assertThat(report.previousDialogs()).hasSize(2);
+        Day08DialogComparison firstComparison = report.previousDialogs().get(0);
+        assertThat(firstComparison.dialogId()).isEqualTo(first.id());
+        assertThat(firstComparison.turnCount()).isEqualTo(2);
+        assertThat(firstComparison.messageCount()).isEqualTo(4);
+        assertThat(firstComparison.summary()).isEqualTo("Итог про небо.");
+        assertThat(firstComparison.totalTokens()).isPositive();
+        assertThat(firstComparison.totalCostUsd()).isPositive();
+        Day08DialogComparison secondComparison = report.previousDialogs().get(1);
+        assertThat(secondComparison.dialogId()).isEqualTo(second.id());
+        assertThat(secondComparison.turnCount()).isEqualTo(1);
+        assertThat(secondComparison.messageCount()).isEqualTo(2);
+        assertThat(secondComparison.totalTokens()).isPositive();
+        assertThat(secondComparison.totalCostUsd()).isPositive();
     }
 
     @Test

@@ -103,14 +103,20 @@ class Day08DialogControllerTest {
                 new BigDecimal("0.60"),
                 150,
                 new BigDecimal("0.0001"),
-                List.of(new Day08GrowthTurn(1, 80, 20, 100, new BigDecimal("0.00003"), new BigDecimal("0.00003")))));
+                List.of(new Day08GrowthTurn(1, 80, 20, 100, new BigDecimal("0.00003"), new BigDecimal("0.00003"))),
+                List.of(new Day08DialogComparison(
+                        "d0", Instant.now().minusSeconds(300), "Прошлый диалог", 4, 2,
+                        90, new BigDecimal("0.00001")))));
 
         mockMvc.perform(get("/api/day8/dialogs/d1/metrics"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dialogId").value("d1"))
                 .andExpect(jsonPath("$.totalTokens").value(150))
                 .andExpect(jsonPath("$.turns[0].promptTokens").value(80))
-                .andExpect(jsonPath("$.turns[0].turn").value(1));
+                .andExpect(jsonPath("$.turns[0].turn").value(1))
+                .andExpect(jsonPath("$.previousDialogs[0].dialogId").value("d0"))
+                .andExpect(jsonPath("$.previousDialogs[0].turnCount").value(2))
+                .andExpect(jsonPath("$.previousDialogs[0].totalTokens").value(90));
     }
 
     @Test
