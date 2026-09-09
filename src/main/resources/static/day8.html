@@ -325,6 +325,17 @@
         return Math.max(1, Math.round([...text].reduce((t, ch) => t + (ch.codePointAt(0) < 128 ? 0.25 : 0.6), 0)));
     }
 
+    function esc(text) {
+        return String(text).replace(/[&<>"']/g, (ch) => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[ch]);
+    }
+
+    function shorten(text, max) {
+        const limit = max || 70;
+        return text.length > limit ? text.slice(0, limit) + "…" : text;
+    }
+
     function renderMemory(memory) {
         if (!memory || memory.length === 0) {
             memoryEl.innerHTML = "<b>Память пуста.</b> Завершите диалог — его итог добавится сюда.";
@@ -491,6 +502,20 @@
             html += "<div class='meta'>Всего токенов: " + data.totalTokens
                 + " · суммарная стоимость ~$ " + data.totalCostUsd
                 + " · лимит " + data.contextLimit + "</div>";
+            html += "<div style='margin-top:18px;font-weight:700;'>Прошлые диалоги — для сравнения</div>";
+            if (!data.previousDialogs || data.previousDialogs.length === 0) {
+                html += "<div class='meta'>Прошлых завершённых диалогов пока нет: завершите этот диалог — он появится здесь.</div>";
+            } else {
+                html += "<table><tr><th>диалог (итог)</th><th>ходов</th><th>сообщений</th><th>сумма, tok</th><th>сумма, $</th></tr>";
+                data.previousDialogs.forEach((p) => {
+                    html += "<tr><td style='text-align:left;'>[" + p.dialogId + "] " + esc(shorten(p.summary || "без итога"))
+                        + "</td><td>" + p.turnCount + "</td><td>" + p.messageCount + "</td>"
+                        + "<td>" + p.totalTokens + "</td><td>$ " + p.totalCostUsd + "</td></tr>";
+                });
+                html += "</table>";
+                html += "<div class='meta'>Токены и стоимость каждого прошлого диалога посчитаны с той памятью, что он видел: "
+                    + "итог каждого следующего диалога добавляется ему в память и увеличивает промпт.</div>";
+            }
             statsBlock.innerHTML = html;
         } catch (error) {
             statsBlock.innerHTML = "Не удалось загрузить статистику: " + error;

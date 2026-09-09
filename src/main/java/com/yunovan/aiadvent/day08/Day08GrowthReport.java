@@ -10,5 +10,6 @@ public record Day08GrowthReport(
         BigDecimal outputPriceUsdPerM,
         long totalTokens,
         BigDecimal totalCostUsd,
-        List<Day08GrowthTurn> turns) {
+        List<Day08GrowthTurn> turns,
+        List<Day08DialogComparison> previousDialogs) {
 }
