@@ -41,6 +41,7 @@ class FileDialogStoreTest {
                 Instant.parse("2026-09-08T10:00:00Z"),
                 Instant.parse("2026-09-08T10:05:00Z"),
                 "Итог: говорили про небо.",
+                null, 0,
                 List.of(ConversationMessage.user("Почему небо синее?"), ConversationMessage.assistant("Из-за рассеяния света.")));
 
         store.save(saved);

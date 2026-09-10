@@ -644,7 +644,7 @@ curl -s -X POST http://localhost:8080/api/day8/dialogs/<id>/finish
 | `day08/Day08CliRunner.java` | CLI: `--day=8 --start/--dialog/--limit/--table/--finish` |
 | `static/day8.html` | окно диалога + метрики, полоса лимита, таблица роста |
 
-Общую инфраструктуру диалогов (пакет `agent/dialog/`) поставляет день 7: `Dialog`, `DialogStore`, `FileDialogStore`, `DialogContext`, `DialogSummarizer` и `DialogStoreConfig` с бинами `day7DialogStore`/`day8DialogStore`.
+Общую инфраструктуру диалогов (пакет `agent/dialog/`) поставляет день 7: `Dialog`, `DialogStore`, `FileDialogStore`, `DialogContext`, `DialogSummarizer` и `DialogStoreConfig` с бинами `day7DialogStore`/`day8DialogStore`/`day9DialogStore`.
 
 Настройки:
 
@@ -653,4 +653,57 @@ DAY8_DIALOG_DIR=data/day8-dialogs   # где лежат диалоги дня 8
 DAY8_CONTEXT_LIMIT=128000           # контекстное окно модели в токенах (уменьшать — чтобы показать переполнение)
 DAY8_INPUT_PRICE=0.15               # цена за 1 млн входных токенов, USD
 DAY8_OUTPUT_PRICE=0.60              # цена за 1 млн выходных токенов, USD
+```
+
+## День 9. Управление контекстом — сжатие истории
+
+Продолжение дня 8 с той же математикой токенов, но история больше не растёт безгранично: последние `recent-messages` сообщений отправляются в модель как есть, а всё, что старше, складывается в chunks по `chunk-size` сообщений и превращается в rolling summary, который вставляется в системный промпт баннером «Сжатая история» и пересчитывается по мере роста диалога.
+
+### Что мы измеряем
+
+В отличие от дней 7–8, промпт больше не растёт линейно с каждым ходом:
+
+- **Без сжатия** — промпт растёт линейно: на ~X-м ходе он дойдёт до лимита контекста (`context_limit`), и запрос перестанет проходить.
+- **Со сжатием** — после первых `recent + chunk` сообщений лишние chunk'и уходят из отправляемой истории, их место занимает короткое резюме. Промпт стабилизируется: рост почти прекращается.
+- Сэкономленные токены и доллары считаются как разница «полный промпт, если бы сжатия не было» минус «реальный отправленный промпт» (колонки `без сжатия` vs `сжато` в таблице роста и в метриках хода).
+
+Важно: на коротких диалогах сжатие может не окупаться — баннер сам занимает токены, поэтому экономия видна только после того, как скопилось несколько chunk'ов. Это честный результат, и его хорошо видно в таблице роста.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=9"
+# UI: http://localhost:8080/day9.html
+
+# CLI
+./gradlew bootRun --args="--day=9 --list"
+./gradlew bootRun --args="--day=9 --start"
+./gradlew bootRun --args="--day=9 --dialog=<id> --prompt=\"Расскажи про себя\""
+./gradlew bootRun --args="--day=9 --dialog=<id> --prompt=\"...\" --no-compress"   # контрольный замер без сжатия
+./gradlew bootRun --args="--day=9 --dialog=<id> --table --limit=1000"             # лимит/таблица роста
+./gradlew bootRun --args="--day=9 --dialog=<id> --finish"
+```
+
+### Как устроен код дня 9
+
+| Файл | Роль |
+|---|---|
+| `day09/Day09HistoryCompressor.java` | сжатие chunk'а: LLM с локальным запасным вариантом, если нет ключа/ошибка |
+| `day09/Day09DialogService.java` | сервис: `compressHistory()` — намотка chunk'ов сверх окна `recent`, вставка summary в системный промпт, сравнение «сжато/без сжатия», `metrics()` — таблица роста с повтором бюджета |
+| `day09/Day9Properties.java` | `day9.dialog-dir`, `day9.context-limit`, `day9.input-price`, `day9.output-price`, `day9.recent-messages`, `day9.chunk-size` |
+| `day09/Day09DialogController.java` | `/api/day9/dialogs`, `/dialogs/{id}/chat?compression=...`, `/metrics`, `/finish` |
+| `day09/Day09CliRunner.java` | CLI: `--day=9 --start/--dialog/--list/--table/--finish/--no-compress/--limit` |
+| `static/day9.html` | окно диалога + чекбокс «Сжимать историю» + таблица роста с колонками сжато/без сжатия |
+
+В `Dialog` добавлены поля `historySummary` и `historySummaryCount`: это rolling summary и число сообщений, которые он уже покрыл. `compressHistory()` по очереди складывает все chunk'и, целиком помещающиеся «до» окна из `recent-messages` сообщений, и конкатенирует их резюме. При `compression=false` summary по-прежнему поддерживается, но в промпт не вставляется — это «контрольная группа» для сравнения.
+
+Настройки:
+
+```bash
+DAY9_DIALOG_DIR=data/day9-dialogs   # где лежат диалоги дня 9
+DAY9_CONTEXT_LIMIT=128000           # контекстное окно модели в токенах (уменьшать — чтобы показать переполнение)
+DAY9_INPUT_PRICE=0.15               # цена за 1 млн входных токенов, USD
+DAY9_OUTPUT_PRICE=0.60              # цена за 1 млн выходных токенов, USD
+DAY9_RECENT_MESSAGES=10             # последние N сообщений всегда отправляются полностью
+DAY9_CHUNK_SIZE=10                  # сколько сообщений умирается в один chunk для сжатия
 ```

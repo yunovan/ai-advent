@@ -18,7 +18,7 @@ class DialogContextTest {
     @Test
     void includesFinishedDialogSummaries() {
         Dialog dialog = new Dialog(
-                "d1", Instant.now(), Instant.now(), "Говорили про небо и море", List.of());
+                "d1", Instant.now(), Instant.now(), "Говорили про небо и море", null, 0, List.of());
 
         String prompt = context.systemPrompt(List.of(dialog));
 

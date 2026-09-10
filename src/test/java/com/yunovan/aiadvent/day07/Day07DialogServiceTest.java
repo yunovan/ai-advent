@@ -70,6 +70,7 @@ class Day07DialogServiceTest {
                 Instant.now(),
                 Instant.now(),
                 "Говорили о том, почему небо синее.",
+                null, 0,
                 List.of());
         when(store.finishedDialogs()).thenReturn(List.of(past));
         when(llmClient.complete(any(CompletionCommand.class), any()))
