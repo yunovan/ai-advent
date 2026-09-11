@@ -10,21 +10,35 @@ public record Dialog(
         Instant createdAt,
         Instant finishedAt,
         String summary,
+        String historySummary,
+        int historySummaryCount,
         List<ConversationMessage> messages) {
 
     public static Dialog create() {
-        return new Dialog(UUID.randomUUID().toString(), Instant.now(), null, null, List.of());
+        return new Dialog(UUID.randomUUID().toString(), Instant.now(), null, null, null, 0, List.of());
     }
 
     public Dialog withMessages(List<ConversationMessage> messages) {
-        return new Dialog(id, createdAt, finishedAt, summary, List.copyOf(messages));
+        return new Dialog(id, createdAt, finishedAt, summary, historySummary, historySummaryCount, List.copyOf(messages));
     }
 
     public Dialog finished(String summary, Instant finishedAt) {
-        return new Dialog(id, createdAt, finishedAt, summary, messages);
+        return new Dialog(id, createdAt, finishedAt, summary, historySummary, historySummaryCount, messages);
+    }
+
+    public Dialog withHistorySummary(String historySummary, int historySummaryCount) {
+        return new Dialog(id, createdAt, finishedAt, summary, historySummary, historySummaryCount, messages);
     }
 
     public boolean isFinished() {
         return finishedAt != null;
+    }
+
+    public boolean hasCompressedHistory() {
+        return historySummary != null && !historySummary.isBlank() && historySummaryCount > 0;
+    }
+
+    public int contextWindowStart() {
+        return historySummaryCount;
     }
 }

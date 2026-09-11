@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 8</title>
+    <title>AI Advent — День 9</title>
     <style>
         :root {
             color-scheme: dark;
@@ -219,6 +219,17 @@
         }
         th { color: var(--muted); font-weight: 600; }
         td { color: var(--text); }
+        label.toggleLabel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+        }
+        label.toggleLabel input { width: 16px; height: 16px; cursor: pointer; }
         .hint {
             margin-top: 12px;
             color: var(--muted);
@@ -244,15 +255,16 @@
         <a href="/day5.html">День 5</a>
         <a href="/day6.html">День 6</a>
         <a href="/day7.html">День 7</a>
-<a href="/day8.html">День 8</a>
-    <a href="/day9.html">День 9</a>
-</nav>
-    <span class="badge">AI Advent · Day 8</span>
-    <h1>Диалоги и токены</h1>
-    <p class="lead">Как день 7, но агент ещё считает токены запроса, диалога, памяти и ответа, оценочную стоимость и не даёт диалогу выйти за контекстное окно. Итоги завершённых диалогов остаются в памяти следующих.</p>
+        <a href="/day8.html">День 8</a>
+        <a href="/day9.html">День 9</a>
+    </nav>
+    <span class="badge">AI Advent · Day 9</span>
+    <h1>Сжатие истории</h1>
+    <p class="lead">Как день 8, но история сжимается: последние N сообщений — как есть, остальное —rolling summary. Сравните «до/после»: выключите сжатие и смотрите, как растёт промпт; включите — токены падают, а агент помнит.</p>
     <div class="card">
         <label for="limit">Контекстный лимит модели (токены)</label>
         <input class="limit" id="limit" type="number" value="128000" min="10" step="10">
+        <label class="toggleLabel"><input type="checkbox" id="compression" checked> Сжимать историю (последние 10 сообщений — как есть, всё раньше — summary)</label>
         <div class="memory" id="memory">Память агента загружается…</div>
         <div class="bar" id="usageBar"><div id="usageFill" style="width:0%"></div></div>
         <div class="banner" id="banner"></div>
@@ -271,11 +283,12 @@
         <div id="statsBlock"></div>
         <div id="pastList"></div>
         <div class="meta" id="meta"></div>
-        <div class="hint">Подсказки для видео: 1) короткий диалог — 1–2 вопроса; 2) длинный — несколько длинных сообщений и «Рост токенов/цены»; 3) переполнение — лимит, например <code>60</code>, и задавайте вопросы; 4) память — «Почему небо синее?» → «Завершить диалог» → «Начать диалог» → «О чём мы говорили раньше?». CLI: <code>./gradlew bootRun --args="--day=8 --start --cli"</code>, метрики: <code>--dialog=&lt;id&gt; --table</code>, маленький лимит: <code>--limit=60</code>.</div>
+        <div class="hint">Подсказки для видео: 1) короткий диалог — 1–2 вопроса; 2) длинный — 10+ вопросов и «Рост токенов/цены»: после 20 сообщений summary вступает в силу — промпт резко падает; 3) сравнение — выключите чекбокс «Сжимать историю» и отправьте тот же вопрос: без сжатия промпт растёт линейно; 4) переполнение — лимит <code>60</code>. CLI: <code>./gradlew bootRun --args="--day=9 --start --cli"</code>, без сжатия: <code>--no-compress</code>, таблица: <code>--table</code>.</div>
     </div>
 </main>
 <script>
     const limitEl = document.getElementById("limit");
+    const compressionEl = document.getElementById("compression");
     const memoryEl = document.getElementById("memory");
     const transcriptEl = document.getElementById("transcript");
     const finishedEl = document.getElementById("finished");
@@ -290,7 +303,7 @@
     const toggleEl = document.getElementById("togglePast");
     const pastListEl = document.getElementById("pastList");
     const metaEl = document.getElementById("meta");
-    const KEY = "ai-advent-day8-dialog";
+    const KEY = "ai-advent-day9-dialog";
     let dialogId = localStorage.getItem(KEY);
 
     function appendMessage(role, content, tokensText) {
@@ -341,17 +354,20 @@
         if (!memory || memory.length === 0) {
             memoryEl.innerHTML = "<b>Память пуста.</b> Завершите диалог — его итог добавится сюда.";
         } else {
-            const items = memory.map((m) => "• [" + m.summary + "]").join("<br>");
+            const items = memory.map((m) => "• [" + esc(shorten(m.summary || "", 80)) + "]").join("<br>");
             memoryEl.innerHTML = "<b>Агент помнит " + memory.length + " прошл" + (memory.length === 1 ? "ый" : "ых") + " диалог"
                 + (memory.length === 1 ? "" : "а") + ":</b><br>" + items;
         }
     }
 
-    function renderUsage(promptTokens, contextTokens, limit) {
+    function renderUsage(promptTokens, fullPromptTokens, contextTokens, limit) {
         limitEl.value = limit;
         const percent = Math.min(100, Math.round(promptTokens * 100 / limit));
         usageFill.style.width = percent + "%";
-        usageFill.parentElement.title = "промпт ~" + promptTokens + " (из них память ~" + contextTokens + ") / " + limit + " токенов (" + percent + "%)";
+        usageFill.parentElement.title =
+            "промпт ~" + promptTokens + " (память ~" + contextTokens + ") / " + limit
+            + " токенов (" + percent + "%)"
+            + (fullPromptTokens > promptTokens ? " · без сжатия было бы ~" + fullPromptTokens : "");
         usageFill.setAttribute("class", percent >= 80 ? "danger" : "");
     }
 
@@ -368,7 +384,7 @@
     }
 
     async function refreshMemoryAndPast() {
-        const response = await fetch("/api/day8/dialogs").catch(() => null);
+        const response = await fetch("/api/day9/dialogs").catch(() => null);
         if (!response || !response.ok) return;
         const dialogs = await response.json().catch(() => []);
         renderMemory(dialogs);
@@ -380,8 +396,8 @@
         dialogs.forEach((d) => {
             const div = document.createElement("div");
             div.className = "past";
-            div.innerHTML = "<b>[" + d.dialogId + "]</b> от " + (d.finishedAt ? new Date(d.finishedAt).toLocaleString() : "?")
-                + " · " + d.messageCount + " сообщений<br>" + (d.summary || "без итога");
+            div.innerHTML = "<b>[" + esc(d.dialogId) + "]</b> от " + (d.finishedAt ? new Date(d.finishedAt).toLocaleString() : "?")
+                + " · " + d.messageCount + " сообщений<br>" + esc(shorten(d.summary || "без итога", 100));
             pastListEl.appendChild(div);
         });
     }
@@ -390,7 +406,7 @@
         startEl.disabled = true;
         metaEl.textContent = "Создаю диалог…";
         try {
-            const response = await fetch("/api/day8/dialogs", { method: "POST" });
+            const response = await fetch("/api/day9/dialogs", { method: "POST" });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
                 metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
@@ -416,14 +432,15 @@
         const request = requestEl.value.trim();
         if (!request || !dialogId) return;
         const contextLimit = parseInt(limitEl.value, 10) || null;
+        const compression = compressionEl.checked;
         sendEl.disabled = true;
         bannerEl.style.display = "none";
-        metaEl.textContent = "Агент думает…";
+        metaEl.textContent = "Агент думает" + (compression ? " (сжатие вкл)…" : " (без сжатия)…");
         try {
-            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/chat", {
+            const response = await fetch("/api/day9/dialogs/" + encodeURIComponent(dialogId) + "/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ request, contextLimit })
+                body: JSON.stringify({ request, contextLimit, compression })
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -432,25 +449,32 @@
             }
             requestEl.value = "";
             renderHistory(data.history);
-            renderUsage(data.promptTokens || 0, data.contextTokens || 0, data.contextLimit || 128000);
+            renderUsage(data.promptTokens || 0, data.fullPromptTokens || 0, data.contextTokens || 0, data.contextLimit || 128000);
             renderMemory(data.memory);
             if (data.exceeded) {
                 bannerEl.style.display = "block";
                 bannerEl.textContent = data.content || "Диалог превысил контекстное окно модели.";
-                metaEl.textContent = "память ~" + data.contextTokens + " · запрос ~" + data.requestTokens
-                    + " · история ~" + data.historyTokens + " · промпт ~" + data.promptTokens
-                    + " из лимита " + data.contextLimit + " · LLM не вызывается";
+                metaEl.textContent = "сжатие: " + (data.compression ? "вкл" : "выкл")
+                    + " · память ~" + data.contextTokens
+                    + " · запрос ~" + data.requestTokens
+                    + " · история ~" + data.historyTokens + " (полная ~" + data.fullHistoryTokens + ")"
+                    + " · промпт ~" + data.promptTokens + " (полная ~" + data.fullPromptTokens + ")"
+                    + " · сэкономлено ~" + data.savedTokens + " · LLM не вызывается";
             } else {
                 metaEl.textContent =
-                    (data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс ·\n" +
-                    "токены: память ~" + data.contextTokens + " · запрос ~" + data.requestTokens +
-                    " · история ~" + data.historyTokens + " · промпт ~" + data.promptTokens +
-                    " · ответ ~" + data.responseTokens + "\n" +
-                    "реальные (prompt/completion): " + (data.realPromptTokens == null ? "н/д" : data.realPromptTokens)
-                    + " / " + (data.realCompletionTokens == null ? "н/д" : data.realCompletionTokens) + "\n" +
-                    "реальная стоимость ответа: " + (data.realCostUsd == null ? "н/д" : "$" + data.realCostUsd) + "\n" +
-                    "оценка: ход ~" + (data.estimatedTurnCostUsd == null ? "н/д" : "$" + data.estimatedTurnCostUsd)
-                    + " · всего диалог ~" + (data.estimatedCumulativeCostUsd == null ? "н/д" : "$" + data.estimatedCumulativeCostUsd);
+                    (data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс · "
+                    + "сжатие: " + (data.compression ? "вкл" : "выкл") + " · сжато: " + data.historySummaryCount + " сообщений\n"
+                    + "токены: память ~" + data.contextTokens
+                    + " · запрос ~" + data.requestTokens
+                    + " · история ~" + data.historyTokens + " (полная ~" + data.fullHistoryTokens + ")"
+                    + " · промпт ~" + data.promptTokens + " (полная ~" + data.fullPromptTokens + ")"
+                    + " · сэкономлено ~" + data.savedTokens + "\n"
+                    + "реальные (prompt/completion): " + (data.realPromptTokens == null ? "н/д" : data.realPromptTokens)
+                    + " / " + (data.realCompletionTokens == null ? "н/д" : data.realCompletionTokens) + "\n"
+                    + "реальная стоимость ответа: " + (data.realCostUsd == null ? "н/д" : "$" + data.realCostUsd) + "\n"
+                    + "оценка: ход ~" + (data.estimatedTurnCostUsd == null ? "н/д" : "$" + data.estimatedTurnCostUsd)
+                    + " · всего диалог ~" + (data.estimatedCumulativeCostUsd == null ? "н/д" : "$" + data.estimatedCumulativeCostUsd)
+                    + " · без сжатия ~" + (data.estimatedFullCumulativeCostUsd == null ? "н/д" : "$" + data.estimatedFullCumulativeCostUsd);
             }
         } catch (error) {
             metaEl.textContent = "Не удалось выполнить запрос: " + error;
@@ -464,7 +488,7 @@
         finishEl.disabled = true;
         metaEl.textContent = "Подвожу итог диалога…";
         try {
-            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/finish", { method: "POST" });
+            const response = await fetch("/api/day9/dialogs/" + encodeURIComponent(dialogId) + "/finish", { method: "POST" });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
                 metaEl.textContent = data.error || data.detail || ("HTTP " + response.status);
@@ -488,35 +512,26 @@
         statsEl.disabled = true;
         statsBlock.innerHTML = "Загрузка…";
         try {
-            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId) + "/metrics");
+            const response = await fetch("/api/day9/dialogs/" + encodeURIComponent(dialogId) + "/metrics");
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
                 statsBlock.innerHTML = "Ошибка: " + (data.error || data.message || response.status);
                 return;
             }
-            let html = "<table><tr><th>#</th><th>промпт, tok</th><th>ответ, tok</th><th>сумма, tok</th><th>стоимость хода</th><th>сумма, $</th></tr>";
+            let html = "<table><tr><th>#</th><th>промпт сжато</th><th>промпт без сжатия</th><th>ответ</th><th>сумма сжато</th><th>сумма без сжатия</th><th>$ ход</th><th>$ сумма</th></tr>";
             (data.turns || []).forEach((t) => {
-                html += "<tr><td>" + t.turn + "</td><td>" + t.promptTokens + "</td><td>" + t.responseTokens
-                    + "</td><td>" + t.cumulativeTokens + "</td><td>$ " + t.turnCostUsd + "</td><td>$ " + t.cumulativeCostUsd + "</td></tr>";
+                html += "<tr><td>" + t.turn + "</td><td>" + t.promptTokens + "</td><td>" + t.fullPromptTokens
+                    + "</td><td>" + t.responseTokens + "</td><td>" + t.cumulativeTokens + "</td><td>" + t.cumulativeFullTokens
+                    + "</td><td>$ " + t.turnCostUsd + "</td><td>$ " + t.cumulativeCostUsd + "</td></tr>";
             });
             html += "</table>";
-            html += "<div class='meta'>Всего токенов: " + data.totalTokens
-                + " · суммарная стоимость ~$ " + data.totalCostUsd
-                + " · лимит " + data.contextLimit + "</div>";
-            html += "<div style='margin-top:18px;font-weight:700;'>Прошлые диалоги — для сравнения</div>";
-            if (!data.previousDialogs || data.previousDialogs.length === 0) {
-                html += "<div class='meta'>Прошлых завершённых диалогов пока нет: завершите этот диалог — он появится здесь.</div>";
-            } else {
-                html += "<table><tr><th>диалог (итог)</th><th>ходов</th><th>сообщений</th><th>сумма, tok</th><th>сумма, $</th></tr>";
-                data.previousDialogs.forEach((p) => {
-                    html += "<tr><td style='text-align:left;'>[" + p.dialogId + "] " + esc(shorten(p.summary || "без итога"))
-                        + "</td><td>" + p.turnCount + "</td><td>" + p.messageCount + "</td>"
-                        + "<td>" + p.totalTokens + "</td><td>$ " + p.totalCostUsd + "</td></tr>";
-                });
-                html += "</table>";
-                html += "<div class='meta'>Токены и стоимость каждого прошлого диалога посчитаны с той памятью, что он видел: "
-                    + "итог каждого следующего диалога добавляется ему в память и увеличивает промпт.</div>";
-            }
+            html += "<div class='meta'>Всего токенов (сжато): " + data.totalTokens
+                + " · без сжатия: " + data.fullTotalTokens
+                + " · сэкономлено: " + data.savedTokens + " токенов"
+                + " · лимит: " + data.contextLimit + "</div>";
+            html += "<div class='meta'>Стоимость: сжато $" + data.totalCostUsd
+                + " · без сжатия $" + data.fullTotalCostUsd
+                + " · экономия $" + (data.fullTotalCostUsd - data.totalCostUsd).toFixed(6) + "</div>";
             statsBlock.innerHTML = html;
         } catch (error) {
             statsBlock.innerHTML = "Не удалось загрузить статистику: " + error;
@@ -539,7 +554,7 @@
     (async function init() {
         await refreshMemoryAndPast();
         if (dialogId) {
-            const response = await fetch("/api/day8/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
+            const response = await fetch("/api/day9/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
             if (response && response.ok) {
                 const data = await response.json().catch(() => null);
                 if (data) {

@@ -33,3 +33,11 @@ day8:
   input-price: ${DAY8_INPUT_PRICE:0.15}
   output-price: ${DAY8_OUTPUT_PRICE:0.60}
 
+day9:
+  dialog-dir: ${DAY9_DIALOG_DIR:data/day9-dialogs}
+  context-limit: ${DAY9_CONTEXT_LIMIT:128000}
+  input-price: ${DAY9_INPUT_PRICE:0.15}
+  output-price: ${DAY9_OUTPUT_PRICE:0.60}
+  recent-messages: ${DAY9_RECENT_MESSAGES:10}
+  chunk-size: ${DAY9_CHUNK_SIZE:10}
+

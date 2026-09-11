@@ -27,6 +27,7 @@ class DialogSummarizerTest {
                 Instant.now(),
                 null,
                 null,
+                null, 0,
                 List.of(
                         ConversationMessage.user("Почему небо синее?"),
                         ConversationMessage.assistant("Из-за рассеяния света Рэлея.")));
