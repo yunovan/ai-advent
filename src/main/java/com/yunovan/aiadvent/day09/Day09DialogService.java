@@ -118,7 +118,7 @@ public class Day09DialogService {
         }
 
         LlmReply reply = llmClient.complete(
-                CompletionCommand.unconstrained(request), toChatMessages(dialogId, compression, active));
+                CompletionCommand.unconstrained(request), toChatMessages(dialogId, compression, active, request));
         long responseTokens = estimator.estimate(reply.content());
 
         List<ConversationMessage> updated = new ArrayList<>(active.messages());
@@ -311,7 +311,8 @@ public class Day09DialogService {
         return active.messages().subList(start, active.messages().size());
     }
 
-    private List<ChatCompletionRequest.Message> toChatMessages(String dialogId, boolean compression, Dialog active) {
+    private List<ChatCompletionRequest.Message> toChatMessages(
+            String dialogId, boolean compression, Dialog active, String request) {
         List<ConversationMessage> messages = new ArrayList<>();
         List<Dialog> previous = previousDialogs(dialogId);
         String basePrompt = dialogContext.systemPrompt(previous);
@@ -326,6 +327,7 @@ public class Day09DialogService {
         } else {
             messages.addAll(active.messages());
         }
+        messages.add(ConversationMessage.user(request));
         return messages.stream()
                 .map(message -> new ChatCompletionRequest.Message(message.role(), message.content()))
                 .toList();

@@ -102,10 +102,28 @@ class Day09DialogServiceTest {
                 ArgumentCaptor.forClass(List.class);
         verify(llmClient, times(3)).complete(any(CompletionCommand.class), messagesCaptor.capture());
         assertThat(messagesCaptor.getAllValues().get(2).getFirst().content()).contains("Сжатая история");
-        assertThat(messagesCaptor.getAllValues().get(2)).hasSize(3);
-        assertThat(messagesCaptor.getAllValues().get(2).getLast().role()).isEqualTo("assistant");
+        assertThat(messagesCaptor.getAllValues().get(2)).hasSize(4);
+        assertThat(messagesCaptor.getAllValues().get(2).getLast().role()).isEqualTo("user");
+        assertThat(messagesCaptor.getAllValues().get(2).getLast().content()).isEqualTo("Третий вопрос");
 
         verify(compressor, atLeastOnce()).summarizeChunk(any());
+    }
+
+    @Test
+    void chatAppendsCurrentRequestAsLastUserMessage() {
+        when(llmClient.complete(any(CompletionCommand.class), any())).thenReturn(reply("Ответ на текущий вопрос"));
+        setup(128_000L);
+
+        service.chat(current.id(), "Первый вопрос", null, null);
+        service.chat(current.id(), "Второй вопрос", null, null);
+
+        ArgumentCaptor<List<ChatCompletionRequest.Message>> messagesCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(llmClient, times(2)).complete(any(CompletionCommand.class), messagesCaptor.capture());
+        List<ChatCompletionRequest.Message> lastCall = messagesCaptor.getAllValues().get(1);
+        assertThat(lastCall.getLast().role()).isEqualTo("user");
+        assertThat(lastCall.getLast().content()).isEqualTo("Второй вопрос");
+        assertThat(lastCall).hasSize(4);
     }
 
     @Test
@@ -144,7 +162,8 @@ class Day09DialogServiceTest {
                 ArgumentCaptor.forClass(List.class);
         verify(llmClient, times(3)).complete(any(CompletionCommand.class), messagesCaptor.capture());
         assertThat(messagesCaptor.getAllValues().get(2).getFirst().content()).doesNotContain("Сжатая история");
-        assertThat(messagesCaptor.getAllValues().get(2)).hasSize(5);
+        assertThat(messagesCaptor.getAllValues().get(2)).hasSize(6);
+        assertThat(messagesCaptor.getAllValues().get(2).getLast().content()).isEqualTo("Третий вопрос");
     }
 
     @Test
