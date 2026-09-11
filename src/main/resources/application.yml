@@ -41,3 +41,10 @@ day9:
   recent-messages: ${DAY9_RECENT_MESSAGES:10}
   chunk-size: ${DAY9_CHUNK_SIZE:10}
 
+day10:
+  dialog-dir: ${DAY10_DIALOG_DIR:data/day10-dialogs}
+  context-limit: ${DAY10_CONTEXT_LIMIT:128000}
+  input-price: ${DAY10_INPUT_PRICE:0.15}
+  output-price: ${DAY10_OUTPUT_PRICE:0.60}
+  default-window: ${DAY10_DEFAULT_WINDOW:8}
+

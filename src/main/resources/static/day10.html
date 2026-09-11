@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 10</title>
+    <style>
+        :root { color-scheme: dark; --bg: #10131a; --card: #1a2030; --line: #2c3548; --text: #eef2ff; --muted: #9aa6bf; --accent: #7aa2ff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1d2740, var(--bg) 55%); color: var(--text); }
+        main { max-width: 860px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        .strategies { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 12px; margin: 16px 0; }
+        .strat { padding: 14px; border: 2px solid var(--line); border-radius: 12px; cursor: pointer; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.5; }
+        .strat:hover { border-color: var(--accent); }
+        .strat.active { border-color: var(--accent); background: #16203a; }
+        .strat b { display: block; color: var(--accent); font-size: 15px; margin-bottom: 4px; }
+        input.limit { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #121826; color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; margin-bottom: 10px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0d1320; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #2c3548; color: var(--text); }
+        button.warn { background: var(--warn); color: #0d1320; }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        .panel { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.6; display: none; }
+        .panel.visible { display: block; }
+        .panel b { color: var(--accent); }
+        .facts-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+        .facts-item input[type=checkbox] { width: 16px; height: 16px; }
+        .facts-item .fact-text { flex: 1; }
+        .facts-item .fact-del { cursor: pointer; color: var(--danger); font-weight: 700; }
+        .addRow { display: flex; gap: 8px; margin-top: 8px; }
+        .addRow input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: #121826; color: var(--text); font-size: 13px; }
+        .branch-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+        .branch-item input[type=radio] { width: 16px; height: 16px; }
+        .bar { margin-top: 12px; height: 6px; border-radius: 3px; background: #0e1420; overflow: hidden; }
+        .bar>div { height: 100%; border-radius: 3px; background: var(--accent); }
+        .bar>div.danger { background: var(--danger); }
+        .transcript { margin-top: 16px; max-height: 42vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); white-space: pre-wrap; font-size: 15px; line-height: 1.5; }
+        .msg .who { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+        .msg.user { background: #16203a; } .msg.assistant { background: #121826; }
+        .inputRow { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .inputRow input { width: 100%; padding: 14px 14px; border-radius: 12px; border: 1px solid var(--line); background: #121826; color: var(--text); font-size: 16px; font-family: Georgia, "Times New Roman", serif; }
+        .inputRow input:focus { outline: 1px solid var(--accent); }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        table { width: 100%; border-collapse: collapse; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-top: 12px; }
+        th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: right; }
+        th { color: var(--muted); font-weight: 600; } td { color: var(--text); }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #121826; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        label.check { display: inline-flex; align-items: center; gap: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; cursor: pointer; }
+        .past { margin-top: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.6; }
+        .past b { color: var(--accent); }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/">День 1</a><a href="/day2.html">День 2</a><a href="/day3.html">День 3</a>
+        <a href="/day4.html">День 4</a><a href="/day5.html">День 5</a><a href="/day6.html">День 6</a>
+        <a href="/day7.html">День 7</a><a href="/day8.html">День 8</a><a href="/day9.html">День 9</a>
+        <a href="/day10.html">День 10</a>
+    </nav>
+    <span class="badge">AI Advent · Day 10</span>
+    <h1>Три стратегии контекста</h1>
+    <p class="lead">Sliding Window, Sticky Facts и Branching — три способа держать диалог в пределах контекстного окна. Выберите стратегию, запустите диалог и сравните: сколько токенов, какая стабильность, насколько удобно.</p>
+    <div class="card">
+        <label>Стратегия управления контекстом</label>
+        <div class="strategies" id="strategies">
+            <div class="strat active" data-strategy="sliding"><b>Sliding Window</b>Последние N сообщений — всё остальное отбрасывается.</div>
+            <div class="strat" data-strategy="facts"><b>Sticky Facts</b>Блок фактов (ключ-значение) + последние N сообщений.</div>
+            <div class="strat" data-strategy="branching"><b>Branching</b>Ветки диалога от checkpoint'а.</div>
+        </div>
+        <label for="limit">Контекстный лимит модели (токены)</label>
+        <input class="limit" id="limit" type="number" value="128000" min="10" step="10">
+        <label for="window" id="windowLabel">Размер окна (Sliding Window / Facts)</label>
+        <input class="limit" id="window" type="number" value="8" min="1" step="1">
+        <div class="memory" id="memory">Память агента загружается…</div>
+        <div class="bar" id="usageBar"><div id="usageFill" style="width:0%"></div></div>
+        <div class="transcript" id="transcript"></div>
+        <div class="inputRow">
+            <input id="request" type="text" placeholder="Напишите сообщение и нажмите Enter…" autocomplete="off">
+            <button id="send" type="button" disabled>Отправить</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="secondary" id="finish" type="button" disabled>Завершить диалог</button>
+            <button class="warn" id="start" type="button">Начать диалог</button>
+            <button class="secondary" id="metricsBtn" type="button">Рост токенов/цены</button>
+            <button class="secondary" id="togglePast" type="button">Прошлые диалоги</button>
+        </div>
+        <div class="panel" id="factsPanel"><b>Факты (ключ: значение)</b><div id="factsList"></div>
+            <div class="addRow"><input id="factKeyInput" placeholder="ключ" autocomplete="off"><input id="factValInput" placeholder="значение" autocomplete="off"><button id="addFactBtn" type="button" class="secondary">Добавить</button></div></div>
+        <div class="panel" id="branchPanel"><b>Ветки диалога</b><div id="branchList"></div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button id="checkpointBtn" type="button" class="secondary">Сохранить checkpoint</button>
+                <button id="createBranchBtn" type="button" class="secondary">Создать ветку</button>
+            </div></div>
+        <div id="metricsBlock"></div>
+        <div id="pastList"></div>
+        <div class="meta" id="meta"></div>
+        <div class="hint">Подсказки: 1) Sliding Window — уменьшайте окно, модель начнёт «забывать»; 2) Facts — добавляйте ключ-значение через UI, агент использует их в промпте; 3) Branching — сохраните checkpoint, создайте ветку, ведите параллельные диалоги; 4) Сравните стратегии на одной задаче (например, сбор ТЗ 10–15 сообщений) через «Прошлые диалоги». CLI: <code>./gradlew bootRun --args="--day=10 --start --strategy=sliding --window=6 --cli"</code>.</div>
+    </div>
+</main>
+<script>
+    const limitEl = document.getElementById("limit");
+    const windowEl = document.getElementById("window");
+    const windowLabel = document.getElementById("windowLabel");
+    const strategiesEl = document.getElementById("strategies");
+    const transcriptEl = document.getElementById("transcript");
+    const memoryEl = document.getElementById("memory");
+    const usageFill = document.getElementById("usageFill");
+    const bannerEl = null;
+    const requestEl = document.getElementById("request");
+    const sendEl = document.getElementById("send");
+    const finishEl = document.getElementById("finish");
+    const startEl = document.getElementById("start");
+    const metricsBtn = document.getElementById("metricsBtn");
+    const metricsBlock = document.getElementById("metricsBlock");
+    const toggleEl = document.getElementById("togglePast");
+    const pastListEl = document.getElementById("pastList");
+    const metaEl = document.getElementById("meta");
+    const factsPanel = document.getElementById("factsPanel");
+    const factsList = document.getElementById("factsList");
+    const branchPanel = document.getElementById("branchPanel");
+    const branchList = document.getElementById("branchList");
+    const KEY = "ai-advent-day10-dialog";
+    let dialogId = localStorage.getItem(KEY);
+    let currentStrategy = "sliding";
+    const STRAT = {sliding:"Sliding Window", facts:"Sticky Facts", branching:"Branching"};
+    const stratLabel = (k) => STRAT[k] || k || "?";
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function shorten(t, max) { t = t || ""; return t.length > (max||70) ? t.slice(0, max||70) + "…" : t; }
+
+    function setStrategy(s) {
+        currentStrategy = s;
+        document.querySelectorAll(".strat").forEach(el => el.classList.toggle("active", el.dataset.strategy === s));
+        windowEl.style.display = s === "branching" ? "none" : "";
+        windowLabel.style.display = s === "branching" ? "none" : "";
+    }
+    document.querySelectorAll(".strat").forEach(el => el.addEventListener("click", () => setStrategy(el.dataset.strategy)));
+
+    function appendMessage(role, content) {
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        const who = document.createElement("div");
+        who.className = "who";
+        who.textContent = role === "user" ? "вы" : role === "assistant" ? "агент" : "система";
+        const body = document.createElement("div");
+        body.textContent = content;
+        div.appendChild(who);
+        div.appendChild(body);
+        transcriptEl.appendChild(div);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    function renderHistory(history) { transcriptEl.innerHTML = ""; (history || []).forEach(m => appendMessage(m.role, m.content)); }
+
+    function renderUsage(promptTokens, contextLimit) {
+        limitEl.value = contextLimit;
+        const pct = Math.min(100, Math.round(promptTokens * 100 / contextLimit));
+        usageFill.style.width = pct + "%";
+        usageFill.parentElement.title = "промпт ~" + promptTokens + " / " + contextLimit + " токенов (" + pct + "%)";
+        usageFill.setAttribute("class", pct >= 80 ? "danger" : "");
+    }
+
+    function renderMemory(memory) {
+        if (!memory || !memory.length) { memoryEl.innerHTML = "<b>Память пуста.</b>"; return; }
+        memoryEl.innerHTML = "<b>Агент помнит " + memory.length + " диалог" + (memory.length===1?"":"ов") + ":</b><br>" +
+            memory.map(m => "• " + esc(shorten(m.summary, 80))).join("<br>");
+    }
+
+    function renderFacts(facts) {
+        factsList.innerHTML = "";
+        if (!facts || !facts.length) { factsList.innerHTML = "<div style='color:var(--muted)'>Пока нет фактов. Добавьте ниже.</div>"; return; }
+        facts.forEach((f, i) => {
+            const div = document.createElement("div");
+            div.className = "facts-item";
+            const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = f.active;
+            cb.addEventListener("change", async () => { await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/facts", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:f.key,value:f.value,active:cb.checked})}); refreshInfo(); });
+            const txt = document.createElement("span"); txt.className = "fact-text"; txt.textContent = f.key + ": " + f.value;
+            div.appendChild(cb); div.appendChild(txt);
+            factsList.appendChild(div);
+        });
+    }
+
+    function renderBranches(info) {
+        branchList.innerHTML = "";
+        (info.branches || []).forEach(b => {
+            const div = document.createElement("div"); div.className = "branch-item";
+            const radio = document.createElement("input"); radio.type = "radio"; radio.name = "branch"; radio.checked = b.id === info.activeBranchId; radio.dataset.branchId = b.id;
+            radio.addEventListener("change", async () => { await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/branches/" + encodeURIComponent(b.id) + "/activate", {method:"POST"}); refreshInfo(); });
+            const label = document.createElement("label"); label.className = "check";
+            label.appendChild(radio);
+            label.append(b.name + " (" + b.messageCount + " сообщ., checkpoint " + b.checkpointAt + ")");
+            div.appendChild(label);
+            branchList.appendChild(div);
+        });
+        document.getElementById("checkpointBtn").disabled = currentStrategy !== "branching";
+        document.getElementById("createBranchBtn").disabled = currentStrategy !== "branching";
+    }
+
+    async function refreshInfo() {
+        if (!dialogId) return;
+        try {
+            const resp = await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId));
+            if (!resp.ok) return;
+            const info = await resp.json();
+            renderFacts(info.facts);
+            renderBranches(info);
+            factsPanel.classList.toggle("visible", currentStrategy === "facts");
+            branchPanel.classList.toggle("visible", currentStrategy === "branching");
+        } catch(e) {}
+    }
+
+    async function refreshMemoryAndPast() {
+        try {
+            const resp = await fetch("/api/day10/dialogs");
+            if (!resp.ok) return;
+            const dialogs = await resp.json();
+            renderMemory(dialogs.filter(d => d.finishedAt).map(d => ({summary: d.summary})));
+            pastListEl.innerHTML = "";
+            if (!dialogs.length) { pastListEl.innerHTML = "<div class='past'>Диалогов пока нет.</div>"; return; }
+            dialogs.forEach(d => {
+                const div = document.createElement("div"); div.className = "past";
+                div.innerHTML = "<b>[" + (d.strategy ? stratLabel(d.strategy) : "?") + "]</b> " + esc(shorten(d.summary || "…", 80))
+                    + " · " + d.messageCount + " сообщ. · $" + (d.totalCostUsd||0) + " · " + d.totalTokens + " tok"
+                    + (d.fullTotalTokens > d.totalTokens ? " (полных ~" + d.fullTotalTokens + ")" : "")
+                    + (d.branchCount > 1 ? " · веток: " + d.branchCount : "")
+                    + (d.factsCount ? " · фактов: " + d.factsCount : "");
+                pastListEl.appendChild(div);
+            });
+        } catch(e) {}
+    }
+
+    async function start() {
+        startEl.disabled = true;
+        metaEl.textContent = "Создаю диалог…";
+        try {
+            const w = currentStrategy === "branching" ? "" : windowEl.value;
+            const resp = await fetch("/api/day10/dialogs?strategy=" + currentStrategy + (w ? "&windowSize=" + w : ""), {method:"POST"});
+            const data = await resp.json();
+            if (!resp.ok) { metaEl.textContent = data.error || data.detail || ("HTTP " + resp.status); return; }
+            dialogId = data.dialogId;
+            localStorage.setItem(KEY, dialogId);
+            transcriptEl.innerHTML = "";
+            usageFill.style.width = "0%"; usageFill.setAttribute("class", "");
+            metaEl.textContent = "Диалог " + dialogId + " · стратегия " + stratLabel(data.strategy) + " · окно " + data.windowSize;
+            setActive(true); setStrategy(data.strategy);
+            refreshInfo(); refreshMemoryAndPast();
+        } catch(e) { metaEl.textContent = "Ошибка: " + e; }
+        finally { startEl.disabled = false; }
+    }
+
+    async function send() {
+        const request = requestEl.value.trim();
+        if (!request || !dialogId) return;
+        const contextLimit = parseInt(limitEl.value, 10) || null;
+        const w = currentStrategy === "branching" ? null : (parseInt(windowEl.value, 10) || null);
+        sendEl.disabled = true;
+        metaEl.textContent = "Агент думает…";
+        try {
+            const resp = await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/chat", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({request,contextLimit,windowSize:w})});
+            const data = await resp.json();
+            if (!resp.ok) { metaEl.textContent = data.error || data.detail || ("HTTP " + resp.status); return; }
+            requestEl.value = "";
+            renderHistory(data.history);
+            renderUsage(data.promptTokens, data.contextLimit);
+            renderFacts(data.facts);
+            setStrategy(data.strategy.key);
+            refreshMemoryAndPast();
+            metaEl.textContent =
+                (data.model ? data.model + " · " : "") + (data.elapsedMs||0) + " мс · "
+                + "стратегия: " + stratLabel(data.strategy) + " · окно: " + data.windowSize + "\n"
+                + "запрос ~" + data.requestTokens + " · история ~" + data.historyTokens + " (полная ~" + data.fullHistoryTokens + ")"
+                + " · промпт ~" + data.promptTokens + " (полная ~" + data.fullPromptTokens + ")"
+                + " · сэкономлено ~" + data.savedTokens + "\n"
+                + "всего: $" + data.estimatedCumulativeCostUsd + " (полных $" + data.estimatedFullCumulativeCostUsd + ")"
+                + (data.facts.length ? "\nфактов: " + data.facts.length : "")
+                + (data.branches.length > 1 ? " · веток: " + data.branches.length : "");
+        } catch(e) { metaEl.textContent = "Ошибка: " + e; }
+        finally { sendEl.disabled = false; }
+    }
+
+    async function finish() {
+        if (!dialogId) return;
+        finishEl.disabled = true;
+        try {
+            const resp = await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/finish", {method:"POST"});
+            const data = await resp.json();
+            if (!resp.ok) { metaEl.textContent = data.error || data.detail; return; }
+            metaEl.textContent = "Итог: " + data.summary;
+            dialogId = null; localStorage.removeItem(KEY);
+            setActive(false); refreshMemoryAndPast();
+        } catch(e) { metaEl.textContent = "Ошибка: " + e; }
+        finally { finishEl.disabled = false; }
+    }
+
+    async function metrics() {
+        if (!dialogId) return;
+        metricsBtn.disabled = true; metricsBlock.innerHTML = "Загрузка…";
+        try {
+            const resp = await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/metrics");
+            const data = await resp.json();
+            if (!resp.ok) { metricsBlock.innerHTML = "Ошибка: " + (data.error||resp.status); return; }
+            let html = "<table><tr><th>#</th><th>промпт стратегия</th><th>промпт без стратегии</th><th>ответ</th><th>сумма стратегия</th><th>сумма без</th><th>$ ход</th><th>$ сумма</th></tr>";
+            (data.turns||[]).forEach(t => {
+                html += "<tr><td>" + t.turn + "</td><td>" + t.promptTokens + "</td><td>~</td><td>" + t.responseTokens + "</td><td>" + t.cumulativeTokens + "</td><td>~</td><td>$ " + t.turnCostUsd + "</td><td>$ " + t.cumulativeCostUsd + "</td></tr>";
+            });
+            html += "</table>";
+            html += "<div class='meta'>Всего: стратегия $" + data.totalCostUsd + " / без стратегии $" + data.fullTotalCostUsd
+                + " · токенов: стратегия " + data.totalTokens + " / без " + data.fullTotalTokens
+                + " · окно " + data.windowSize + " · лимит " + data.contextLimit
+                + (data.factsCount ? " · фактов " + data.factsCount : "")
+                + (data.branchCount > 1 ? " · веток " + data.branchCount : "")
+                + " · активная ветка " + data.activeBranchId + "</div>";
+            metricsBlock.innerHTML = html;
+        } catch(e) { metricsBlock.innerHTML = "Ошибка: " + e; }
+        finally { metricsBtn.disabled = false; }
+    }
+
+    function setActive(active) { sendEl.disabled = !active || !dialogId; finishEl.disabled = !active || !dialogId; requestEl.disabled = !active; if (active) requestEl.focus(); }
+
+    sendEl.addEventListener("click", send);
+    finishEl.addEventListener("click", finish);
+    startEl.addEventListener("click", start);
+    requestEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); send(); } });
+    metricsBtn.addEventListener("click", metrics);
+    toggleEl.addEventListener("click", () => { pastListEl.style.display = pastListEl.style.display === "none" ? "block" : "none"; });
+
+    document.getElementById("addFactBtn").addEventListener("click", async () => {
+        const key = document.getElementById("factKeyInput").value.trim();
+        const val = document.getElementById("factValInput").value.trim();
+        if (!key || !val || !dialogId) return;
+        await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/facts", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,value:val,active:true})});
+        document.getElementById("factKeyInput").value = "";
+        document.getElementById("factValInput").value = "";
+        refreshInfo();
+    });
+
+    document.getElementById("checkpointBtn").addEventListener("click", async () => { if (!dialogId) return; await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/checkpoint", {method:"POST"}); refreshInfo(); metaEl.textContent = "Checkpoint сохранён"; });
+    document.getElementById("createBranchBtn").addEventListener("click", async () => { if (!dialogId) return; await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId) + "/branches", {method:"POST"}); refreshInfo(); metaEl.textContent = "Ветка создана"; });
+
+    (async function init() {
+        await refreshMemoryAndPast();
+        if (dialogId) {
+            const resp = await fetch("/api/day10/dialogs/" + encodeURIComponent(dialogId)).catch(() => null);
+            if (resp && resp.ok) { const data = await resp.json(); renderHistory(data.history); setStrategy(data.strategy); metaEl.textContent = "Диалог " + data.dialogId + " восстановлен"; setActive(true); refreshInfo(); return; }
+            localStorage.removeItem(KEY); dialogId = null;
+        }
+        setActive(false); metaEl.textContent = "Выберите стратегию и нажмите «Начать диалог».";
+    })();
+</script>
+</body>
+</html>
