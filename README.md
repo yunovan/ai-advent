@@ -707,3 +707,113 @@ DAY9_OUTPUT_PRICE=0.60              # цена за 1 млн выходных т
 DAY9_RECENT_MESSAGES=10             # последние N сообщений всегда отправляются полностью
 DAY9_CHUNK_SIZE=10                  # сколько сообщений умирается в один chunk для сжатия
 ```
+
+---
+
+## День 10. Управление контекстом — три стратегии
+
+Три способа держать диалог в пределах контекстного окна:
+
+1. **Sliding Window** — в модель уходят только последние N сообщений, всё остальное отбрасывается. UI позволяет менять N для каждого диалога.
+2. **Sticky Facts** — в системный промпт добавляется блок ключ-значение, который обновляется после каждого сообщения. В модель идут facts + последние N сообщений.
+3. **Branching** — диалог можно разделить ветками: сохраняется checkpoint, создаётся ветка, каждая живёт независимо. В модель идёт вся история ветки.
+
+**Важно:** полный транскрипт (все сообщения, все факты) всегда хранится в JSON-файле целиком. Отбрасывается **только то, что уходит в модель** — это нужно, чтобы метрики (суммарные токены и стоимость) были честными и сравнимыми со сценарием «без стратегии».
+
+После каждого сообщения в режиме Facts — `Day10FactExtractor` (LLM или локальный парсер строк `ключ: значение`) извлекает факты и обновляет блок. Тумблеры активности facts доступны на UI.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=10"
+# UI: http://localhost:8080/day10.html
+
+# CLI
+./gradlew bootRun --args="--day=10 --list"
+./gradlew bootRun --args="--day=10 --start --strategy=sliding --window=6"
+./gradlew bootRun --args="--day=10 --dialog=<id> --prompt=\"Соберём ТЗ\""
+./gradlew bootRun --args="--day=10 --dialog=<id> --fact=\"Цель: собрать ТЗ\""
+./gradlew bootRun --args="--day=10 --dialog=<id> --checkpoint --branch"
+./gradlew bootRun --args="--day=10 --dialog=<id> --switch=b2 --prompt=\"Продолжение\""
+./gradlew bootRun --args="--day=10 --dialog=<id> --table"
+./gradlew bootRun --args="--day=10 --dialog=<id> --finish"
+```
+
+### Как устроен код дня 10
+
+| Файл | Роль |
+|---|---|
+| `day10/Day10Strategy.java` | enum: `sliding`, `facts`, `branching` (с `@JsonValue` на `key()`) |
+| `day10/Day10Fact.java` | ключ-значение + флаг `active`, `usable()`, `display()` |
+| `day10/Day10Branch.java` | ветка диалога: `id`, `name`, `parentId`, `checkpointAt`, `messages`; `main()` и `fork()` |
+| `day10/Day10Dialog.java` | диалог: `strategy`, `facts`, `branches`, `activeBranchId`; `activeMessages()`, `withBranchMessages()`, `withWindow()`, `withFacts()`, `withCheckpoint()`, `withNewBranch()`, `withActiveBranch()` |
+| `day10/Day10FileDialogStore.java` | JSON-хранилище: `create(strategy, window)`, `load`, `save`, `finishedDialogs`, `allDialogs` (с учётом facts/branches) |
+| `day10/Day10FactExtractor.java` | извлечение facts из текста: LLM (если ключ есть) или локальный парсер `ключ: значение` |
+| `day10/Day10Properties.java` | `day10.dialog-dir`, `day10.context-limit`, `day10.input-price`, `day10.output-price`, `day10.default-window` |
+| `day10/Day10DialogService.java` | сервис: `start`, `chat`, `addFact`, `checkpoint`, `createBranch`, `switchBranch`, `metrics`, `dialogs`, `finish`; budgets replay, переполнение |
+| `day10/Day10DialogController.java` | `/api/day10/dialogs`, `chat`, `facts`, `checkpoint`, `branches`, `branches/{id}/activate`, `metrics`, `finish` |
+| `day10/Day10CliRunner.java` | CLI: `--day=10 --start/--strategy/--window/--dialog/--prompt/--fact/--checkpoint/--branch/--switch/--table/--finish` |
+| `static/day10.html` | UI: выбор стратегии, панель facts (тумблеры + добавление), панель веток (checkpoint/create/switch), транскрипт, метрики, список диалогов |
+
+Настройки:
+
+```bash
+DAY10_DIALOG_DIR=data/day10-dialogs
+DAY10_CONTEXT_LIMIT=128000
+DAY10_INPUT_PRICE=0.15
+DAY10_OUTPUT_PRICE=0.60
+DAY10_DEFAULT_WINDOW=8
+```
+
+## День 11. Модель памяти агента
+
+Три явных слоя памяти, каждый хранится отдельно, и решение «что и куда сохраняется» принимается вручную:
+
+1. **Краткосрочная (short-term)** — текущий диалог: в модель уходят только последние N сообщений (окно по умолчанию 10). Из каждого сообщения `Day11FactExtractor` извлекает кандидатов `ключ: значение`, которые появляются как темноватые записи и **ждут вашего решения** — остаются ли они в краткосрочной или переносятся в рабочий отдел.
+2. **Рабочая (working)** — данные текущей задачи: цель, требования, бюджет, сроки, стек. В модель попадают каждый запрос и живут, пока выполняется задача.
+3. **Долговременная (long-term)** — профиль, принятые решения и накопленные знания: живут между задачами и между диалогами. Пополняется кнопками «→ Долговременная», формой ручного `remember`, фиксацией решений (`decide`) и автоматически итогом завершённого диалога (`finish` → `итог:<id>`).
+
+Слои лежат в разных директориях (`short-term/`, `working/`, `long-term/`), так что «какие данные попадают в каждый слой» видно по файловой системе. `Day11MemoryRules.suggestLayer` подсказывает дефолт (профильное → долговременная, задачное → рабочая), но выбор всегда можно переопределить явно.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=11"
+# UI: http://localhost:8080/day11.html
+
+# CLI
+./gradlew bootRun --args="--day=11 --list"
+./gradlew bootRun --args="--day=11 --start --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --prompt=\"Соберём ТЗ, я Ася, бюджет 10 000$\" --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --promote=\"Имя\" --target=long-term --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --remember=\"Стек: Java 21\" --layer=working --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --decide=\"Берём Java 21\" --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --table --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --finish --cli"
+```
+
+### Как устроен код дня 11
+
+| Файл | Роль |
+|---|---|
+| `day11/Day11MemoryLayer.java` | enum слоёв: `short-term`, `working`, `long-term` (с `@JsonValue` на `key()`); `from(value)` со списком доступных |
+| `day11/Day11MemoryEntry.java` | запись памяти: ключ, значение, слой, источник, флаг `pending`; `withLayer()`, `hardened()`, `usable()`, `isCandidate()`, `display()` |
+| `day11/Day11MemoryRules.java` | `suggestLayer(key)`: маркеры профиля → долговременная, маркеры задачи → рабочая, иначе краткосрочная |
+| `day11/Day11FileMemoryStore.java` | файловое хранилище по слоям: `save`, `find`, `delete`, `all`, `all(layer)`; sanitize ключей под имена файлов |
+| `day11/Day11FactExtractor.java` | извлечение кандидатов из текста: LLM (если есть ключ) или локальный парсер `ключ: значение`; записи → `SHORT_TERM`, `pending=true` |
+| `day11/Day11Properties.java` | `day11.dialog-dir`, `day11.memory-dir`, `day11.context-limit`, `day11.input-price`, `day11.output-price`, `day11.short-term-window` |
+| `day11/Day11DialogService.java` | сервис: `start`, `chat`, `remember`, `promote`, `decide`, `forget`, `metrics`, `finish`, `dialogs`, `get`; блок «Слой памяти: …» в системном промпте, окно краткосрочной, переполнение |
+| `day11/Day11DialogController.java` | `/api/day11/dialogs`, `chat`, `remember`, `promote`, `decide`, `forget`, `metrics`, `finish` |
+| `day11/Day11CliRunner.java` | CLI: `--day=11 --start/--list/--dialog/--prompt/--remember/--promote/--decide/--forget/--table/--finish/--cli` |
+| `static/day11.html` | UI: панели краткосрочной (кандидаты с кнопками переноса), рабочей и долговременной памяти, решения, метрики роста токенов/цены |
+
+Настройки:
+
+```bash
+DAY11_DIALOG_DIR=data/day11-dialogs
+DAY11_MEMORY_DIR=data/day11-memory
+DAY11_CONTEXT_LIMIT=128000
+DAY11_INPUT_PRICE=0.15
+DAY11_OUTPUT_PRICE=0.60
+DAY11_SHORT_TERM_WINDOW=10
+```
