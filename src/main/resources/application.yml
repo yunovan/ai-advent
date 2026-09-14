@@ -48,3 +48,11 @@ day10:
   output-price: ${DAY10_OUTPUT_PRICE:0.60}
   default-window: ${DAY10_DEFAULT_WINDOW:8}
 
+day11:
+  dialog-dir: ${DAY11_DIALOG_DIR:data/day11-dialogs}
+  memory-dir: ${DAY11_MEMORY_DIR:data/day11-memory}
+  context-limit: ${DAY11_CONTEXT_LIMIT:128000}
+  input-price: ${DAY11_INPUT_PRICE:0.15}
+  output-price: ${DAY11_OUTPUT_PRICE:0.60}
+  short-term-window: ${DAY11_SHORT_TERM_WINDOW:10}
+

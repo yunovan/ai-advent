@@ -764,3 +764,56 @@ DAY10_INPUT_PRICE=0.15
 DAY10_OUTPUT_PRICE=0.60
 DAY10_DEFAULT_WINDOW=8
 ```
+
+## День 11. Модель памяти агента
+
+Три явных слоя памяти, каждый хранится отдельно, и решение «что и куда сохраняется» принимается вручную:
+
+1. **Краткосрочная (short-term)** — текущий диалог: в модель уходят только последние N сообщений (окно по умолчанию 10). Из каждого сообщения `Day11FactExtractor` извлекает кандидатов `ключ: значение`, которые появляются как темноватые записи и **ждут вашего решения** — остаются ли они в краткосрочной или переносятся в рабочий отдел.
+2. **Рабочая (working)** — данные текущей задачи: цель, требования, бюджет, сроки, стек. В модель попадают каждый запрос и живут, пока выполняется задача.
+3. **Долговременная (long-term)** — профиль, принятые решения и накопленные знания: живут между задачами и между диалогами. Пополняется кнопками «→ Долговременная», формой ручного `remember`, фиксацией решений (`decide`) и автоматически итогом завершённого диалога (`finish` → `итог:<id>`).
+
+Слои лежат в разных директориях (`short-term/`, `working/`, `long-term/`), так что «какие данные попадают в каждый слой» видно по файловой системе. `Day11MemoryRules.suggestLayer` подсказывает дефолт (профильное → долговременная, задачное → рабочая), но выбор всегда можно переопределить явно.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=11"
+# UI: http://localhost:8080/day11.html
+
+# CLI
+./gradlew bootRun --args="--day=11 --list"
+./gradlew bootRun --args="--day=11 --start --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --prompt=\"Соберём ТЗ, я Ася, бюджет 10 000$\" --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --promote=\"Имя\" --target=long-term --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --remember=\"Стек: Java 21\" --layer=working --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --decide=\"Берём Java 21\" --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --table --cli"
+./gradlew bootRun --args="--day=11 --dialog=<id> --finish --cli"
+```
+
+### Как устроен код дня 11
+
+| Файл | Роль |
+|---|---|
+| `day11/Day11MemoryLayer.java` | enum слоёв: `short-term`, `working`, `long-term` (с `@JsonValue` на `key()`); `from(value)` со списком доступных |
+| `day11/Day11MemoryEntry.java` | запись памяти: ключ, значение, слой, источник, флаг `pending`; `withLayer()`, `hardened()`, `usable()`, `isCandidate()`, `display()` |
+| `day11/Day11MemoryRules.java` | `suggestLayer(key)`: маркеры профиля → долговременная, маркеры задачи → рабочая, иначе краткосрочная |
+| `day11/Day11FileMemoryStore.java` | файловое хранилище по слоям: `save`, `find`, `delete`, `all`, `all(layer)`; sanitize ключей под имена файлов |
+| `day11/Day11FactExtractor.java` | извлечение кандидатов из текста: LLM (если есть ключ) или локальный парсер `ключ: значение`; записи → `SHORT_TERM`, `pending=true` |
+| `day11/Day11Properties.java` | `day11.dialog-dir`, `day11.memory-dir`, `day11.context-limit`, `day11.input-price`, `day11.output-price`, `day11.short-term-window` |
+| `day11/Day11DialogService.java` | сервис: `start`, `chat`, `remember`, `promote`, `decide`, `forget`, `metrics`, `finish`, `dialogs`, `get`; блок «Слой памяти: …» в системном промпте, окно краткосрочной, переполнение |
+| `day11/Day11DialogController.java` | `/api/day11/dialogs`, `chat`, `remember`, `promote`, `decide`, `forget`, `metrics`, `finish` |
+| `day11/Day11CliRunner.java` | CLI: `--day=11 --start/--list/--dialog/--prompt/--remember/--promote/--decide/--forget/--table/--finish/--cli` |
+| `static/day11.html` | UI: панели краткосрочной (кандидаты с кнопками переноса), рабочей и долговременной памяти, решения, метрики роста токенов/цены |
+
+Настройки:
+
+```bash
+DAY11_DIALOG_DIR=data/day11-dialogs
+DAY11_MEMORY_DIR=data/day11-memory
+DAY11_CONTEXT_LIMIT=128000
+DAY11_INPUT_PRICE=0.15
+DAY11_OUTPUT_PRICE=0.60
+DAY11_SHORT_TERM_WINDOW=10
+```
