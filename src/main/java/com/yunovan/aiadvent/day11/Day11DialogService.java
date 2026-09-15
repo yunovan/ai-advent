@@ -42,7 +42,7 @@ public class Day11DialogService {
             DialogContext dialogContext,
             DialogSummarizer summarizer,
             Day11FactExtractor factExtractor,
-            Day11FileMemoryStore memoryStore,
+            @Qualifier("day11MemoryStore") Day11FileMemoryStore memoryStore,
             TokenEstimator estimator) {
         this.llmClient = llmClient;
         this.properties = properties;

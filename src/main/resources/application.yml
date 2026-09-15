@@ -56,3 +56,12 @@ day11:
   output-price: ${DAY11_OUTPUT_PRICE:0.60}
   short-term-window: ${DAY11_SHORT_TERM_WINDOW:10}
 
+day12:
+  dialog-dir: ${DAY12_DIALOG_DIR:data/day12-dialogs}
+  profile-dir: ${DAY12_PROFILE_DIR:data/day12-profiles}
+  memory-dir: ${DAY12_MEMORY_DIR:data/day12-memory}
+  context-limit: ${DAY12_CONTEXT_LIMIT:128000}
+  input-price: ${DAY12_INPUT_PRICE:0.15}
+  output-price: ${DAY12_OUTPUT_PRICE:0.60}
+  short-term-window: ${DAY12_SHORT_TERM_WINDOW:10}
+

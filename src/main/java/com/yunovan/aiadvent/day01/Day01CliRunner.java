@@ -33,7 +33,8 @@ public class Day01CliRunner implements ApplicationRunner {
                 || "8".equals(firstOption(args, "day"))
                 || "9".equals(firstOption(args, "day"))
                 || "10".equals(firstOption(args, "day"))
-                || "11".equals(firstOption(args, "day"))) {
+                || "11".equals(firstOption(args, "day"))
+                || "12".equals(firstOption(args, "day"))) {
             return;
         }
 

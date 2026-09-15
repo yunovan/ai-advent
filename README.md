@@ -817,3 +817,65 @@ DAY11_INPUT_PRICE=0.15
 DAY11_OUTPUT_PRICE=0.60
 DAY11_SHORT_TERM_WINDOW=10
 ```
+
+---
+
+## День 12. Персонализация ассистента
+
+Профиль пользователя поверх модели памяти дня 11: стиль, формат и ограничения подключаются к **каждому** запросу автоматически, поэтому один и тот же ассистент отвечает по-разному для разных пользователей.
+
+Профиль (`Day12Profile`) описывает:
+
+- **Имя** — как обращаться и подписывать ответы;
+- **Стиль** — «кратко и по делу», «развёрнуто и формально», «точно и с деталями»;
+- **Формат** — «списки, шаги 1-2-3», «отчёт с заголовками и таблицей сроков», «код, термины, минимум воды»;
+- **Ограничения** — «без жаргона», «без эмодзи», «только русский», «без повторов» и т.п.;
+- **Заметки** — роль, контекст, пожелания.
+
+`Day12Personalizer.block(profile)` собирает из профиля текстовый блок, который добавляется в системный промпт первым (после базы `DialogContext`): «Профиль пользователя: … Учитывай этот профиль в каждом ответе». Профиль привязан к диалогу через `Day12DialogProfileStore` (dialogId → profileId), переключается в любой момент (кнопкой/`POST /profile`), и подключается к каждому последующему запросу — проверка «что ассистент учитывает автоматически».
+
+При старте по умолчанию создаются 3 профиля-примера: **Ася** (кратко, списки), **Менеджер** (отчёт, сроки), **Разработчик** (точно, без воды). Если их нет в `data/day12-profiles`, `seedIfEmpty()` создаст при первом обращении.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=12"
+# UI: http://localhost:8080/day12.html
+
+# CLI
+./gradlew bootRun --args="--day=12 --profiles"
+./gradlew bootRun --args="--day=12 --create-profile=\"Имя:Тестировщик;Стиль:аккуратно;Формат:чек-листы;Ограничения:без абстракций;Заметки:QA-инженер\""
+./gradlew bootRun --args="--day=12 --start --profile=Менеджер --cli"
+./gradlew bootRun --args="--day=12 --list"
+./gradlew bootRun --args="--day=12 --dialog=<id> --prompt=\"Какие риски у перехода на Java 21?\" --cli"
+./gradlew bootRun --args="--day=12 --dialog=<id> --profile=dev --cli"
+./gradlew bootRun --args="--day=12 --dialog=<id> --remember=\"Бюджет: 10 000$\" --layer=working --cli"
+./gradlew bootRun --args="--day=12 --dialog=<id> --finish --cli"
+```
+
+### Как устроен код дня 12
+
+| Файл | Роль |
+|---|---|
+| `day12/Day12Profile.java` | запись профиля: id, name, style, format, restrictions, notes, createdAt; `usable()`, `display()` |
+| `day12/Day12Personalizer.java` | `block(profile)` — текстовый блок «Профиль пользователя» для системного промпта; `defaultRestrictions(name)` |
+| `day12/Day12ProfileStore.java` | файловое хранилище профилей: `create`, `find`, `findByName`, `all`, `delete`, `seedIfEmpty()` (3 примера) |
+| `day12/Day12DialogProfileStore.java` | связь диалог → профиль: `assign`, `profileIdFor` (JSON в `profileDir/links/`) |
+| `day12/Day12DialogStore.java` | файловое хранилище диалогов дня 12 (реализация `DialogStore`) + `allDialogs()` |
+| `day12/Day12MemoryStoreConfig.java` | бины: `day12MemoryStore`, `day12DialogStore`, `day12ProfileStore`, `day12DialogProfileStore` |
+| `day12/Day12DialogService.java` | сервис: `start(profile)`, `chat`, `setProfile`, `remember`, `createProfile`, `profiles`, `get`, `dialogs`, `finish`; системный промпт = база + блок профиля + блок памяти (рабочая/долговременная); лимит контекста и метрики токенов |
+| `day12/Day12DialogController.java` | `/api/day12/dialogs` (POST/GET), `chat`, `profile`, `remember`, `finish`, `/api/day12/profiles` (GET/POST), `profiles/{id}` |
+| `day12/Day12CliRunner.java` | CLI: `--day=12 --profiles/--create-profile/--start/--profile/--list/--dialog/--prompt/--remember/--finish/--cli` |
+| `static/day12.html` | UI: карточки профилей (выбор и переключение), чат с тегом профиля, панели рабочей и долговременной памяти, форма создания профиля, прошлые диалоги |
+
+Настройки:
+
+```bash
+DAY12_DIALOG_DIR=data/day12-dialogs
+DAY12_PROFILE_DIR=data/day12-profiles
+DAY12_MEMORY_DIR=data/day12-memory
+DAY12_CONTEXT_LIMIT=128000
+DAY12_INPUT_PRICE=0.15
+DAY12_OUTPUT_PRICE=0.60
+DAY12_SHORT_TERM_WINDOW=10
+```
