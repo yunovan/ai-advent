@@ -65,3 +65,10 @@ day12:
   output-price: ${DAY12_OUTPUT_PRICE:0.60}
   short-term-window: ${DAY12_SHORT_TERM_WINDOW:10}
 
+day13:
+  task-dir: ${DAY13_TASK_DIR:data/day13-tasks}
+  context-limit: ${DAY13_CONTEXT_LIMIT:128000}
+  input-price: ${DAY13_INPUT_PRICE:0.15}
+  output-price: ${DAY13_OUTPUT_PRICE:0.60}
+  short-term-window: ${DAY13_SHORT_TERM_WINDOW:10}
+

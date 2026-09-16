@@ -879,3 +879,61 @@ DAY12_INPUT_PRICE=0.15
 DAY12_OUTPUT_PRICE=0.60
 DAY12_SHORT_TERM_WINDOW=10
 ```
+
+---
+
+## День 13. Состояние задачи (state machine)
+
+Агент с формализованным состоянием задачи как конечным автоматом:
+
+- **этап задачи** — один из `planning → execution → validation → done` (планирование → выполнение → проверка → готово);
+- **текущий шаг** — порядковый номер шага внутри задачи;
+- **ожидаемое действие** — что агент должен сделать дальше.
+
+Проверки дня:
+
+- пауза на любом этапе: `--pause` ставит задачу на паузу, `--resume` продолжает — без потери состояния;
+- продолжение без повторных объяснений: системный промпт при `continue` содержит блок «Состояние задачи» (этап, шаг, ожидаемое действие) и инструкцию не повторять уже данные объяснения.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=13"
+# UI: http://localhost:8080/day13.html
+
+# CLI
+./gradlew bootRun --args="--day=13 --create=\"Переезд на Java 21\" --cli"
+./gradlew bootRun --args="--day=13 --list"
+./gradlew bootRun --args="--day=13 --task=<id> --advance --cli"
+./gradlew bootRun --args="--day=13 --task=<id> --step=3 --cli"
+./gradlew bootRun --args="--day=13 --task=<id> --expected-action=\"Проверить сборку\" --cli"
+./gradlew bootRun --args="--day=13 --task=<id> --note=\"План согласован\" --cli"
+./gradlew bootRun --args="--day=13 --task=<id> --pause --cli"
+./gradlew bootRun --args="--day=13 --task=<id> --resume --cli"
+./gradlew bootRun --args="--day=13 --task=<id> --prompt=\"Выполняй следующий шаг\" --cli"
+```
+
+### Как устроен код дня 13
+
+| Файл | Роль |
+|---|---|
+| `day13/Day13Stage.java` | этапы конечного автомата: планирование, выполнение, проверка, готово |
+| `day13/Day13StateMachine.java` | правила переходов `planning → execution → validation → done`, `canTransition`, `next`, терминальный этап |
+| `day13/Day13Task.java` | задача: id, название, этап, шаг, ожидаемое действие, пауза, заметки, история, метки времени |
+| `day13/Day13TaskState.java` | срез состояния задачи для API |
+| `day13/Day13TaskStore.java` | файловое хранилище задач (JSON) |
+| `day13/Day13TaskPrompt.java` | блок «Состояние задачи» для системного промпта + инструкция не повторять объяснения |
+| `day13/Day13TaskService.java` | сервис: `create`, `get`, `list`, `state`, `advance` (по автомату), `setStep`, `setExpectedAction`, `addNote`, `pause`, `resume`, `continueTask` (LLM, лимит контекста, пауза блокирует продолжение) |
+| `day13/Day13TaskController.java` | `/api/day13/tasks` (POST/GET), `tasks/{id}`, `state`, `advance`, `step`, `expected-action`, `note`, `pause`, `resume`, `continue` |
+| `day13/Day13CliRunner.java` | CLI: `--day=13 --create/--list/--task/--advance/--step/--expected-action/--note/--pause/--resume/--prompt/--cli` |
+| `static/day13.html` | UI: создание задачи, карточка состояния с цепочкой этапов, управление этим автоматом, история продолжения |
+
+Настройки:
+
+```bash
+DAY13_TASK_DIR=data/day13-tasks
+DAY13_CONTEXT_LIMIT=128000
+DAY13_INPUT_PRICE=0.15
+DAY13_OUTPUT_PRICE=0.60
+DAY13_SHORT_TERM_WINDOW=10
+```
