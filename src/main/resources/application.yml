@@ -72,3 +72,10 @@ day13:
   output-price: ${DAY13_OUTPUT_PRICE:0.60}
   short-term-window: ${DAY13_SHORT_TERM_WINDOW:10}
 
+day14:
+  invariant-dir: ${DAY14_INVARIANT_DIR:data/day14-invariants}
+  context-limit: ${DAY14_CONTEXT_LIMIT:128000}
+  input-price: ${DAY14_INPUT_PRICE:0.15}
+  output-price: ${DAY14_OUTPUT_PRICE:0.60}
+  short-term-window: ${DAY14_SHORT_TERM_WINDOW:10}
+

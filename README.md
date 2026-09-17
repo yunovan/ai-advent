@@ -937,3 +937,59 @@ DAY13_INPUT_PRICE=0.15
 DAY13_OUTPUT_PRICE=0.60
 DAY13_SHORT_TERM_WINDOW=10
 ```
+
+---
+
+## День 14. Инварианты и ограничения состояния
+
+Проектные инварианты (архитектурные решения, стек, бизнес-правила), хранящиеся отдельно от диалога и принудительно учитываемые ассистентом:
+
+- инварианты хранятся в `data/day14-invariants/` как JSON-файлы;
+- при каждом запросе блок инвариантов встраивается в системный промпт с инструкцией «ОТКАЖИСЬ, если запрос нарушает инвариант»;
+- ассистент явно объясняет отказ и указывает, какой инвариант нарушен.
+
+Проверки дня:
+
+- конфликт запроса и инварианта: «Заменим базу на MySQL?» при инварианте «только PostgreSQL» → отказ с объяснением;
+- объяснение отказа: системный промпт содержит `[стек] База данных: только PostgreSQL` и требование «ОТКАЖИСЬ»;
+- выключенные инварианты не попадают в промпт.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=14"
+# UI: http://localhost:8080/day14.html
+
+# CLI
+./gradlew bootRun --args="--day=14 --category=стек --title=\"База данных\" --description=\"только PostgreSQL\" --cli"
+./gradlew bootRun --args="--day=14 --category=архитектура --title=\"Микросервисы\" --description=\"без монолита\" --cli"
+./gradlew bootRun --args="--day=14 --invariants"
+./gradlew bootRun --args="--day=14 --invariant=<id> --deactivate --cli"
+./gradlew bootRun --args="--day=14 --invariant=<id> --delete --cli"
+./gradlew bootRun --args="--day=14 --prompt=\"Заменим базу на MySQL?\" --cli"
+```
+
+### Как устроен код дня 14
+
+| Файл | Роль |
+|---|---|
+| `day14/Day14Category.java` | категории инвариантов: архитектура, решение, стек, бизнес |
+| `day14/Day14Invariant.java` | инвариант: id, категория, заголовок, описание, активность, дата создания |
+| `day14/Day14InvariantStore.java` | файловое хранилище инвариантов (JSON) |
+| `day14/Day14InvariantPrompt.java` | блок «Инварианты проекта» для системного промпта + инструкция отказывать |
+| `day14/Day14Properties.java` | настройки: `invariantDir`, `contextLimit`, `inputPrice`, `outputPrice`, `shortTermWindow` |
+| `day14/Day14Config.java` | бин `Day14InvariantStore` |
+| `day14/Day14InvariantService.java` | CRUD инвариантов + `advise(request, contextLimit)` (LLM, лимит контекста, active-только) |
+| `day14/Day14InvariantController.java` | `/api/day14/invariants` (POST/GET), `active`, `invariants/{id}`, `deactivate`, `DELETE`, `/api/day14/advise` |
+| `day14/Day14CliRunner.java` | CLI: `--day=14 --category/--title/--description/--invariants/--invariant/--deactivate/--delete/--prompt/--cli` |
+| `static/day14.html` | UI: добавление инвариантов по категориям, список с выключением, чат-проверка (выделение отказов) |
+
+Настройки:
+
+```bash
+DAY14_INVARIANT_DIR=data/day14-invariants
+DAY14_CONTEXT_LIMIT=128000
+DAY14_INPUT_PRICE=0.15
+DAY14_OUTPUT_PRICE=0.60
+DAY14_SHORT_TERM_WINDOW=10
+```
