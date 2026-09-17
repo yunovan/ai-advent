@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 14</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0f1220; --card: #1a2134; --line: #2c3550; --text: #eef2ff; --muted: #9aa6c4; --accent: #8a8aff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #221f3d, var(--bg) 55%); color: var(--text); }
+        main { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0d101d; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #2c3550; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #2c3550; color: var(--text); }
+        button.warn { background: var(--warn); color: #0d101d; }
+        button.danger { background: var(--danger); color: #0d101d; }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #131a2e; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        textarea { min-height: 64px; resize: vertical; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .row.three { grid-template-columns: 1fr 1fr 1fr; }
+        .row.smallRow { grid-template-columns: 2fr 1fr; }
+        .invariants { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+        .inv { padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+        .inv.off { opacity: 0.55; }
+        .inv b { color: var(--text); }
+        .inv .cat { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); font-size: 11px; margin-right: 8px; }
+        .inv .desc { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .inv .cid { color: var(--muted); font-size: 11px; margin-top: 6px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .transcript { margin-top: 16px; max-height: 36vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); white-space: pre-wrap; font-size: 15px; line-height: 1.5; }
+        .msg .who { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+        .msg.user { background: #1b2340; } .msg.assistant { background: #131a2e; }
+        .msg.refusal { border-color: var(--warn); }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #131a2e; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/">День 1</a><a href="/day2.html">День 2</a><a href="/day3.html">День 3</a>
+        <a href="/day4.html">День 4</a><a href="/day5.html">День 5</a><a href="/day6.html">День 6</a>
+        <a href="/day7.html">День 7</a><a href="/day8.html">День 8</a><a href="/day9.html">День 9</a>
+        <a href="/day10.html">День 10</a><a href="/day11.html">День 11</a><a href="/day12.html">День 12</a>
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a>
+    </nav>
+    <span class="badge">AI Advent · Day 14</span>
+    <h1>Инварианты и ограничения состояния</h1>
+    <p class="lead">Проектные инварианты живут отдельно от диалога. Ассистент обязан учитывать их в рассуждениях и отказываться предлагать решения, которые их нарушают.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Добавить инвариант</h3>
+        <div class="row three">
+            <select id="category">
+                <option value="стек">стек</option>
+                <option value="архитектура">архитектура</option>
+                <option value="решение">решение</option>
+                <option value="бизнес">бизнес</option>
+            </select>
+            <input id="title" type="text" placeholder="Заголовок (например: База данных)" autocomplete="off">
+            <input id="desc" type="text" placeholder="Ограничение (например: только PostgreSQL)" autocomplete="off">
+        </div>
+        <div class="row">
+            <span></span>
+            <button class="green" id="addBtn" type="button">Добавить инвариант</button>
+        </div>
+        <div class="invariants" id="invariants"></div>
+
+        <div class="state" id="state" style="display:none"></div>
+
+        <div class="row">
+            <input id="request" type="text" placeholder="Спросите ассистента: например «Заменим базу на MySQL?»" autocomplete="off">
+            <button id="askBtn" type="button">Спросить агента</button>
+        </div>
+        <div class="transcript" id="transcript"></div>
+        <div class="meta" id="meta">Сначала добавьте инварианты, затем задавайте вопросы — ассистент обязан соблюдать их.</div>
+    </div>
+
+    <div class="hint">Сценарий видео: 1) добавьте инварианты: «стек / База данных / только PostgreSQL», «архитектура / Микросервисы / без монолита», «бизнес / Скидки / максимум 10%»; 2) спросите «Заменим базу данных на MySQL?» — ассистент должен отказаться и объяснить, какой инвариант нарушен; 3) спросите «Добавим индекс по email?» — решение в рамках стека будет принято. CLI: <code>./gradlew bootRun --args="--day=14 --category=стек --title=\"База данных\" --description=\"только PostgreSQL\" --cli"</code>, <code>--day=14 --invariants</code>, <code>--day=14 --prompt=\"Заменим на MySQL?\" --cli</code>.</div>
+</main>
+<script>
+    const invEl = document.getElementById("invariants");
+    const stateEl = document.getElementById("state");
+    const transcriptEl = document.getElementById("transcript");
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function loadInvariants() {
+        const resp = await fetch("/api/day14/invariants").catch(() => null);
+        if (!resp || !resp.ok) return;
+        render(await resp.json());
+    }
+
+    function render(invariants) {
+        invEl.innerHTML = "";
+        if (!invariants.length) {
+            invEl.innerHTML = "<div style='color:var(--muted)'>Инвариантов пока нет. Добавьте первый.</div>";
+            return;
+        }
+        invariants.forEach(i => {
+            const div = document.createElement("div");
+            div.className = "inv" + (i.active ? "" : " off");
+            const line = document.createElement("div");
+            const cat = document.createElement("span"); cat.className = "cat"; cat.textContent = i.category;
+            const title = document.createElement("b"); title.textContent = i.title;
+            line.appendChild(cat); line.appendChild(title);
+            if (!i.active) {
+                const off = document.createElement("span"); off.textContent = " · выключен"; off.style.color = "var(--muted)";
+                line.appendChild(off);
+            }
+            const desc = document.createElement("div"); desc.className = "desc"; desc.textContent = i.description;
+            const cid = document.createElement("div"); cid.className = "cid"; cid.textContent = "id: " + i.id;
+            const offBtn = document.createElement("button"); offBtn.className = "small";
+            offBtn.type = "button"; offBtn.textContent = i.active ? "Выключить" : "Включить";
+            offBtn.addEventListener("click", async () => {
+                if (offBtn.disabled) return;
+                offBtn.disabled = true;
+                const resp = await fetch("/api/day14/invariants/" + encodeURIComponent(i.id) + "/deactivate", {method:"POST"});
+                if (resp.ok) { await loadInvariants(); toast(i.active ? "Инвариант выключен (стал не обязательным)" : "Инвариант снова активен"); }
+                else { const d = await resp.json(); toast(d.error || "Ошибка"); }
+                offBtn.disabled = false;
+            });
+            div.appendChild(line); div.appendChild(desc); div.appendChild(cid); div.appendChild(offBtn);
+            invEl.appendChild(div);
+        });
+    }
+
+    async function add() {
+        const category = document.getElementById("category").value;
+        const title = document.getElementById("title").value.trim();
+        const desc = document.getElementById("desc").value.trim();
+        if (!title) { toast("Введите заголовок инварианта."); return; }
+        addBtn.disabled = true;
+        try {
+            const resp = await fetch("/api/day14/invariants", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({category, title, description: desc || title})});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail); return; }
+            document.getElementById("title").value = ""; document.getElementById("desc").value = "";
+            await loadInvariants();
+            toast("Инвариант добавлен: [" + data.category + "] " + data.title);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { addBtn.disabled = false; }
+    }
+
+    function appendMessage(role, content, refusal) {
+        const div = document.createElement("div");
+        div.className = "msg " + role + (refusal ? " refusal" : "");
+        const who = document.createElement("div"); who.className = "who";
+        who.textContent = role === "user" ? "вы" : "агент";
+        const body = document.createElement("div"); body.textContent = content;
+        div.appendChild(who); div.appendChild(body);
+        transcriptEl.appendChild(div);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    async function ask() {
+        const request = document.getElementById("request").value.trim();
+        if (!request) return;
+        askBtn.disabled = true;
+        toast("Агент проверяет инварианты…");
+        try {
+            const resp = await fetch("/api/day14/advise", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({request})});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            document.getElementById("request").value = "";
+            appendMessage("user", request);
+            const refusal = /отказ|не могу|наруша|инвариант|запрещ/i.test(data.content);
+            appendMessage("assistant", data.content, refusal);
+            const active = (data.invariants || []).length;
+            stateEl.style.display = "block";
+            stateEl.innerHTML = "<span class='activeLine'>Учтено инвариантов: " + active + "</span>"
+                + "<br>промпт ~" + data.promptTokens + " токенов · модель " + (data.model || "—")
+                + " · " + (data.elapsedMs || 0) + " мс"
+                + (data.exceeded ? "<br>ПРЕВЫШЕН ЛИМИТ КОНТЕКСТА!" : "")
+                + (refusal ? "<br><span style='color:var(--warn)'>Похоже, ассистент отклонил запрос из-за инварианта</span>" : "");
+            toast((data.model || "") + " · " + (data.elapsedMs || 0) + " мс · промпт ~" + data.promptTokens
+                + (data.exceeded ? " · ПРЕВЫШЕН ЛИМИТ!" : ""));
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { askBtn.disabled = false; }
+    }
+
+    document.getElementById("addBtn").addEventListener("click", add);
+    document.getElementById("desc").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+    document.getElementById("askBtn").addEventListener("click", ask);
+    document.getElementById("request").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); ask(); } });
+
+    (async function init() {
+        await loadInvariants();
+        toast("Добавьте инварианты, затем задавайте вопросы. Ассистент обязан их соблюдать.");
+    })();
+</script>
+</body>
+</html>
