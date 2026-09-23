@@ -26,6 +26,14 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-restclient")
+    // Day 16 MCP uses Jackson 2.x (com.fasterxml.jackson.databind); Spring Boot 4
+    // ships Jackson 3 (tools.jackson.*), which does not contain that package.
+    implementation("com.fasterxml.jackson.core:jackson-core:2.21.5") {
+        version { strictly("2.21.5") }
+    }
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.5") {
+        version { strictly("2.21.5") }
+    }
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-restclient-test")
 }

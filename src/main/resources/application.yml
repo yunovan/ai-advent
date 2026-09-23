@@ -86,3 +86,9 @@ day15:
   output-price: ${DAY15_OUTPUT_PRICE:0.60}
   short-term-window: ${DAY15_SHORT_TERM_WINDOW:10}
 
+day16:
+  server-port: ${DAY16_SERVER_PORT:8090}
+  path: ${DAY16_PATH:/mcp}
+  name: ${DAY16_NAME:ai-advent-mcp}
+  version: ${DAY16_VERSION:0.1.0}
+

@@ -1011,6 +1011,21 @@ DAY14_SHORT_TERM_WINDOW=10
 - реакция ассистента детерминирована и происходит до вызова модели;
 - продолжение после паузы сохраняет все разрешённые переходы текущего состояния.
 
+## День 16. Подключение MCP
+
+Совместно с приложением стартует собственный MCP-сервер (Model Context Protocol) на порту 8090, а приложение подключается к нему как MCP-клиент:
+
+- MCP-сервер поднимается вместе с приложением (`@PostConstruct`) на `http://localhost:8090/mcp`;
+- клиент устанавливает MCP-соединение (`initialize` → `initialized`) и получает от сервера список доступных инструментов (`tools/list`);
+- регистрируются два демо-инструмента: `day16_sum` (сложение целых чисел) и `day16_upper` (текст в верхний регистр);
+- реализован минимальный поднабор протокола MCP поверх JSON-RPC (Streamable HTTP): `initialize`, `notifications/initialized`, `ping`, `tools/list`, `tools/call`.
+
+Проверки дня:
+
+- соединение устанавливается: `initialize` возвращает версию протокола, capabilities и `serverInfo`, выдаётся идентификатор сессии;
+- список инструментов корректно возвращается: `tools/list` возвращает `day16_sum` и `day16_upper` с описаниями и JSON Schema;
+- вызов `tools/call` исполняет инструменты, ошибки (неизвестный инструмент, отсутствующие аргументы) помечаются `isError=true`.
+
 ### Запуск
 
 ```bash
@@ -1052,6 +1067,23 @@ DAY14_SHORT_TERM_WINDOW=10
 | `static/day15.html` | UI: карточка состояния с цепочкой этапов, кнопки только разрешённых переходов, пауза/продолжение, история |
 | `day15/Day15TransitionRequest.java` и др. | DTO запросов |
 
+### Как устроен код дня 16
+
+| Файл | Роль |
+|---|---|
+| `day16/Day16Properties.java` | настройки: `serverPort`, `path`, `name`, `version` |
+| `day16/Day16Tool.java` | инструмент MCP: имя, описание, JSON Schema, обработчик |
+| `day16/Day16Connection.java` | установленное MCP-соединение: протокол, сервер, сессия |
+| `day16/Day16ToolInfo.java` | название и описание инструмента из `tools/list` |
+| `day16/Day16ToolResult.java` | результат вызова инструмента: текст, признак ошибки |
+| `day16/Day16McpException.java` | ошибки MCP (соединение, протокол, HTTP) |
+| `day16/Day16McpServer.java` | MCP-сервер на JDK `HttpServer`: JSON-RPC `initialize`/`ping`/`tools/list`/`tools/call`, сессии |
+| `day16/Day16McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day16/Day16McpService.java` | сервис: ленивое подключение и переподключение при сбое |
+| `day16/Day16McpController.java` | `/api/day16/health`, `/api/day16/tools`, `/api/day16/call` (502 при недоступном MCP) |
+| `day16/Day16CliRunner.java` | CLI: `--day=16 --check/--tools/--call=<имя> [--arg=k=v ...]` |
+| `static/day16.html` | UI: проверка соединения, список инструментов, вызов инструмента |
+
 Настройки:
 
 ```bash
@@ -1060,4 +1092,11 @@ DAY15_CONTEXT_LIMIT=128000
 DAY15_INPUT_PRICE=0.15
 DAY15_OUTPUT_PRICE=0.60
 DAY15_SHORT_TERM_WINDOW=10
+```
+
+```bash
+DAY16_SERVER_PORT=8090
+DAY16_PATH=/mcp
+DAY16_NAME=ai-advent-mcp
+DAY16_VERSION=0.1.0
 ```
