@@ -996,6 +996,21 @@ DAY14_SHORT_TERM_WINDOW=10
 
 ---
 
+## День 15. Контролируемые переходы состояний
+
+Задача живёт в конечном наборе состояний с явно заданными разрешёнными переходами (управляемый граф, а не «любое движение вперёд»):
+
+- состояния: `планирование → план утверждён → выполнение → проверка → готово`;
+- разрешённые переходы — рёбра графа: план утверждается, затем выполняется, затем проверяется, затем завершается; разрешён и контролируемый возврат (план на доработку, реализация на исправление);
+- «перепрыгнуть» этап нельзя: реализация невозможна без утверждённого плана, завершение — только после проверки;
+- пауза замораживает состояние; после `resume` продолжение и переходы корректны.
+
+Проверки дня:
+
+- попытка перейти в недопустимое состояние (например `планирование → выполнение`) отклоняется с объяснением и списком разрешённых переходов;
+- реакция ассистента детерминирована и происходит до вызова модели;
+- продолжение после паузы сохраняет все разрешённые переходы текущего состояния.
+
 ## День 16. Подключение MCP
 
 Совместно с приложением стартует собственный MCP-сервер (Model Context Protocol) на порту 8090, а приложение подключается к нему как MCP-клиент:
@@ -1014,16 +1029,43 @@ DAY14_SHORT_TERM_WINDOW=10
 ### Запуск
 
 ```bash
-./gradlew bootRun --args="--day=16"
-# UI: http://localhost:8080/day16.html
-# MCP-сервер: http://localhost:8090/mcp
+./gradlew bootRun --args="--day=15"
+# UI: http://localhost:8080/day15.html
 
-# CLI (подключение + список инструментов)
-./gradlew bootRun --args="--day=16 --check --cli"
-./gradlew bootRun --args="--day=16 --tools --cli"
-./gradlew bootRun --args="--day=16 --call=day16_sum --arg=a=6 --arg=b=7 --cli"
-./gradlew bootRun --args="--day=16 --call=day16_upper --arg=text=привет --cli"
+# CLI
+./gradlew bootRun --args="--day=15 --create=\"Переезд на Java 21\" --cli"
+./gradlew bootRun --args="--day=15 --list"
+./gradlew bootRun --args="--day=15 --task=<id> --transition=выполнение --cli"
+#   → Недопустимый переход: 'планирование' → 'выполнение' ...
+./gradlew bootRun --args="--day=15 --task=<id> --advance --cli"
+#   → планирование → план утверждён
+./gradlew bootRun --args="--day=15 --task=<id> --transition=выполнение --cli"
+./gradlew bootRun --args="--day=15 --task=<id> --transition=готово --cli"
+#   → Недопустимый переход: 'выполнение' → 'готово' ...
+./gradlew bootRun --args="--day=15 --task=<id> --advance --cli"
+#   → выполнение → проверка
+./gradlew bootRun --args="--day=15 --task=<id> --transition=готово --cli"
+#   → проверка → готово (завершено)
+./gradlew bootRun --args="--day=15 --task=<id> --pause --cli"
+./gradlew bootRun --args="--day=15 --task=<id> --resume --cli"
+./gradlew bootRun --args="--day=15 --task=<id> --prompt=\"Продолжай работу\" --cli"
 ```
+
+### Как устроен код дня 15
+
+| Файл | Роль |
+|---|---|
+| `day15/Day15Stage.java` | состояния задачи: планирование, план утверждён, выполнение, проверка, готово |
+| `day15/Day15StateMachine.java` | граф разрешённых переходов (`canTransition`, `transition`, `allowedTargets`, `nextForward`), запрет перепрыгивания, сообщение о недопустимом переходе |
+| `day15/Day15Task.java` | задача с состоянием и историей переходов |
+| `day15/Day15TaskState.java` | срез состояния + список разрешённых переходов |
+| `day15/Day15TaskStore.java` | файловое хранилище задач (JSON) |
+| `day15/Day15TaskPrompt.java` | блок состояния с разрешёнными переходами + правила «не перепрыгивай» |
+| `day15/Day15TaskService.java` | `create`, `transition(taskId, target)` — детерминированная проверка по графу, `advance`, `setStep`, `setExpectedAction`, `addNote`, `pause`, `resume`, `continueTask` (LLM, лимит контекста, пауза блокирует переходы и продолжение) |
+| `day15/Day15TaskController.java` | `/api/day15/tasks` (POST/GET), `state`, `transition`, `advance`, `step`, `expected-action`, `note`, `pause`, `resume`, `continue` |
+| `day15/Day15CliRunner.java` | CLI: `--day=15 --create/--list/--task/--transition/--advance/--step/--expected-action/--note/--pause/--resume/--prompt/--cli` |
+| `static/day15.html` | UI: карточка состояния с цепочкой этапов, кнопки только разрешённых переходов, пауза/продолжение, история |
+| `day15/Day15TransitionRequest.java` и др. | DTO запросов |
 
 ### Как устроен код дня 16
 
@@ -1043,6 +1085,14 @@ DAY14_SHORT_TERM_WINDOW=10
 | `static/day16.html` | UI: проверка соединения, список инструментов, вызов инструмента |
 
 Настройки:
+
+```bash
+DAY15_TASK_DIR=data/day15-tasks
+DAY15_CONTEXT_LIMIT=128000
+DAY15_INPUT_PRICE=0.15
+DAY15_OUTPUT_PRICE=0.60
+DAY15_SHORT_TERM_WINDOW=10
+```
 
 ```bash
 DAY16_SERVER_PORT=8090

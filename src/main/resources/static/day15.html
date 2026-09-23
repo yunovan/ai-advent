@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 13</title>
+    <title>AI Advent — День 15</title>
     <style>
-        :root { color-scheme: dark; --bg: #10131a; --card: #1a2030; --line: #2c3548; --text: #eef2ff; --muted: #9aa6bf; --accent: #7aa2ff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        :root { color-scheme: dark; --bg: #0e1418; --card: #19222a; --line: #2b3b47; --text: #eef4f8; --muted: #9fb2c0; --accent: #5cc8ff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
         * { box-sizing: border-box; }
-        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1d2740, var(--bg) 55%); color: var(--text); }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #173244, var(--bg) 55%); color: var(--text); }
         main { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
         .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
         .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
@@ -15,34 +15,34 @@
         h1 { margin: 16px 0 8px; font-size: 36px; }
         p.lead { color: var(--muted); margin-bottom: 28px; }
         .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
-        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0d1320; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
-        button.secondary { background: #2c3548; color: var(--text); }
-        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #2c3548; color: var(--text); }
-        button.warn { background: var(--warn); color: #0d1320; }
-        button.green { background: var(--ok); color: #0d1320; }
-        button.danger { background: var(--danger); color: #0d1320; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #08141e; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #2b3b47; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #2b3b47; color: var(--text); }
+        button.warn { background: var(--warn); color: #08141e; }
+        button.green { background: var(--ok); color: #08141e; }
+        button.danger { background: var(--danger); color: #08141e; }
         button:disabled { opacity: 0.55; cursor: not-allowed; }
-        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #121826; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a22; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
         .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
         .row.smallRow { grid-template-columns: 2fr 1fr; }
         .tasks { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
         .task { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.4; }
         .task:hover { border-color: var(--accent); }
-        .task.active { border-color: var(--accent); background: #16203a; }
+        .task.active { border-color: var(--accent); background: #142434; }
         .task b { flex: 1; }
         .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
         .state .stageLine { font-size: 16px; }
         .etapok { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0 10px; }
         .etap { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; }
-        .etap.active { border-color: var(--accent); background: #16203a; color: var(--accent); font-weight: 700; }
+        .etap.active { border-color: var(--accent); background: #142434; color: var(--accent); font-weight: 700; }
         .note { margin-top: 4px; padding: 2px 10px; border-left: 3px solid var(--accent); color: var(--muted); font-size: 13px; }
         .transcript { margin-top: 16px; max-height: 32vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .msg { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); white-space: pre-wrap; font-size: 15px; line-height: 1.5; }
         .msg .who { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-        .msg.user { background: #16203a; } .msg.assistant { background: #121826; }
+        .msg.user { background: #142434; } .msg.assistant { background: #101a22; }
         .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
         .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
-        .hint code { background: #121826; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .hint code { background: #101a22; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
     </style>
 </head>
 <body>
@@ -54,9 +54,9 @@
         <a href="/day10.html">День 10</a><a href="/day11.html">День 11</a><a href="/day12.html">День 12</a>
         <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a>
     </nav>
-    <span class="badge">AI Advent · Day 13</span>
-    <h1>Состояние задачи (state machine)</h1>
-    <p class="lead">Агент с формализованным состоянием задачи: этап (планирование → выполнение → проверка → готово), текущий шаг и ожидаемое действие. Пауза на любом этапе и продолжение без повторных объяснений.</p>
+    <span class="badge">AI Advent · Day 15</span>
+    <h1>Контролируемые переходы состояний</h1>
+    <p class="lead">У задачи — явные состояния и разрешённые переходы. Ассистент не может «перепрыгнуть» этап: реализация — только после утверждённого плана, завершение — только после проверки. Пауза сохраняет состояние, продолжение после неё корректно.</p>
     <div class="card">
         <div class="row">
             <input id="newTitle" type="text" placeholder="Название новой задачи…" autocomplete="off">
@@ -67,10 +67,11 @@
         <div id="workArea" style="display:none">
             <div class="state" id="state"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button id="advanceBtn" type="button">Следующий этап</button>
+                <button id="advanceBtn" type="button">Следующее состояние</button>
                 <button id="pauseBtn" type="button" class="warn">Пауза</button>
                 <button id="resumeBtn" type="button" class="secondary">Продолжить</button>
             </div>
+            <div class="transitions" id="transitions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;"></div>
             <div class="row smallRow">
                 <input id="expected" type="text" placeholder="Ожидаемое действие…" autocomplete="off">
                 <button id="expectedBtn" type="button" class="secondary">Задать действие</button>
@@ -88,21 +89,22 @@
                 <button id="continueBtn" type="button">Продолжить</button>
             </div>
             <div class="transcript" id="transcript"></div>
-            <div class="meta" id="meta">Создайте задачу, затем управляйте этапами и шагами. Пауза доступна на любом этапе.</div>
+            <div class="meta" id="meta">Создайте задачу, затем управляйте переходами между состояниями. Разрешённые переходы показаны кнопками.</div>
         </div>
     </div>
 
-    <div class="hint">Сценарий видео: 1) создайте задачу «Переезд на Java 21»; 2) нажмите «Следующий этап» — состояние перейдёт в «выполнение»; 3) нажмите «Пауза», затем «Продолжить», отправьте «Продолжай работу» — агент продолжит без повторных вводных; 4) пройдите этапы до «готово». Цепочка: планирование → выполнение → проверка → готово. CLI: <code>./gradlew bootRun --args="--day=13 --create=\"Задача\" --cli"</code>, <code>--task=&lt;id&gt; --advance --cli</code>, <code>--task=&lt;id&gt; --pause --cli</code>, <code>--task=&lt;id&gt; --prompt=\"...\" --cli</code>.</div>
+    <div class="hint">Сценарий видео: 1) создайте задачу «Переезд на Java 21»; 2) попробуйте переход «выполнение» прямо из «планирование» — ассистент его отклонит (нельзя до утверждённого плана); 3) пройдите «план утверждён → выполнение → проверка → готово»; 4) нажмите «Пауза», затем «Продолжить» и отправьте «Продолжай работу» — агент продолжит в том же состоянии. Цепочка: планирование → план утверждён → выполнение → проверка → готово. CLI: <code>./gradlew bootRun --args="--day=15 --create=\"Задача\" --cli"</code>, <code>--task=&lt;id&gt; --transition=выполнение --cli</code> (отклонится), <code>--task=&lt;id&gt; --advance --cli</code>, <code>--task=&lt;id&gt; --pause --cli</code>, <code>--task=&lt;id&gt; --prompt=\"...\" --cli</code>.</div>
 </main>
 <script>
-    const STAGES = ["PLANNING", "EXECUTION", "VALIDATION", "DONE"];
-    const STAGE_DISPLAY = {PLANNING:"планирование", EXECUTION:"выполнение", VALIDATION:"проверка", DONE:"готово"};
+    const CHAIN = ["PLANNING", "PLAN_APPROVED", "EXECUTION", "VALIDATION", "DONE"];
+    const STAGE_DISPLAY = {PLANNING:"планирование", PLAN_APPROVED:"план утверждён", EXECUTION:"выполнение", VALIDATION:"проверка", DONE:"готово"};
     const tasksEl = document.getElementById("tasks");
     const stateEl = document.getElementById("state");
+    const transitionsEl = document.getElementById("transitions");
     const workArea = document.getElementById("workArea");
     const transcriptEl = document.getElementById("transcript");
     const metaEl = document.getElementById("meta");
-    const KEY = "ai-advent-day13-task";
+    const KEY = "ai-advent-day15-task";
     let tasks = [];
     let currentId = localStorage.getItem(KEY);
 
@@ -110,7 +112,7 @@
     function toast(msg) { metaEl.textContent = msg; }
 
     async function loadTasks() {
-        const resp = await fetch("/api/day13/tasks").catch(() => null);
+        const resp = await fetch("/api/day15/tasks").catch(() => null);
         if (!resp || !resp.ok) return;
         tasks = await resp.json();
         renderTasks();
@@ -136,7 +138,7 @@
 
     async function loadState() {
         if (!currentId) return;
-        const resp = await fetch("/api/day13/tasks/" + encodeURIComponent(currentId) + "/state");
+        const resp = await fetch("/api/day15/tasks/" + encodeURIComponent(currentId) + "/state");
         if (!resp.ok) { localStorage.removeItem(KEY); currentId = null; renderTasks(); return; }
         const s = await resp.json();
         workArea.style.display = "block";
@@ -145,15 +147,16 @@
     }
 
     function renderState(s) {
-        let etapy = STAGES.map(st => {
+        let etapy = CHAIN.map(st => {
             const active = st === s.stage ? " active" : "";
-            const done = STAGES.indexOf(st) < STAGES.indexOf(s.stage) ? " ✅" : "";
+            const done = CHAIN.indexOf(st) < CHAIN.indexOf(s.stage) ? " ✅" : "";
             return "<span class='etap" + active + "'>" + STAGE_DISPLAY[st] + done + "</span>";
         }).join("");
         let html = "<span class='stageLine'>" + esc(s.title) + "</span>";
         html += "<div class='etapok'>" + etapy + "</div>";
         html += "Шаг: <b>" + s.step + "</b><br>";
         html += "Ожидаемое действие: <b>" + esc(s.expectedAction || "—") + "</b><br>";
+        html += "Разрешённые переходы: <b>" + (s.allowedTransitions || []).map(st => STAGE_DISPLAY[st]).join(", ") + "</b><br>";
         html += "Пауза: <b>" + (s.paused ? "да" : "нет") + "</b>";
         if (s.finishedAt) html += "<br>Завершена: да";
         if (s.notes && s.notes.length) {
@@ -163,13 +166,31 @@
         stateEl.innerHTML = html;
         document.getElementById("pauseBtn").disabled = s.stage === "DONE" || s.paused;
         document.getElementById("resumeBtn").disabled = s.stage === "DONE" || !s.paused;
-        document.getElementById("advanceBtn").disabled = s.stage === "DONE";
+        document.getElementById("advanceBtn").disabled = s.stage === "DONE" || s.paused;
         document.getElementById("continueBtn").disabled = s.paused || s.stage === "DONE";
         document.getElementById("request").disabled = s.paused || s.stage === "DONE";
+        renderTransitions(s);
+    }
+
+    function renderTransitions(s) {
+        transitionsEl.innerHTML = "";
+        if (s.stage === "DONE") {
+            const span = document.createElement("span"); span.style.color = "var(--muted)"; span.textContent = "задача завершена";
+            transitionsEl.appendChild(span);
+            return;
+        }
+        (s.allowedTransitions || []).forEach(target => {
+            const btn = document.createElement("button");
+            btn.type = "button"; btn.className = "small";
+            btn.textContent = "→ " + STAGE_DISPLAY[target];
+            btn.disabled = s.paused;
+            btn.addEventListener("click", () => action("Переход в " + STAGE_DISPLAY[target], "/transition", {target}));
+            transitionsEl.appendChild(btn);
+        });
     }
 
     async function loadTranscript() {
-        const resp = await fetch("/api/day13/tasks/" + encodeURIComponent(currentId)).catch(() => null);
+        const resp = await fetch("/api/day15/tasks/" + encodeURIComponent(currentId)).catch(() => null);
         if (!resp || !resp.ok) { transcriptEl.innerHTML = ""; return; }
         const t = await resp.json();
         transcriptEl.innerHTML = "";
@@ -198,7 +219,7 @@
 
     async function post(path, body) {
         const opts = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {method:"POST"};
-        const resp = await fetch("/api/day13/tasks/" + encodeURIComponent(currentId) + path, opts);
+        const resp = await fetch("/api/day15/tasks/" + encodeURIComponent(currentId) + path, opts);
         return resp;
     }
 
@@ -218,7 +239,7 @@
         if (!title) { toast("Введите название задачи."); return; }
         createBtn.disabled = true;
         try {
-            const resp = await fetch("/api/day13/tasks", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({title})});
+            const resp = await fetch("/api/day15/tasks", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({title})});
             const data = await resp.json();
             if (!resp.ok) { toast(data.error || data.detail); return; }
             document.getElementById("newTitle").value = "";
@@ -244,15 +265,16 @@
             renderState(data.state);
             toast((data.model ? data.model + " · " : "") + (data.elapsedMs || 0) + " мс · промпт ~" + data.promptTokens
                 + (data.exceeded ? " · ПРЕВЫШЕН ЛИМИТ!\n" + data.content : "")
-                + "\nэтап: " + data.state.stage + " · шаг: " + data.state.step
-                + " · пауза: " + (data.state.paused ? "да" : "нет"));
+                + "\nсостояние: " + (data.state && data.state.stage ? STAGE_DISPLAY[data.state.stage] : data.state.stage)
+                + " · шаг: " + (data.state && data.state.step)
+                + " · пауза: " + (data.state && data.state.paused ? "да" : "нет"));
         } catch(e) { toast("Ошибка: " + e); }
         finally { continueBtn.disabled = false; }
     }
 
     document.getElementById("createBtn").addEventListener("click", create);
     document.getElementById("newTitle").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); create(); } });
-    document.getElementById("advanceBtn").addEventListener("click", () => action("Переход на следующий этап", "/advance", null));
+    document.getElementById("advanceBtn").addEventListener("click", () => action("Переход в следующее состояние", "/advance", null));
     document.getElementById("pauseBtn").addEventListener("click", () => action("Пауза", "/pause", null));
     document.getElementById("resumeBtn").addEventListener("click", () => action("Продолжить", "/resume", null));
     document.getElementById("expectedBtn").addEventListener("click", () => {

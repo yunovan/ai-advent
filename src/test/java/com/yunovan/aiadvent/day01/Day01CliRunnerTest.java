@@ -156,6 +156,16 @@ class Day01CliRunnerTest {
     }
 
     @Test
+    void skipsWhenDayIsFifteen() {
+        LlmClient llmClient = mock(LlmClient.class);
+        Day01CliRunner runner = new Day01CliRunner(llmClient, mock(ApplicationContext.class));
+
+        runner.run(new DefaultApplicationArguments("--day=15", "--prompt=Hello"));
+
+        verifyNoInteractions(llmClient);
+    }
+
+    @Test
     void skipsWhenDayIsSixteen() {
         LlmClient llmClient = mock(LlmClient.class);
         Day01CliRunner runner = new Day01CliRunner(llmClient, mock(ApplicationContext.class));

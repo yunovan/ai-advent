@@ -79,6 +79,13 @@ day14:
   output-price: ${DAY14_OUTPUT_PRICE:0.60}
   short-term-window: ${DAY14_SHORT_TERM_WINDOW:10}
 
+day15:
+  task-dir: ${DAY15_TASK_DIR:data/day15-tasks}
+  context-limit: ${DAY15_CONTEXT_LIMIT:128000}
+  input-price: ${DAY15_INPUT_PRICE:0.15}
+  output-price: ${DAY15_OUTPUT_PRICE:0.60}
+  short-term-window: ${DAY15_SHORT_TERM_WINDOW:10}
+
 day16:
   server-port: ${DAY16_SERVER_PORT:8090}
   path: ${DAY16_PATH:/mcp}
