@@ -5,3 +5,7 @@ llm:
   http:
     customize-client: false
     max-attempts: 1
+
+day16:
+  server-port: 0
+  path: /mcp
