@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 16</title>
+    <title>AI Advent — День 17</title>
     <style>
         :root { color-scheme: dark; --bg: #0f1220; --card: #1a2134; --line: #2c3550; --text: #eef2ff; --muted: #9aa6c4; --accent: #8a8aff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
         * { box-sizing: border-box; }
@@ -21,19 +21,23 @@
         button:disabled { opacity: 0.55; cursor: not-allowed; }
         input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #131a2e; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
         select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 90px; resize: vertical; }
         .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
-        .row.three { grid-template-columns: 1fr 1fr 1fr; }
-        .params { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
         .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
         .activeLine { color: var(--ok); font-weight: 700; }
         .tools { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
         .tool { padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
         .tool b { color: var(--text); }
         .tool .desc { color: var(--muted); font-size: 13px; margin-top: 4px; }
-        .tool .cid { color: var(--ok); font-size: 12px; margin-top: 6px; }
+        .agent { margin-top: 14px; }
+        .agent .toolUse { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+        .agent .toolUse b { color: var(--accent); }
+        .agent pre { background: #0e1425; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
         .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
         .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
         .hint code { background: #131a2e; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .examples { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .examples button { text-align: left; margin: 0; }
     </style>
 </head>
 <body>
@@ -45,12 +49,12 @@
         <a href="/day10.html">День 10</a><a href="/day11.html">День 11</a><a href="/day12.html">День 12</a>
         <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a>
     </nav>
-    <span class="badge">AI Advent · Day 16</span>
-    <h1>Подключение MCP</h1>
-    <p class="lead">Вместе с приложением стартует собственный MCP-сервер на порту 8090, а приложение подключается к нему как MCP-клиент и получает список доступных инструментов.</p>
+    <span class="badge">AI Advent · Day 17</span>
+    <h1>Первый инструмент MCP</h1>
+    <p class="lead">Собственный MCP-сервер «трекер» (mock Яндекс.Трекера) с тремя инструментами. Агент разбирает запрос, сам выбирает инструмент, вызывает его по MCP и формулирует ответ.</p>
 
     <div class="card">
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Соединение с MCP</h3>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Соединение агента с MCP</h3>
         <div class="row">
             <span></span>
             <button id="checkBtn" type="button">Проверить соединение</button>
@@ -61,55 +65,52 @@
         <button class="secondary" id="toolsBtn" type="button">Список инструментов</button>
         <div class="tools" id="tools"></div>
 
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Вызвать инструмент</h3>
-        <div class="row three">
-            <select id="tool"><option value="day16_sum">day16_sum — сложить два числа</option><option value="day16_upper">day16_upper — текст в верхний регистр</option></select>
-            <input id="p1" type="text" placeholder="a (первое число)" autocomplete="off">
-            <input id="p2" type="text" placeholder="b (второе число)" autocomplete="off">
-        </div>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент вызывает инструмент</h3>
+        <textarea id="prompt" placeholder="Напишите запрос, например: создай задачу Привезти стол"></textarea>
         <div class="row">
             <span></span>
-            <button id="callBtn" type="button">Вызвать</button>
+            <button id="agentBtn" type="button">Выполнить через агента</button>
         </div>
-        <div class="state" id="callResult" style="display:none"></div>
+        <div class="state agent" id="agentResult" style="display:none"></div>
+        <div class="examples" id="examples"></div>
     </div>
 
-    <div class="hint">MCP стартует вместе с приложением: <code>http://localhost:8090/mcp</code>. Сценарий видео: 1) «Проверить соединение» — приложение устанавливает MCP-соединение и показывает версию протокола, имя и версию сервера; 2) «Список инструментов» — MCP возвращает <code>day16_sum</code> и <code>day16_upper</code>; 3) вызовите <code>day16_sum</code> с числами — результат придёт из MCP. CLI: <code>./gradlew bootRun --args="--day=16 --check --cli"</code>, <code>--day=16 --tools --cli</code>, <code>--day=16 --call=day16_sum --arg=a=6 --arg=b=7 --cli</code>.</div>
+    <div class="hint">Собственный MCP-сервер стартует вместе с приложением: <code>http://localhost:9090/mcp</code>. Скрипт видео: 1) «Проверить соединение» — агент подключается к своему MCP-серверу как клиент; 2) «Список инструментов» — агент читает <code>tracker_create_task</code>, <code>tracker_list_tasks</code>, <code>tracker_add_comment</code> по MCP; 3) «создай задачу Привезти стол» — агент сам выбирает инструмент, вызывает его по MCP и даёт ответ. Данные хранятся в <code>data/day17-tasks</code>.</div>
+    <div class="meta" id="meta"></div>
 </main>
 <script>
     const healthEl = document.getElementById("health");
     const toolsEl = document.getElementById("tools");
-    const callEl = document.getElementById("callResult");
-    const metaEl = document.createElement("div"); metaEl.className = "meta"; document.querySelector(".hint").before(metaEl);
+    const agentEl = document.getElementById("agentResult");
+    const promptEl = document.getElementById("prompt");
+    const metaEl = document.getElementById("meta");
 
     function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
     function toast(msg) { metaEl.textContent = msg; }
 
     async function check() {
         checkBtn.disabled = true;
-        toast("Устанавливаем MCP-соединение…");
+        toast("Подключаемся к своему MCP-серверу…");
         try {
-            const resp = await fetch("/api/day16/health");
+            const resp = await fetch("/api/day17/health");
             const data = await resp.json();
             if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
             healthEl.style.display = "block";
             healthEl.innerHTML = (data.connected
-                ? "<span class='activeLine'>Соединение установлено</span>"
+                ? "<span class='activeLine'>Агент подключён к MCP-серверу</span>"
                 : "<span style='color:var(--danger)'>Нет соединения</span>")
-                + "<br>протокол: " + esc(data.protocolVersion)
                 + "<br>сервер: " + esc(data.serverName) + " " + esc(data.serverVersion)
-                + "<br>сессия: " + esc(data.sessionId || "—")
                 + "<br>инструментов: " + data.toolCount;
-            toast("Соединение установлено, инструментов: " + data.toolCount);
+            toast("Подключено, инструментов: " + data.toolCount);
         } catch(e) { toast("Ошибка: " + e); }
         finally { checkBtn.disabled = false; }
     }
 
     async function loadTools() {
         toolsBtn.disabled = true;
-        toast("Запрашиваем список инструментов MCP…");
+        toast("Запрашиваем инструменты по MCP…");
         try {
-            const resp = await fetch("/api/day16/tools");
+            const resp = await fetch("/api/day17/tools");
             const data = await resp.json();
             if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
             toolsEl.innerHTML = "";
@@ -119,54 +120,58 @@
                 div.className = "tool";
                 const b = document.createElement("b"); b.textContent = t.name;
                 const desc = document.createElement("div"); desc.className = "desc"; desc.textContent = t.description;
-                const cid = document.createElement("div"); cid.className = "cid"; cid.textContent = "доступен через MCP";
-                div.appendChild(b); div.appendChild(desc); div.appendChild(cid);
+                div.appendChild(b); div.appendChild(desc);
                 toolsEl.appendChild(div);
             });
-            toast("Список инструментов получен из MCP: " + data.map(t => t.name).join(", "));
+            toast("Инструментов из MCP: " + data.map(t => t.name).join(", "));
         } catch(e) { toast("Ошибка: " + e); }
         finally { toolsBtn.disabled = false; }
     }
 
-    function syncParams() {
-        const tool = document.getElementById("tool").value;
-        const p1 = document.getElementById("p1");
-        const p2 = document.getElementById("p2");
-        if (tool === "day16_sum") {
-            p1.placeholder = "a (первое число)"; p2.placeholder = "b (второе число)"; p2.style.display = "";
-        } else {
-            p1.placeholder = "text (исходный текст)"; p2.placeholder = "—"; p2.style.display = "none";
-        }
-    }
-
-    async function callTool() {
-        const tool = document.getElementById("tool").value;
-        const p1 = document.getElementById("p1").value.trim();
-        const p2 = document.getElementById("p2").value.trim();
-        callBtn.disabled = true;
-        toast("Вызываем инструмент " + tool + " через MCP…");
-        const arguments = tool === "day16_sum" ? {a: p1, b: p2} : {text: p1};
+    async function runAgent() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        agentBtn.disabled = true;
+        toast("Агент выбирает инструмент и вызывает его по MCP…");
         try {
-            const resp = await fetch("/api/day16/call", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({tool, arguments})});
+            const resp = await fetch("/api/day17/agent", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({prompt})});
             const data = await resp.json();
             if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
-            callEl.style.display = "block";
-            callEl.innerHTML = (data.isError
-                ? "<span style='color:var(--danger)'>ОШИБКА: " + esc(data.result) + "</span>"
-                : "<span class='activeLine'>Результат MCP: " + esc(data.result) + "</span>");
-            toast("MCP вернул: " + data.result);
+            agentEl.style.display = "block";
+            let html = "";
+            if (data.tool) {
+                html += "<div class='toolUse'><b>Инструмент MCP:</b> " + esc(data.tool)
+                    + "<br><b>Аргументы:</b> " + esc(JSON.stringify(data.arguments))
+                    + "<br><b>Результат:</b><pre>" + esc(data.toolResult || "—") + "</pre></div>";
+            }
+            html += "<div><b>Ответ агента:</b> " + esc(data.answer) + "</div>";
+            agentEl.innerHTML = html;
+            toast(data.tool ? ("Агент вызвал " + data.tool + " по MCP") : "Агент не нашёл подходящий инструмент");
         } catch(e) { toast("Ошибка: " + e); }
-        finally { callBtn.disabled = false; }
+        finally { agentBtn.disabled = false; }
     }
+
+    const examples = [
+        "создай задачу Привезти стол",
+        "создай задачу Написать отчёт, описание: квартальный отчёт, для Марии",
+        "покажи задачи",
+        "покажи задачи в работе",
+        "добавь комментарий к задаче t-a1b2c3d4: проверил, всё ок"
+    ];
+    const listEl = document.getElementById("examples");
+    examples.forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "small"; btn.type = "button"; btn.textContent = text;
+        btn.addEventListener("click", () => { promptEl.value = btn.textContent; runAgent(); });
+        listEl.appendChild(btn);
+    });
 
     document.getElementById("checkBtn").addEventListener("click", check);
     document.getElementById("toolsBtn").addEventListener("click", loadTools);
-    document.getElementById("callBtn").addEventListener("click", callTool);
-    document.getElementById("tool").addEventListener("change", syncParams);
-    syncParams();
+    document.getElementById("agentBtn").addEventListener("click", runAgent);
 
     (function init() {
-        toast("Приложение уже держит MCP-соединение с сервером на порту 8090. Нажмите «Проверить соединение».");
+        toast("MCP-сервер трекера уже запущен вместе с приложением на порту 9090. Нажмите «Проверить соединение».");
     })();
 </script>
 </body>

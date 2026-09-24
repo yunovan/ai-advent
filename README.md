@@ -1100,3 +1100,65 @@ DAY16_PATH=/mcp
 DAY16_NAME=ai-advent-mcp
 DAY16_VERSION=0.1.0
 ```
+
+## День 17. Первый инструмент MCP
+
+Вместе с приложением стартует собственный MCP-сервер «трекер» (mock Яндекс.Трекера) на порту 9090. Агент разбирает запрос пользователя, сам выбирает инструмент, вызывает его по MCP и формулирует ответ:
+
+- MCP-сервер «трекер» поднимается вместе с приложением (`@PostConstruct`) на `http://localhost:9090/mcp`;
+- регистрируются три инструмента с описаниями и JSON Schema параметров: `tracker_create_task`, `tracker_list_tasks`, `tracker_add_comment`;
+- инструменты реально работают: создают задачи и комментарии, фильтруют по статусу; данные хранятся в `data/day17-tasks/tracker.json`;
+- агент (`Day17AgentService`) детерминированно распознаёт намерение по шаблонам («создай задачу», «покажи задачи», «добавь комментарий»), формирует аргументы, вызывает инструмент через MCP-клиент;
+- после вызова инструмента агент передаёт результат LLM для формулировки ответа; если LLM недоступен — возвращает результат инструмента как есть.
+
+Проверки дня:
+
+- `initialize` (`tools/list`) возвращает три инструмента трекера с JSON Schema;
+- `tracker_create_task` создаёт задачу, требование указать title;
+- `tracker_list_tasks` возвращает задачи с фильтром по статусу: `new`, `in_progress`, `done`;
+- `tracker_add_comment` добавляет комментарий к задаче по её id;
+- агент по запросу «создай задачу Привезти стол» вызывает `tracker_create_task` и возвращает ответ пользователю.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=17"
+# UI: http://localhost:8080/day17.html
+# MCP-сервер: http://localhost:9090/mcp
+
+./gradlew bootRun --args="--day=17 --check --cli"
+./gradlew bootRun --args="--day=17 --tools --cli"
+./gradlew bootRun --args="--day=17 --prompt=\"создай задачу Привезти стол\" --cli"
+./gradlew bootRun --args="--day=17 --prompt=\"покажи задачи в работе\" --cli"
+./gradlew bootRun --args="--day=17 --prompt=\"добавь комментарий к задаче t-xxxxx: проверил, всё ок\" --cli"
+```
+
+### Как устроен код дня 17
+
+| Файл | Роль |
+|---|---|
+| `day17/Day17Properties.java` | настройки: `serverPort` (9090), `path` (`/mcp`), `name`, `version`, `storeDir` |
+| `day17/Day17Ticket.java`, `day17/Day17Comment.java` | модель задачи и комментария трекера |
+| `day17/Day17TicketStore.java` | файловое хранилище задач и комментариев (JSON, Jackson) |
+| `day17/Day17TrackerApi.java` | интерфейс «внешнего API» трекера |
+| `day17/Day17TrackerService.java` | реализация трекера: создать задачу, список с фильтром, добавить комментарий |
+| `day17/Day17MockApiController.java` | mock-API трекера для ручного тестирования инструментов: `/api/day17/tracker/tasks` |
+| `day17/Day17Tool.java` | инструмент MCP: имя, описание, JSON Schema, обработчик |
+| `day17/Day17Connection.java`, `day17/Day17ToolInfo.java`, `day17/Day17ToolResult.java` | DTO MCP-соединения и инструментов |
+| `day17/Day17McpException.java` | ошибки MCP |
+| `day17/Day17McpServer.java` | MCP-сервер на JDK `HttpServer`: JSON-RPC `initialize`/`tools/list`/`tools/call`, сессии |
+| `day17/Day17McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day17/Day17AgentService.java` | агент: распознавание намерения → вызов инструмента через MCP → формулировка ответа LLM |
+| `day17/Day17AgentController.java` | `/api/day17/health`, `/api/day17/tools`, `/api/day17/agent` (502 при недоступном MCP) |
+| `day17/Day17CliRunner.java` | CLI: `--day=17 --check/--tools/--prompt=<текст>` |
+| `static/day17.html` | UI: соединение, список инструментов, запрос к агенту с примерами |
+
+Настройки:
+
+```bash
+DAY17_SERVER_PORT=9090
+DAY17_PATH=/mcp
+DAY17_NAME=ai-advent-tracker-mcp
+DAY17_VERSION=0.1.0
+DAY17_STORE_DIR=data/day17-tasks
+```

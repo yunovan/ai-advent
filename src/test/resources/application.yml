@@ -9,3 +9,8 @@ llm:
 day16:
   server-port: 0
   path: /mcp
+
+day17:
+  server-port: 0
+  path: /mcp
+  store-dir: build/day17-tests-tasks
