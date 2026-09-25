@@ -1242,3 +1242,76 @@ DAY18_VERSION=0.1.0
 DAY18_STORE_DIR=data/day18-scheduler
 DAY18_TICK_MILLIS=500
 ```
+
+## День 19. Композиция MCP-инструментов
+
+Вместе с приложением стартует MCP-сервер витрины (порт 9092) с тремя инструментами, которые можно вызывать по отдельности и складывать в автоматический пайплайн «поиск → сводка → файл»:
+
+- `search(query, category, maxResults, sort)` — ищет товары в каталоге магазинов и возвращает JSON-список: название, категория, продавец, цена, рейтинг, ссылка на сайт и ключевые параметры;
+- `summarize(query, data, format)` — принимает результат `search` (проверяет его на пустоту и корректность), строит сводную таблицу «Сравнение по запросу» в markdown или csv: колонки «Товар | Продавец | Цена, ₽ | Рейтинг | Ключевые параметры | Ссылка»;
+- `saveToFile(data, summary, format, fileName)` — принимает результат `summarize` и складывает файл (`md`, `txt`, `csv` или `json`) в `data/day19-market`; возвращает имя, путь и размер.
+
+Композиция — главная идея дня: результат одного инструмента передаётся в следующий, и каждый шаг проверяет переданные данные (пустой список, отсутствие заголовка таблицы, нулевой размер файла считаются ошибкой передачи). Полный пайплайн выполняется автоматически в `Day19AgentService.pipeline()`.
+
+Как это устроено:
+
+- MCP-сервер (`Day19McpServer`) сам не знает о пайплайне: он предоставляет три независимых инструмента, а их последовательное выполнение и проверка передачи данных — забота клиента (`Day19McpClient`) и оркестратора (`Day19AgentService`);
+- три шага пайплайна возвращаются в ответе как `steps` с пометкой успеха и пояснением: «получено N товаров», «таблица готова к сохранению», «файл записан»;
+- агент (`Day19AgentService`) распознаёт намерение: «найди ноутбуки» → только `search`, «сравни смартфоны в таблицу» → `search` + `summarize`, «сохрани телевизоры в файл csv» → полный пайплайн; запрос и формат (markdown/csv/json/txt) выделяются из текста;
+- каталог — 13 мок-товаров (`Day19CatalogService`), продавцы с сайтами и параметрами, поиск по категориям «ноутбуки», «смартфоны», «телевизоры», «наушники», сортировка по цене и рейтингу;
+- CLI-режим `--pipeline=<запрос>` запускает весь конвейер и печатает успех каждого шага и сохранённый файл.
+
+Проверки дня:
+
+- инструмент `search` возвращает корректный JSON и по запросу «ноутбук» находит 5 товаров;
+- `summarize` принимает результат `search` и строит markdown/csv таблицу с заголовком «Сравнение по запросу»; на пустом или битом `data` отвечает ошибкой -32602;
+- `saveToFile` сохраняет файл в нужном формате и возвращает путь и размер; указание неизвестного формата — ошибка;
+- полный пайплайн выполняет три шага автоматически, каждый шаг подтверждает успех, файл реально создаётся;
+- МСР-сервер без сессии отвечает 400 (-32600), неизвестный метод — -32601, агент по фразам «найди…», «сравни…», «сохрани … в файл» выбирает нужную композицию.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=19"
+# UI: http://localhost:8080/day19.html
+# MCP-сервер: http://localhost:9092/mcp
+
+./gradlew bootRun --args="--day=19 --check --cli"
+./gradlew bootRun --args="--day=19 --tools --cli"
+./gradlew bootRun --args="--day=19 --search=ноутбук --cli"
+./gradlew bootRun --args="--day=19 --summarize=ноутбук --format=csv --cli"
+./gradlew bootRun --args="--day=19 --save=телевизоры --format=csv --file=телевизоры-2026 --cli"
+./gradlew bootRun --args="--day=19 --pipeline=ноутбуки --cli"
+./gradlew bootRun --args="--day=19 --prompt=\"сравни ноутбуки в таблицу\" --cli"
+./gradlew bootRun --args="--day=19 --prompt=\"сохрани телевизоры в файл csv\" --cli"
+./gradlew bootRun --args="--day=19 --files --cli"
+```
+
+### Как устроен код дня 19
+
+| Файл | Роль |
+|---|---|
+| `day19/Day19Properties.java` | настройки: `serverPort` (9092), `path` (`/mcp`), `name`, `version`, `storeDir` |
+| `day19/Day19Product.java` | мок-модель товара: id, название, категория, продавец, сайт, цена, рейтинг, параметры |
+| `day19/Day19CatalogService.java` | каталог из 13 товаров, поиск по подстроке, категориям, лимиту и сортировке, разбор JSON-списка товаров |
+| `day19/Day19TableBuilder.java` | markdown/csv-таблица «Сравнение по запросу» |
+| `day19/Day19SaveService.java` | сохранение сводки в файл (`md`/`txt`/`csv`/`json`), список сохранённых файлов |
+| `day19/Day19MarketApi.java`, `day19/Day19MarketService.java` | интерфейс и реализация витрины для MCP-инструментов |
+| `day19/Day19Tool.java`, `day19/Day19Connection.java`, `day19/Day19ToolInfo.java`, `day19/Day19ToolResult.java` | DTO MCP-инструментов |
+| `day19/Day19McpException.java` | ошибки MCP |
+| `day19/Day19McpServer.java` | MCP-сервер на JDK `HttpServer`: `initialize`/`tools/list`/`tools/call`, сессии |
+| `day19/Day19McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day19/Day19AgentService.java` | агент: распознавание намерения → пайплайн search/summarize/saveToFile через MCP → ответ LLM |
+| `day19/Day19Controller.java` | `/api/day19/health`, `/tools`, `/search`, `/summarize`, `/save`, `/pipeline`, `/agent`, `/files` |
+| `day19/Day19CliRunner.java` | CLI: `--day=19 --check/--tools/--search/--summarize/--save/--pipeline/--prompt/--files` |
+| `static/day19.html` | UI: проверка MCP, поиск, сводная таблица, кнопка полного пайплайна, список файлов, запрос к агенту |
+
+Настройки:
+
+```bash
+DAY19_SERVER_PORT=9092
+DAY19_PATH=/mcp
+DAY19_NAME=ai-advent-pipeline-mcp
+DAY19_VERSION=0.1.0
+DAY19_STORE_DIR=data/day19-market
+```
