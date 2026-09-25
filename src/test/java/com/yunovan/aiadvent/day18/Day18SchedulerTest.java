@@ -1,6 +1,7 @@
 package com.yunovan.aiadvent.day18;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -96,6 +97,62 @@ class Day18SchedulerTest {
         assertThat(store.findById(job.getId()).getRunCount()).isEqualTo(1);
         assertThat(store.samplesFor("events", null)).hasSize(1);
         assertThat(store.samplesFor("events", null).get(0).value()).isEqualTo(1.0);
+    }
+
+    @Test
+    void stoppingProcessStopsScheduling() {
+        Day18Job job = scheduler.addCollector("events", 1, null, null);
+        await(() -> store.samplesFor("events", null).size() >= 2);
+
+        List<Day18Job> stopped = scheduler.stopProcess(job.getId());
+        await(() -> "stopped".equals(store.findById(job.getId()).getStatus()));
+
+        assertThat(stopped).hasSize(1);
+        assertThat(stopped.get(0).getStatus()).isEqualTo("stopped");
+        Day18Job after = store.findById(job.getId());
+        assertThat(after.getNextRunAt()).isNull();
+        int frozenCount = after.getRunCount();
+        int frozenSamples = store.samplesFor("events", null).size();
+
+        sleep(700);
+        assertThat(store.findById(job.getId()).getRunCount()).isEqualTo(frozenCount);
+        assertThat(store.samplesFor("events", null)).hasSize(frozenSamples);
+    }
+
+    @Test
+    void stopProcessWithoutIdStopsAllSchedulableJobs() {
+        Day18Job collector = scheduler.addCollector("events", 1, null, null);
+        Day18Job reminder = scheduler.addReminder("выпить чай", 60);
+        await(() -> store.samplesFor("events", null).size() >= 1);
+
+        List<Day18Job> stopped = scheduler.stopProcess("");
+        await(() -> "stopped".equals(store.findById(collector.getId()).getStatus()));
+
+        assertThat(stopped).hasSize(2);
+        assertThat(store.findById(collector.getId()).getStatus()).isEqualTo("stopped");
+        assertThat(store.findById(reminder.getId()).getStatus()).isEqualTo("stopped");
+        assertThat(store.findById(collector.getId()).getNextRunAt()).isNull();
+    }
+
+    @Test
+    void stopProcessWithUnknownIdThrows() {
+        assertThatThrownBy(() -> scheduler.stopProcess("j-missing"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Задание не найдено");
+    }
+
+    @Test
+    void runNowRevivesStoppedCollector() {
+        Day18Job job = scheduler.addCollector("events", 1, null, null);
+        await(() -> store.samplesFor("events", null).size() >= 1);
+        scheduler.stopProcess(job.getId());
+        assertThat(store.findById(job.getId()).getStatus()).isEqualTo("stopped");
+
+        Day18Job after = scheduler.runNow(job.getId());
+
+        assertThat(after.getStatus()).isEqualTo("active");
+        assertThat(store.samplesFor("events", null).size())
+                .isGreaterThanOrEqualTo(2);
     }
 
     @Test

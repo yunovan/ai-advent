@@ -42,14 +42,14 @@ class Day18ControllerTest {
 
     @Test
     void getHealthReturnsConnectionInfo() throws Exception {
-        when(service.health()).thenReturn(new Day18HealthResponse(true, "ai-advent-scheduler-mcp", "0.1.0", 5));
+        when(service.health()).thenReturn(new Day18HealthResponse(true, "ai-advent-scheduler-mcp", "0.1.0", 6));
 
         mockMvc.perform(get("/api/day18/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.connected").value(true))
                 .andExpect(jsonPath("$.serverName").value("ai-advent-scheduler-mcp"))
                 .andExpect(jsonPath("$.serverVersion").value("0.1.0"))
-                .andExpect(jsonPath("$.toolCount").value(5));
+                .andExpect(jsonPath("$.toolCount").value(6));
     }
 
     @Test
@@ -59,11 +59,12 @@ class Day18ControllerTest {
                 new Day18ToolInfo("scheduler_add_collector", "Периодический сбор."),
                 new Day18ToolInfo("scheduler_list_jobs", "Список заданий."),
                 new Day18ToolInfo("scheduler_summary", "Сводка."),
-                new Day18ToolInfo("scheduler_run_now", "Выполнить сейчас.")));
+                new Day18ToolInfo("scheduler_run_now", "Выполнить сейчас."),
+                new Day18ToolInfo("scheduler_stop_process", "Остановить процесс.")));
 
         mockMvc.perform(get("/api/day18/tools"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[0].name").value("scheduler_add_reminder"))
                 .andExpect(jsonPath("$[4].description").value(containsString("сейчас")));
     }
@@ -132,6 +133,32 @@ class Day18ControllerTest {
                         .content("{\"jobId\":\"j-c1\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("j-c1"));
+    }
+
+    @Test
+    void postStopStopsJob() throws Exception {
+        when(scheduler.stopProcess(eq("j-c1")))
+                .thenReturn(List.of(job("j-c1", "stopped")));
+
+        mockMvc.perform(post("/api/day18/stop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jobId\":\"j-c1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value("j-c1"))
+                .andExpect(jsonPath("$[0].status").value("stopped"));
+    }
+
+    @Test
+    void postStopWithoutJobIdStopsAll() throws Exception {
+        when(scheduler.stopProcess(isNull()))
+                .thenReturn(List.of(job("j-1", "stopped"), job("j-2", "stopped")));
+
+        mockMvc.perform(post("/api/day18/stop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test

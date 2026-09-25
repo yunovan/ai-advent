@@ -104,6 +104,7 @@
         <div class="row">
             <span></span>
             <button class="secondary" id="jobsBtn" type="button">Обновить список</button>
+            <button id="stopBtn" type="button">Остановить все процессы</button>
         </div>
         <div class="state" id="jobs" style="display:none"></div>
 
@@ -129,7 +130,7 @@
         <div class="examples" id="examples"></div>
     </div>
 
-    <div class="hint">MCP-сервер планировщика стартует вместе с приложением: <code>http://localhost:9091/mcp</code>. Скрипт видео: 1) «Проверить соединение» и «Список инструментов» — агент читает 5 инструментов планировщика по MCP; 2) «Запланировать напоминание» — через N секунд в заданиях появится статус <code>done</code> и замер в потоке <code>reminders</code>; 3) «Запустить коллектор» без URL — каждые N секунд в поток <code>events</code> пишутся мок-замеры; 4) «Показать сводку» — агрегированный результат; 5) агент по-русски: «собирай данные каждые 3 секунды по events» или «пиши сводку каждые 4 секунды по events».</div>
+    <div class="hint">MCP-сервер планировщика стартует вместе с приложением: <code>http://localhost:9091/mcp</code>. Скрипт видео: 1) «Проверить соединение» и «Список инструментов» — агент читает 6 инструментов планировщика по MCP; 2) «Запланировать напоминание» — через N секунд в заданиях появится статус <code>done</code> и замер в потоке <code>reminders</code>; 3) «Запустить коллектор» без URL — каждые N секунд в поток <code>events</code> пишутся мок-замеры; 4) «Остановить все процессы» или кнопка «остановить» у задания — статус <code>stopped</code> и счётчик замеров замирает; 5) «Показать сводку» — агрегированный результат; 6) агент по-русски: «собирай данные каждые 3 секунды по events», «останови сбор» или «пиши сводку каждые 4 секунды по events».</div>
     <div class="meta" id="meta"></div>
 </main>
 <script>
@@ -234,6 +235,7 @@
                     + ", период: " + (j.periodSeconds || "—") + ", следующий запуск: " + esc(j.nextRunAt || "—")
                     + (j.lastResult ? ", итог: " + esc(j.lastResult) : "") + "</span>"
                     + "<button class='small' data-job='" + esc(j.id) + "' onclick='runNow(this)'>выполнить сейчас</button>"
+                    + "<button class='small' data-job='" + esc(j.id) + "' onclick='stopJob(this)'>остановить</button>"
                     + "</div>";
             });
             jobs.innerHTML = html;
@@ -252,6 +254,31 @@
             toast("Выполнено сейчас: " + data.lastResult);
             loadJobs();
         } catch(e) { toast("Ошибка: " + e); }
+    }
+
+    async function stopJob(btn) {
+        const jobId = btn.getAttribute("data-job");
+        btn.disabled = true;
+        try {
+            const resp = await post("/api/day18/stop", {jobId});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); loadJobs(); return; }
+            toast("Остановлено заданий: " + data.length);
+            loadJobs();
+        } catch(e) { toast("Ошибка: " + e); }
+    }
+
+    async function stopAll() {
+        stopBtn.disabled = true;
+        toast("Останавливаем все процессы планировщика…");
+        try {
+            const resp = await post("/api/day18/stop", {});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            toast("Остановлено процессов: " + data.length);
+            loadJobs();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { stopBtn.disabled = false; }
     }
 
     async function showSummary() {
@@ -318,7 +345,8 @@
         "собирай данные каждые 3 секунды по events",
         "пиши сводку каждые 4 секунды по events",
         "дай сводку по events",
-        "какие задания есть в планировщике"
+        "какие задания есть в планировщике",
+        "останови сбор"
     ];
     const listEl = document.getElementById("examples");
     examples.forEach(text => {
@@ -333,6 +361,7 @@
     document.getElementById("reminderBtn").addEventListener("click", addReminder);
     document.getElementById("collectBtn").addEventListener("click", addCollector);
     document.getElementById("jobsBtn").addEventListener("click", loadJobs);
+    document.getElementById("stopBtn").addEventListener("click", stopAll);
     document.getElementById("summaryBtn").addEventListener("click", showSummary);
     document.getElementById("agentBtn").addEventListener("click", runAgent);
 

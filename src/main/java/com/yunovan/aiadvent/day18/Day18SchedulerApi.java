@@ -10,6 +10,8 @@ public interface Day18SchedulerApi {
 
     Day18Job runNow(String jobId);
 
+    List<Day18Job> stopProcess(String jobId);
+
     List<Day18Job> listJobs();
 
     Day18Summary summary(String feed, Integer sinceSeconds);

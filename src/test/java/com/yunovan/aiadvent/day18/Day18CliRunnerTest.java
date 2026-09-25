@@ -43,14 +43,14 @@ class Day18CliRunnerTest {
     @Test
     void checkPrintsConnectionInfo() {
         Day18AgentService service = mock(Day18AgentService.class);
-        when(service.health()).thenReturn(new Day18HealthResponse(true, "ai-advent-scheduler-mcp", "0.1.0", 5));
+        when(service.health()).thenReturn(new Day18HealthResponse(true, "ai-advent-scheduler-mcp", "0.1.0", 6));
 
         String output = run(mock(Day18SchedulerApi.class), service, "--day=18", "--check");
 
         assertThat(output).contains("=== СОЕДИНЕНИЕ С MCP ===");
         assertThat(output).contains("connected: true");
         assertThat(output).contains("ai-advent-scheduler-mcp");
-        assertThat(output).contains("tools: 5");
+        assertThat(output).contains("tools: 6");
     }
 
     @Test
@@ -61,13 +61,15 @@ class Day18CliRunnerTest {
                 new Day18ToolInfo("scheduler_add_collector", "Периодический сбор."),
                 new Day18ToolInfo("scheduler_list_jobs", "Список заданий."),
                 new Day18ToolInfo("scheduler_summary", "Сводка."),
-                new Day18ToolInfo("scheduler_run_now", "Выполнить сейчас.")));
+                new Day18ToolInfo("scheduler_run_now", "Выполнить сейчас."),
+                new Day18ToolInfo("scheduler_stop_process", "Остановить процесс.")));
 
         String output = run(mock(Day18SchedulerApi.class), service, "--day=18", "--tools");
 
         assertThat(output).contains("=== ИНСТРУМЕНТЫ MCP ===");
         assertThat(output).contains("scheduler_add_reminder");
         assertThat(output).contains("scheduler_run_now");
+        assertThat(output).contains("scheduler_stop_process");
     }
 
     @Test
@@ -108,6 +110,20 @@ class Day18CliRunnerTest {
         assertThat(output).contains("=== ПЕРИОДИЧЕСКИЙ СБОР ===");
         assertThat(output).contains("j-c1");
         verify(scheduler).addCollector(eq("events"), eq(3), isNull(), isNull());
+    }
+
+    @Test
+    void stopStopsAllProcessesWhenNoIdGiven() {
+        Day18SchedulerApi scheduler = mock(Day18SchedulerApi.class);
+        when(scheduler.stopProcess(isNull())).thenReturn(List.of(
+                job("j-1", "collector", "stopped"), job("j-2", "collector", "stopped")));
+
+        String output = run(scheduler, mock(Day18AgentService.class), "--day=18", "--stop");
+
+        assertThat(output).contains("=== ОСТАНОВЛЕНО ПРОЦЕССОВ: 2 ===");
+        assertThat(output).contains("j-1");
+        assertThat(output).contains("stopped");
+        verify(scheduler).stopProcess(isNull());
     }
 
     @Test

@@ -103,13 +103,13 @@ class Day18McpServerTest {
     }
 
     @Test
-    void toolsListReturnsFiveSchedulerTools() throws Exception {
+    void toolsListReturnsSixSchedulerTools() throws Exception {
         HttpResponse<String> response = post(request(2, "tools/list"), sessionId());
 
         assertThat(response.statusCode()).isEqualTo(200);
         JsonNode tools = mapper.readTree(response.body()).path("result").path("tools");
         assertThat(tools.isArray()).isTrue();
-        assertThat(tools.size()).isEqualTo(5);
+        assertThat(tools.size()).isEqualTo(6);
         assertThat(tools.get(0).path("name").asText()).isEqualTo("scheduler_add_reminder");
         assertThat(tools.get(0).path("inputSchema").path("type").asText()).isEqualTo("object");
         assertThat(tools.get(0).path("inputSchema").path("required").toString()).contains("delaySeconds");
@@ -119,6 +119,7 @@ class Day18McpServerTest {
         assertThat(tools.get(2).path("name").asText()).isEqualTo("scheduler_list_jobs");
         assertThat(tools.get(3).path("name").asText()).isEqualTo("scheduler_summary");
         assertThat(tools.get(4).path("name").asText()).isEqualTo("scheduler_run_now");
+        assertThat(tools.get(5).path("name").asText()).isEqualTo("scheduler_stop_process");
     }
 
     @Test
@@ -164,6 +165,47 @@ class Day18McpServerTest {
         assertThat(text).contains("\"runCount\":1");
         assertThat(store.samplesFor("events", null)).hasSize(1);
         assertThat(store.samplesFor("events", null).get(0).value()).isEqualTo(1.0);
+    }
+
+    @Test
+    void callStopProcessStopsCollector() throws Exception {
+        String created = callToolText("scheduler_add_collector",
+                "{\"feed\":\"events\",\"periodSeconds\":60}", sessionId());
+        String jobId = extractId(created);
+
+        String text = callToolText("scheduler_stop_process", "{\"jobId\":\"" + jobId + "\"}", sessionId());
+
+        assertThat(text).contains("\"status\":\"stopped\"");
+        assertThat(text).contains("\"id\":\"" + jobId + "\"");
+        assertThat(store.findById(jobId).getNextRunAt()).isNull();
+    }
+
+    @Test
+    void callStopProcessWithoutIdStopsAll() throws Exception {
+        String session = sessionId();
+        String first = callToolText("scheduler_add_collector",
+                "{\"feed\":\"events\",\"periodSeconds\":60}", session);
+        String second = callToolText("scheduler_add_collector",
+                "{\"feed\":\"uptime\",\"periodSeconds\":60}", session);
+
+        String text = callToolText("scheduler_stop_process", "{}", session);
+
+        assertThat(text).contains(extractId(first));
+        assertThat(text).contains(extractId(second));
+        assertThat(text).contains("\"status\":\"stopped\"");
+        assertThat(store.findById(extractId(first)).getStatus()).isEqualTo("stopped");
+        assertThat(store.findById(extractId(second)).getStatus()).isEqualTo("stopped");
+    }
+
+    @Test
+    void callStopProcessWithUnknownIdMarksError() throws Exception {
+        HttpResponse<String> response = post(call(12, "scheduler_stop_process",
+                "{\"jobId\":\"j-missing\"}"), sessionId());
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode error = mapper.readTree(response.body()).path("error");
+        assertThat(error.path("code").asInt()).isEqualTo(-32602);
+        assertThat(error.path("message").asText()).contains("Задание не найдено");
     }
 
     @Test

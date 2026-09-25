@@ -83,6 +83,12 @@ public class Day18Controller {
         return invoke(() -> scheduler.runNow(request == null ? null : request.jobId()));
     }
 
+    @PostMapping("/stop")
+    @ResponseBody
+    public List<Day18Job> stop(@RequestBody(required = false) Day18RunRequest request) {
+        return invoke(() -> scheduler.stopProcess(request == null ? null : request.jobId()));
+    }
+
     private static <T> T invoke(Supplier<T> supplier) {
         try {
             return supplier.get();
