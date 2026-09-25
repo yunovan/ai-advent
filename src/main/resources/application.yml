@@ -107,3 +107,10 @@ day18:
   store-dir: ${DAY18_STORE_DIR:data/day18-scheduler}
   tick-millis: ${DAY18_TICK_MILLIS:500}
 
+day19:
+  server-port: ${DAY19_SERVER_PORT:9092}
+  path: ${DAY19_PATH:/mcp}
+  name: ${DAY19_NAME:ai-advent-pipeline-mcp}
+  version: ${DAY19_VERSION:0.1.0}
+  store-dir: ${DAY19_STORE_DIR:data/day19-market}
+
