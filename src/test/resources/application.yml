@@ -14,3 +14,9 @@ day17:
   server-port: 0
   path: /mcp
   store-dir: build/day17-tests-tasks
+
+day18:
+  server-port: 0
+  path: /mcp
+  store-dir: build/day18-tests-tasks
+  tick-millis: 50

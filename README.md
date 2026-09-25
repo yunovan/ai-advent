@@ -1162,3 +1162,79 @@ DAY17_NAME=ai-advent-tracker-mcp
 DAY17_VERSION=0.1.0
 DAY17_STORE_DIR=data/day17-tasks
 ```
+
+## День 18. Планировщик и фоновые задачи
+
+Вместе с приложением стартует MCP-сервер планировщика (порт 9091) и фоновое ядро, которое работает 24/7: задания выполняются по расписанию и переживают перезапуск (состояние хранится в JSON). Есть три вида запланированных инструментов — напоминание (отложенный запуск), периодический сбор данных и регулярная сводка:
+
+- `scheduler_add_reminder(topic, delaySeconds)` — отложенное задание: напоминание сработает один раз через N секунд;
+- `scheduler_add_collector(feed, periodSeconds, url, sourceFeed)` — периодическое задание: каждый период происходит замер и сохраняется в поток `feed`; если задан `url` — проверка доступности сайта (пинг), если задан `sourceFeed` — регулярная сводка по ранее собранным данным;
+- `scheduler_list_jobs()` — список заданий со статусом, счётчиком запусков и временем следующего запуска;
+- `scheduler_summary(feed, sinceSeconds)` — агрегированный результат: сколько событий, первое/последнее, среднее/мин/макс значение, доля успешных проверок, последние записи;
+- `scheduler_run_now(jobId)` — мгновенный запуск задания для демонстрации без ожидания расписания.
+
+Как это устроено:
+
+- фоновый планировщик (`Day18SchedulerService`) тикает каждые 500 мс, находит задания, у которых наступило время запуска, и выполняет их; поток демон, работает с момента старта приложения;
+- каждое выполнение сохраняет замер в поток данных, а задание обновляет счётчик запусков и время следующего выполнения; всё состояние сохраняется в `data/day18-scheduler/scheduler.json` и восстанавливается при перезапуске;
+- агрегация (`Day18Aggregator`) считает статистику по собранным замерам — это и есть «регулярный summary»;
+- агент (`Day18AgentService`) распознаёт намерение («напомни через 10 секунд выпить чай», «собирай данные каждые 3 секунды по events», «пиши сводку каждые 4 секунды по events», «дай сводку по events»), вызывает инструмент планировщика через MCP и формулирует ответ;
+- CLI-режим `--live` показывает работу планировщика «вживую»: задания, счётчики и сводки обновляются каждые 2 секунды — агент «работает 24/7».
+
+Проверки дня:
+
+- напоминание срабатывает через заданную задержку ровно один раз и помечается `done`;
+- коллектор с периодом 1–2 секунды реально копит замеры по расписанию (без обращения к внешним сервисам в тестах);
+- коллектор со `sourceFeed` пишет регулярные сводки по накопленным данным;
+- `scheduler_run_now` запускает задание мгновенно;
+- `scheduler_summary` агрегирует замеры: счётчик, среднее, мин/макс, последняя запись;
+- агент по запросам «напомни…», «собирай…», «сводку…», «какие задания…» выбирает нужный инструмент и возвращает ответ.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=18"
+# UI: http://localhost:8080/day18.html
+# MCP-сервер: http://localhost:9091/mcp
+
+./gradlew bootRun --args="--day=18 --check --cli"
+./gradlew bootRun --args="--day=18 --tools --cli"
+./gradlew bootRun --args="--day=18 --reminder=\"выпить чай\" --delay=10 --cli"
+./gradlew bootRun --args="--day=18 --collect --feed=events --period=2 --cli"
+./gradlew bootRun --args="--day=18 --collect --feed=digest --period=4 --source=events --cli"
+./gradlew bootRun --args="--day=18 --summary --feed=events --cli"
+./gradlew bootRun --args="--day=18 --live --seconds=20 --cli"
+./gradlew bootRun --args="--day=18 --prompt=\"напомни через 10 секунд выпить чай\" --cli"
+./gradlew bootRun --args="--day=18 --prompt=\"дай сводку по events\" --cli"
+```
+
+### Как устроен код дня 18
+
+| Файл | Роль |
+|---|---|
+| `day18/Day18Properties.java` | настройки: `serverPort` (9091), `path` (`/mcp`), `name`, `version`, `storeDir`, `tickMillis` |
+| `day18/Day18Job.java`, `day18/Day18Sample.java` | модель задания планировщика и замера данных |
+| `day18/Day18Store.java` | файловое хранилище заданий и замеров (JSON, Jackson) |
+| `day18/Day18Summary.java`, `day18/Day18Aggregator.java` | агрегированный результат и его расчёт |
+| `day18/Day18HttpProbe.java` | проверка доступности URL (пинг) с замером времени ответа |
+| `day18/Day18SchedulerApi.java` | интерфейс планировщика для MCP-инструментов |
+| `day18/Day18SchedulerService.java` | фоновое ядро 24/7: тик, выполнение задания, персистентность расписания |
+| `day18/Day18Tool.java`, `day18/Day18Connection.java`, `day18/Day18ToolInfo.java`, `day18/Day18ToolResult.java` | DTO MCP-инструментов |
+| `day18/Day18McpException.java` | ошибки MCP |
+| `day18/Day18McpServer.java` | MCP-сервер на JDK `HttpServer`: JSON-RPC `initialize`/`tools/list`/`tools/call`, сессии |
+| `day18/Day18McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day18/Day18AgentService.java` | агент: распознавание намерения → вызов инструмента планировщика через MCP → ответ LLM |
+| `day18/Day18Controller.java` | `/api/day18/health`, `/tools`, `/agent`, `/jobs`, `/summary`, `/samples`, `/reminder`, `/collector`, `/run` |
+| `day18/Day18CliRunner.java` | CLI: `--day=18 --check/--tools/--jobs/--reminder/--collect/--run/--summary/--live/--prompt` |
+| `static/day18.html` | UI: напоминания, периодический сбор, список заданий, сводка, запрос к агенту |
+
+Настройки:
+
+```bash
+DAY18_SERVER_PORT=9091
+DAY18_PATH=/mcp
+DAY18_NAME=ai-advent-scheduler-mcp
+DAY18_VERSION=0.1.0
+DAY18_STORE_DIR=data/day18-scheduler
+DAY18_TICK_MILLIS=500
+```

@@ -99,3 +99,11 @@ day17:
   version: ${DAY17_VERSION:0.1.0}
   store-dir: ${DAY17_STORE_DIR:data/day17-tasks}
 
+day18:
+  server-port: ${DAY18_SERVER_PORT:9091}
+  path: ${DAY18_PATH:/mcp}
+  name: ${DAY18_NAME:ai-advent-scheduler-mcp}
+  version: ${DAY18_VERSION:0.1.0}
+  store-dir: ${DAY18_STORE_DIR:data/day18-scheduler}
+  tick-millis: ${DAY18_TICK_MILLIS:500}
+

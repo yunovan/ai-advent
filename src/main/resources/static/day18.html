@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 18</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0f1220; --card: #1a2134; --line: #2c3550; --text: #eef2ff; --muted: #9aa6c4; --accent: #8a8aff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1d3a3a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0d101d; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #2c3550; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #2c3550; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #131a2e; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 90px; resize: vertical; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .tools { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .tool { padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+        .tool b { color: var(--text); }
+        .tool .desc { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .agent { margin-top: 14px; }
+        .agent .toolUse { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+        .agent .toolUse b { color: var(--accent); }
+        .agent pre { background: #0e1425; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #131a2e; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .examples { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .examples button { text-align: left; margin: 0; }
+        .job { border-top: 1px solid var(--line); padding: 10px 0; }
+        table.agg { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+        table.agg td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+        table.agg td:first-child { color: var(--muted); white-space: nowrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/">День 1</a><a href="/day2.html">День 2</a><a href="/day3.html">День 3</a>
+        <a href="/day4.html">День 4</a><a href="/day5.html">День 5</a><a href="/day6.html">День 6</a>
+        <a href="/day7.html">День 7</a><a href="/day8.html">День 8</a><a href="/day9.html">День 9</a>
+        <a href="/day10.html">День 10</a><a href="/day11.html">День 11</a><a href="/day12.html">День 12</a>
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a>
+    </nav>
+    <span class="badge">AI Advent · Day 18</span>
+    <h1>Планировщик и фоновые задачи</h1>
+    <p class="lead">MCP-инструменты с отложенным и периодическим выполнением: напоминания, сбор данных по расписанию и регулярные сводки. Фоновое ядро работает 24/7, данные живут в <code>data/day18-scheduler</code>.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Соединение агента с MCP</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить соединение</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Инструменты MCP</h3>
+        <button class="secondary" id="toolsBtn" type="button">Список инструментов</button>
+        <div class="tools" id="tools"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Напоминание (отложенный запуск)</h3>
+        <div class="pair">
+            <div><label>Текст напоминания</label><input id="reminderTopic" placeholder="выпить чай"></div>
+            <div><label>Через, секунд</label><input id="reminderDelay" type="number" value="10"></div>
+        </div>
+        <div class="row">
+            <span></span>
+            <button id="reminderBtn" type="button">Запланировать напоминание</button>
+        </div>
+
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Периодический сбор данных / регулярная сводка</h3>
+        <div class="pair">
+            <div><label>Поток (feed)</label><input id="feedInput" placeholder="events"></div>
+            <div><label>Период, секунд</label><input id="periodInput" type="number" value="2"></div>
+        </div>
+        <div class="pair">
+            <div><label>URL для пинга (необязательно)</label><input id="urlInput" placeholder="https://example.com"></div>
+            <div><label>Источник сводки sourceFeed (необязательно)</label><input id="sourceInput" placeholder="events"></div>
+        </div>
+        <div class="row">
+            <span></span>
+            <button id="collectBtn" type="button">Запустить коллектор</button>
+        </div>
+        <div class="hint">Три режима: без URL и source — мок-замеры каждые N секунд; с URL — проверка доступности сайта; со sourceFeed — регулярная сводка по накопленным данным потока.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Задания планировщика</h3>
+        <div class="row">
+            <span></span>
+            <button class="secondary" id="jobsBtn" type="button">Обновить список</button>
+        </div>
+        <div class="state" id="jobs" style="display:none"></div>
+
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Сводка (агрегированный результат)</h3>
+        <div class="row">
+            <div>
+                <label>Поток (пусто — все)</label>
+                <input id="summaryFeed" placeholder="events">
+            </div>
+            <button id="summaryBtn" type="button">Показать сводку</button>
+        </div>
+        <div class="state" id="summary" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент 24/7</h3>
+        <textarea id="prompt" placeholder="Например: напомни через 10 секунд выпить чай"></textarea>
+        <div class="row">
+            <span></span>
+            <button id="agentBtn" type="button">Выполнить через агента</button>
+        </div>
+        <div class="state agent" id="agentResult" style="display:none"></div>
+        <div class="examples" id="examples"></div>
+    </div>
+
+    <div class="hint">MCP-сервер планировщика стартует вместе с приложением: <code>http://localhost:9091/mcp</code>. Скрипт видео: 1) «Проверить соединение» и «Список инструментов» — агент читает 5 инструментов планировщика по MCP; 2) «Запланировать напоминание» — через N секунд в заданиях появится статус <code>done</code> и замер в потоке <code>reminders</code>; 3) «Запустить коллектор» без URL — каждые N секунд в поток <code>events</code> пишутся мок-замеры; 4) «Показать сводку» — агрегированный результат; 5) агент по-русски: «собирай данные каждые 3 секунды по events» или «пиши сводку каждые 4 секунды по events».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function post(url, body) {
+        const resp = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body || {})});
+        return resp;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Подключаемся к MCP-серверу планировщика…");
+        try {
+            const resp = await fetch("/api/day18/health");
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            health.style.display = "block";
+            health.innerHTML = (data.connected
+                ? "<span class='activeLine'>Агент подключён к MCP-серверу</span>"
+                : "<span style='color:var(--danger)'>Нет соединения</span>")
+                + "<br>сервер: " + esc(data.serverName) + " " + esc(data.serverVersion)
+                + "<br>инструментов: " + data.toolCount;
+            toast("Подключено, инструментов: " + data.toolCount);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function loadTools() {
+        toolsBtn.disabled = true;
+        toast("Запрашиваем инструменты по MCP…");
+        try {
+            const resp = await fetch("/api/day18/tools");
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            toolsEl.innerHTML = "";
+            if (!data.length) { toolsEl.innerHTML = "<div style='color:var(--muted)'>Инструментов нет.</div>"; return; }
+            data.forEach(t => {
+                const div = document.createElement("div");
+                div.className = "tool";
+                const b = document.createElement("b"); b.textContent = t.name;
+                const desc = document.createElement("div"); desc.className = "desc"; desc.textContent = t.description;
+                div.appendChild(b); div.appendChild(desc);
+                toolsEl.appendChild(div);
+            });
+            toast("Инструментов из MCP: " + data.map(t => t.name).join(", "));
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { toolsBtn.disabled = false; }
+    }
+
+    async function addReminder() {
+        const topic = reminderTopic.value.trim();
+        const delaySeconds = parseInt(reminderDelay.value, 10) || 10;
+        if (!topic) { toast("Введите текст напоминания"); return; }
+        reminderBtn.disabled = true;
+        toast("Планируем напоминание…");
+        try {
+            const resp = await post("/api/day18/reminder", {topic, delaySeconds});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            toast("Напоминание «" + data.name + "» через " + data.delaySeconds + " с, id=" + data.id);
+            loadJobs();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { reminderBtn.disabled = false; }
+    }
+
+    async function addCollector() {
+        const feed = feedInput.value.trim() || "events";
+        const periodSeconds = parseInt(periodInput.value, 10) || 2;
+        const url = urlInput.value.trim() || null;
+        const sourceFeed = sourceInput.value.trim() || null;
+        collectBtn.disabled = true;
+        toast("Запускаем периодический сбор…");
+        try {
+            const resp = await post("/api/day18/collector", {feed, periodSeconds, url, sourceFeed});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            toast("Коллектор " + data.id + " запущен, период " + (sourceFeed ? "сводка по " + sourceFeed : "замеры") + " каждые " + data.periodSeconds + " с");
+            loadJobs();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { collectBtn.disabled = false; }
+    }
+
+    async function loadJobs() {
+        jobsBtn.disabled = true;
+        try {
+            const resp = await fetch("/api/day18/jobs");
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            jobs.style.display = "block";
+            if (!data.length) { jobs.innerHTML = "<div style='color:var(--muted)'>Заданий пока нет.</div>"; return; }
+            let html = "";
+            data.forEach(j => {
+                html += "<div class='job'><b>" + esc(j.id) + "</b> [" + esc(j.type) + "] «" + esc(j.name)
+                    + "» — статус <b>" + esc(j.status) + "</b>, запусков " + j.runCount
+                    + "<br><span style='color:var(--muted)'>feed: " + esc(j.feed || "—")
+                    + (j.sourceFeed ? ", сводка по: " + esc(j.sourceFeed) : "")
+                    + (j.url ? ", url: " + esc(j.url) : "")
+                    + ", период: " + (j.periodSeconds || "—") + ", следующий запуск: " + esc(j.nextRunAt || "—")
+                    + (j.lastResult ? ", итог: " + esc(j.lastResult) : "") + "</span>"
+                    + "<button class='small' data-job='" + esc(j.id) + "' onclick='runNow(this)'>выполнить сейчас</button>"
+                    + "</div>";
+            });
+            jobs.innerHTML = html;
+            toast("Заданий: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { jobsBtn.disabled = false; }
+    }
+
+    async function runNow(btn) {
+        const jobId = btn.getAttribute("data-job");
+        btn.disabled = true;
+        try {
+            const resp = await post("/api/day18/run", {jobId});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); loadJobs(); return; }
+            toast("Выполнено сейчас: " + data.lastResult);
+            loadJobs();
+        } catch(e) { toast("Ошибка: " + e); }
+    }
+
+    async function showSummary() {
+        const feed = summaryFeed.value.trim();
+        summaryBtn.disabled = true;
+        toast("Считаем агрегированный результат…");
+        try {
+            const url = "/api/day18/summary" + (feed ? "?feed=" + encodeURIComponent(feed) : "");
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            summary.style.display = "block";
+            let html = "<span class='activeLine'>Сводка по потоку: " + esc(feed || "все") + "</span>";
+            if (!data.count) {
+                html += "<br><span style='color:var(--muted)'>событий нет</span>";
+            } else {
+                html += "<table class='agg'>"
+                    + "<tr><td>событий</td><td>" + data.count + "</td></tr>"
+                    + "<tr><td>первое</td><td>" + esc(data.firstAt) + "</td></tr>"
+                    + "<tr><td>последнее</td><td>" + esc(data.lastAt) + "</td></tr>"
+                    + "<tr><td>среднее значение</td><td>" + Math.round(data.avgValue * 10) / 10 + "</td></tr>"
+                    + "<tr><td>мин / макс</td><td>" + Math.round(data.minValue * 10) / 10 + " / " + Math.round(data.maxValue * 10) / 10 + "</td></tr>"
+                    + (data.successRate != null ? "<tr><td>успешных проверок</td><td>" + Math.round(data.successRate * 100) + "%</td></tr>" : "")
+                    + "<tr><td>последняя запись</td><td>" + esc(data.lastPayload || "—") + "</td></tr>";
+                if (data.recent && data.recent.length) {
+                    html += "<tr><td>последние записи</td><td>";
+                    data.recent.forEach(s => { html += esc(s.kind) + " " + esc(s.payload) + "<br>"; });
+                    html += "</td></tr>";
+                }
+                html += "</table>";
+            }
+            summary.innerHTML = html;
+            toast("Сводка готова: событий " + data.count);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { summaryBtn.disabled = false; }
+    }
+
+    async function runAgent() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        agentBtn.disabled = true;
+        toast("Агент выбирает инструмент планировщика и вызывает его по MCP…");
+        try {
+            const resp = await fetch("/api/day18/agent", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({prompt})});
+            const data = await resp.json();
+            if (!resp.ok) { toast(data.error || data.detail || ("HTTP " + resp.status)); return; }
+            agentEl.style.display = "block";
+            let html = "";
+            if (data.tool) {
+                html += "<div class='toolUse'><b>Инструмент MCP:</b> " + esc(data.tool)
+                    + "<br><b>Аргументы:</b> " + esc(JSON.stringify(data.arguments))
+                    + "<br><b>Результат:</b><pre>" + esc(data.toolResult || "—") + "</pre></div>";
+            }
+            html += "<div><b>Ответ агента:</b> " + esc(data.answer) + "</div>";
+            agentEl.innerHTML = html;
+            toast(data.tool ? ("Агент вызвал " + data.tool + " по MCP") : "Агент не нашёл подходящий инструмент");
+            loadJobs();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { agentBtn.disabled = false; }
+    }
+
+    const examples = [
+        "напомни через 10 секунд выпить чай",
+        "собирай данные каждые 3 секунды по events",
+        "пиши сводку каждые 4 секунды по events",
+        "дай сводку по events",
+        "какие задания есть в планировщике"
+    ];
+    const listEl = document.getElementById("examples");
+    examples.forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "small"; btn.type = "button"; btn.textContent = text;
+        btn.addEventListener("click", () => { promptEl.value = btn.textContent; runAgent(); });
+        listEl.appendChild(btn);
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("toolsBtn").addEventListener("click", loadTools);
+    document.getElementById("reminderBtn").addEventListener("click", addReminder);
+    document.getElementById("collectBtn").addEventListener("click", addCollector);
+    document.getElementById("jobsBtn").addEventListener("click", loadJobs);
+    document.getElementById("summaryBtn").addEventListener("click", showSummary);
+    document.getElementById("agentBtn").addEventListener("click", runAgent);
+
+    const health = document.getElementById("health");
+    const toolsEl = document.getElementById("tools");
+    const reminderTopic = document.getElementById("reminderTopic");
+    const reminderDelay = document.getElementById("reminderDelay");
+    const feedInput = document.getElementById("feedInput");
+    const periodInput = document.getElementById("periodInput");
+    const urlInput = document.getElementById("urlInput");
+    const sourceInput = document.getElementById("sourceInput");
+    const jobs = document.getElementById("jobs");
+    const summary = document.getElementById("summary");
+    const promptEl = document.getElementById("prompt");
+
+    setInterval(function() { loadJobs(); }, 5000);
+    (function init() {
+        toast("Планировщик работает 24/7 (тик каждые 500 мс). MCP-сервер: http://localhost:9091/mcp. Нажмите «Проверить соединение».");
+    })();
+</script>
+</body>
+</html>
