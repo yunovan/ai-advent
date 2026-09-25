@@ -1171,7 +1171,8 @@ DAY17_STORE_DIR=data/day17-tasks
 - `scheduler_add_collector(feed, periodSeconds, url, sourceFeed)` — периодическое задание: каждый период происходит замер и сохраняется в поток `feed`; если задан `url` — проверка доступности сайта (пинг), если задан `sourceFeed` — регулярная сводка по ранее собранным данным;
 - `scheduler_list_jobs()` — список заданий со статусом, счётчиком запусков и временем следующего запуска;
 - `scheduler_summary(feed, sinceSeconds)` — агрегированный результат: сколько событий, первое/последнее, среднее/мин/макс значение, доля успешных проверок, последние записи;
-- `scheduler_run_now(jobId)` — мгновенный запуск задания для демонстрации без ожидания расписания.
+- `scheduler_run_now(jobId)` — мгновенный запуск задания для демонстрации без ожидания расписания;
+- `scheduler_stop_process(jobId)` — остановка процесса: конкретное задание по `jobId` или все активные процессы сбора и ожидающие напоминания, если `jobId` не указан; возвращает список остановленных заданий.
 
 Как это устроено:
 
@@ -1187,8 +1188,9 @@ DAY17_STORE_DIR=data/day17-tasks
 - коллектор с периодом 1–2 секунды реально копит замеры по расписанию (без обращения к внешним сервисам в тестах);
 - коллектор со `sourceFeed` пишет регулярные сводки по накопленным данным;
 - `scheduler_run_now` запускает задание мгновенно;
+- `scheduler_stop_process` останавливает задание (один процесс или все), статус становится `stopped`, расписание замирает, а повторный `run_now` оживляет коллектор;
 - `scheduler_summary` агрегирует замеры: счётчик, среднее, мин/макс, последняя запись;
-- агент по запросам «напомни…», «собирай…», «сводку…», «какие задания…» выбирает нужный инструмент и возвращает ответ.
+- агент по запросам «напомни…», «собирай…», «сводку…», «какие задания…», «останови…» выбирает нужный инструмент и возвращает ответ.
 
 ### Запуск
 
@@ -1203,6 +1205,8 @@ DAY17_STORE_DIR=data/day17-tasks
 ./gradlew bootRun --args="--day=18 --collect --feed=events --period=2 --cli"
 ./gradlew bootRun --args="--day=18 --collect --feed=digest --period=4 --source=events --cli"
 ./gradlew bootRun --args="--day=18 --summary --feed=events --cli"
+./gradlew bootRun --args="--day=18 --stop --cli"
+./gradlew bootRun --args="--day=18 --stop=<id-задания> --cli"
 ./gradlew bootRun --args="--day=18 --live --seconds=20 --cli"
 ./gradlew bootRun --args="--day=18 --prompt=\"напомни через 10 секунд выпить чай\" --cli"
 ./gradlew bootRun --args="--day=18 --prompt=\"дай сводку по events\" --cli"
@@ -1224,9 +1228,9 @@ DAY17_STORE_DIR=data/day17-tasks
 | `day18/Day18McpServer.java` | MCP-сервер на JDK `HttpServer`: JSON-RPC `initialize`/`tools/list`/`tools/call`, сессии |
 | `day18/Day18McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
 | `day18/Day18AgentService.java` | агент: распознавание намерения → вызов инструмента планировщика через MCP → ответ LLM |
-| `day18/Day18Controller.java` | `/api/day18/health`, `/tools`, `/agent`, `/jobs`, `/summary`, `/samples`, `/reminder`, `/collector`, `/run` |
-| `day18/Day18CliRunner.java` | CLI: `--day=18 --check/--tools/--jobs/--reminder/--collect/--run/--summary/--live/--prompt` |
-| `static/day18.html` | UI: напоминания, периодический сбор, список заданий, сводка, запрос к агенту |
+| `day18/Day18Controller.java` | `/api/day18/health`, `/tools`, `/agent`, `/jobs`, `/summary`, `/samples`, `/reminder`, `/collector`, `/run`, `/stop` |
+| `day18/Day18CliRunner.java` | CLI: `--day=18 --check/--tools/--jobs/--reminder/--collect/--run/--stop/--summary/--live/--prompt` |
+| `static/day18.html` | UI: напоминания, периодический сбор, список заданий, остановка процессов, сводка, запрос к агенту |
 
 Настройки:
 

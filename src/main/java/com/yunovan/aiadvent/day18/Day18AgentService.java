@@ -113,10 +113,14 @@ public class Day18AgentService {
                         + "seconds?|minutes?|hours?)",
                 Pattern.CASE_INSENSITIVE);
         private static final Pattern URL_TOKEN = Pattern.compile("https?://[^\\s,.]+");
+        private static final Pattern JOB_ID = Pattern.compile("\\bj-[0-9a-fA-F]{4,16}\\b");
         private static final Pattern FEED_AFTER = Pattern.compile(
                 "(?:по\\s+тем[еу]|по\\s+каналу|данные\\s+по|сводк[уа]\\s+по|по)\\s+([\\p{L}0-9_-]+)",
                 Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
         private static final List<String> REMINDERS = List.of("напомни", "напоминание", "remind");
+        private static final List<String> STOPS = List.of(
+                "останови", "остановить", "остановись", "остановка", "стоп",
+                "прекрати", "останови процесс", "останови задание", "останови сбор", "stop");
         private static final List<String> COLLECTORS = List.of(
                 "собирай", "собирать", "коллектор", "каждые", "периодическ", "collect");
         private static final List<String> SUMMARIES = List.of(
@@ -130,6 +134,9 @@ public class Day18AgentService {
             if (containsAny(lower, REMINDERS)) {
                 return reminder(prompt);
             }
+            if (containsAny(lower, STOPS)) {
+                return stopProcess(prompt);
+            }
             Matcher when = WHEN.matcher(prompt);
             if (when.find() && containsAny(lower, COLLECTORS)) {
                 return collector(prompt, when);
@@ -141,6 +148,15 @@ public class Day18AgentService {
                 return new Intent("scheduler_list_jobs", Map.of());
             }
             return null;
+        }
+
+        private static Intent stopProcess(String prompt) {
+            Map<String, Object> args = new LinkedHashMap<>();
+            Matcher jobMatcher = JOB_ID.matcher(prompt);
+            if (jobMatcher.find()) {
+                args.put("jobId", jobMatcher.group());
+            }
+            return new Intent("scheduler_stop_process", args);
         }
 
         private static Intent reminder(String prompt) {

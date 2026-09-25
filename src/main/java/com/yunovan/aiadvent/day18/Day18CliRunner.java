@@ -94,6 +94,14 @@ public class Day18CliRunner implements ApplicationRunner {
                 return;
             }
 
+            if (args.containsOption("stop")) {
+                List<Day18Job> stopped = scheduler.stopProcess(firstOption(args, "stop"));
+                System.out.println("=== ОСТАНОВЛЕНО ПРОЦЕССОВ: " + stopped.size() + " ===");
+                printJobs(stopped);
+                maybeExit(args);
+                return;
+            }
+
             if (args.containsOption("summary")) {
                 Day18Summary summary = scheduler.summary(
                         firstOption(args, "feed"), optionInt(args, "since", 0));
@@ -133,7 +141,7 @@ public class Day18CliRunner implements ApplicationRunner {
                 + "Запрос: --prompt=<текст>");
         System.out.println("Напоминание: --reminder=<текст> --delay=<сек>");
         System.out.println("Сбор: --collect --feed=<имя> --period=<сек> [--url=...] [--source=<поток>]");
-        System.out.println("Выполнить: --run=<id> | Сводка: --summary [--feed=<имя>] | "
+        System.out.println("Выполнить: --run=<id> | Остановить: --stop[=<id>] | Сводка: --summary [--feed=<имя>] | "
                 + "Наблюдение: --live [--seconds=<сек>]");
     }
 

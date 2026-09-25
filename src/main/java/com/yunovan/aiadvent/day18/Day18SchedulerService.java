@@ -62,7 +62,8 @@ public class Day18SchedulerService implements Day18SchedulerApi {
     }
 
     boolean isDue(Day18Job job) {
-        if ("done".equals(job.getStatus()) || job.getNextRunAt() == null) {
+        if ("done".equals(job.getStatus()) || "stopped".equals(job.getStatus())
+                || job.getNextRunAt() == null) {
             return false;
         }
         return !parseInstant(job.getNextRunAt()).isAfter(Instant.now());
@@ -113,6 +114,35 @@ public class Day18SchedulerService implements Day18SchedulerApi {
         }
         run(job);
         return job;
+    }
+
+    @Override
+    public List<Day18Job> stopProcess(String jobId) {
+        String id = jobId == null ? "" : jobId.trim();
+        List<Day18Job> affected;
+        if (id.isBlank()) {
+            affected = store.listJobs().stream()
+                    .filter(job -> !"done".equals(job.getStatus()))
+                    .toList();
+        } else {
+            Day18Job job = store.findById(id);
+            if (job == null) {
+                throw new IllegalArgumentException("Задание не найдено: " + jobId);
+            }
+            affected = List.of(job);
+        }
+        for (Day18Job job : affected) {
+            stop(job);
+        }
+        log.info("День 18: остановлено заданий: {}", affected.size());
+        return affected;
+    }
+
+    private void stop(Day18Job job) {
+        job.setStatus("stopped");
+        job.setNextRunAt(null);
+        job.setLastResult("Остановлено в " + shortTs(TS.format(Instant.now())));
+        store.saveJob(job);
     }
 
     @Override

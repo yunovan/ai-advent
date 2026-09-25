@@ -112,6 +112,18 @@ public class Day18McpServer {
                         new Param("jobId", "string", "Идентификатор задания планировщика (обязательный)")),
                         List.of("jobId")),
                 args -> mapper.valueToTree(api.runNow(stringArg(args, "jobId"))).toString()));
+
+        tools.put("scheduler_stop_process", new Day18Tool(
+                "scheduler_stop_process",
+                "Останавливает процесс: если указан jobId — конкретное задание планировщика, "
+                        + "если не указан — все активные процессы сбора и ожидающие напоминания. "
+                        + "Возвращает список остановленных заданий.",
+                objectSchema(List.of(
+                        new Param("jobId", "string",
+                                "Идентификатор задания; если не указан — остановить все процессы")),
+                        List.of()),
+                args -> mapper.valueToTree(api.stopProcess(
+                        stringArgOrNull(args, "jobId"))).toString()));
     }
 
     @PostConstruct

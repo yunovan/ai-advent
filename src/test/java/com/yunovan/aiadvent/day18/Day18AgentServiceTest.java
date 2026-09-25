@@ -50,22 +50,22 @@ class Day18AgentServiceTest {
     }
 
     @Test
-    void healthReportsConnectedServerAndFiveTools() {
+    void healthReportsConnectedServerAndSixTools() {
         Day18HealthResponse health = service.health();
 
         assertThat(health.connected()).isTrue();
         assertThat(health.serverName()).isEqualTo("ai-advent-scheduler-mcp");
         assertThat(health.serverVersion()).isEqualTo("0.1.0");
-        assertThat(health.toolCount()).isEqualTo(5);
+        assertThat(health.toolCount()).isEqualTo(6);
     }
 
     @Test
-    void toolsReturnsTheFiveSchedulerTools() {
+    void toolsReturnsTheSixSchedulerTools() {
         List<Day18ToolInfo> tools = service.tools();
 
         assertThat(tools.stream().map(Day18ToolInfo::name)).containsExactlyInAnyOrder(
                 "scheduler_add_reminder", "scheduler_add_collector", "scheduler_list_jobs",
-                "scheduler_summary", "scheduler_run_now");
+                "scheduler_summary", "scheduler_run_now", "scheduler_stop_process");
     }
 
     @Test
@@ -130,6 +130,28 @@ class Day18AgentServiceTest {
 
         assertThat(response.tool()).isEqualTo("scheduler_list_jobs");
         assertThat(response.toolError()).isFalse();
+    }
+
+    @Test
+    void submitStopWithJobIdStopsSingleProcess() {
+        Day18AgentResponse created = service.submit("собирай данные каждые 5 секунд по events");
+        String jobId = extractId(created.toolResult());
+
+        Day18AgentResponse response = service.submit("останови процесс " + jobId);
+
+        assertThat(response.tool()).isEqualTo("scheduler_stop_process");
+        assertThat(response.arguments().get("jobId")).isEqualTo(jobId);
+        assertThat(response.toolResult()).contains("\"status\":\"stopped\"");
+    }
+
+    @Test
+    void submitStopWithoutIdStopsAllProcesses() {
+        Day18AgentResponse response = service.submit("стоп, прекрати сбор данных");
+
+        assertThat(response.tool()).isEqualTo("scheduler_stop_process");
+        assertThat(response.arguments()).doesNotContainKey("jobId");
+        assertThat(response.toolError()).isFalse();
+        assertThat(response.answer()).contains("Результат инструмента:");
     }
 
     @Test
