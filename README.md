@@ -1100,3 +1100,214 @@ DAY16_PATH=/mcp
 DAY16_NAME=ai-advent-mcp
 DAY16_VERSION=0.1.0
 ```
+
+## День 17. Первый инструмент MCP
+
+Вместе с приложением стартует собственный MCP-сервер «трекер» (mock Яндекс.Трекера) на порту 9090. Агент разбирает запрос пользователя, сам выбирает инструмент, вызывает его по MCP и формулирует ответ:
+
+- MCP-сервер «трекер» поднимается вместе с приложением (`@PostConstruct`) на `http://localhost:9090/mcp`;
+- регистрируются три инструмента с описаниями и JSON Schema параметров: `tracker_create_task`, `tracker_list_tasks`, `tracker_add_comment`;
+- инструменты реально работают: создают задачи и комментарии, фильтруют по статусу; данные хранятся в `data/day17-tasks/tracker.json`;
+- агент (`Day17AgentService`) детерминированно распознаёт намерение по шаблонам («создай задачу», «покажи задачи», «добавь комментарий»), формирует аргументы, вызывает инструмент через MCP-клиент;
+- после вызова инструмента агент передаёт результат LLM для формулировки ответа; если LLM недоступен — возвращает результат инструмента как есть.
+
+Проверки дня:
+
+- `initialize` (`tools/list`) возвращает три инструмента трекера с JSON Schema;
+- `tracker_create_task` создаёт задачу, требование указать title;
+- `tracker_list_tasks` возвращает задачи с фильтром по статусу: `new`, `in_progress`, `done`;
+- `tracker_add_comment` добавляет комментарий к задаче по её id;
+- агент по запросу «создай задачу Привезти стол» вызывает `tracker_create_task` и возвращает ответ пользователю.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=17"
+# UI: http://localhost:8080/day17.html
+# MCP-сервер: http://localhost:9090/mcp
+
+./gradlew bootRun --args="--day=17 --check --cli"
+./gradlew bootRun --args="--day=17 --tools --cli"
+./gradlew bootRun --args="--day=17 --prompt=\"создай задачу Привезти стол\" --cli"
+./gradlew bootRun --args="--day=17 --prompt=\"покажи задачи в работе\" --cli"
+./gradlew bootRun --args="--day=17 --prompt=\"добавь комментарий к задаче t-xxxxx: проверил, всё ок\" --cli"
+```
+
+### Как устроен код дня 17
+
+| Файл | Роль |
+|---|---|
+| `day17/Day17Properties.java` | настройки: `serverPort` (9090), `path` (`/mcp`), `name`, `version`, `storeDir` |
+| `day17/Day17Ticket.java`, `day17/Day17Comment.java` | модель задачи и комментария трекера |
+| `day17/Day17TicketStore.java` | файловое хранилище задач и комментариев (JSON, Jackson) |
+| `day17/Day17TrackerApi.java` | интерфейс «внешнего API» трекера |
+| `day17/Day17TrackerService.java` | реализация трекера: создать задачу, список с фильтром, добавить комментарий |
+| `day17/Day17MockApiController.java` | mock-API трекера для ручного тестирования инструментов: `/api/day17/tracker/tasks` |
+| `day17/Day17Tool.java` | инструмент MCP: имя, описание, JSON Schema, обработчик |
+| `day17/Day17Connection.java`, `day17/Day17ToolInfo.java`, `day17/Day17ToolResult.java` | DTO MCP-соединения и инструментов |
+| `day17/Day17McpException.java` | ошибки MCP |
+| `day17/Day17McpServer.java` | MCP-сервер на JDK `HttpServer`: JSON-RPC `initialize`/`tools/list`/`tools/call`, сессии |
+| `day17/Day17McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day17/Day17AgentService.java` | агент: распознавание намерения → вызов инструмента через MCP → формулировка ответа LLM |
+| `day17/Day17AgentController.java` | `/api/day17/health`, `/api/day17/tools`, `/api/day17/agent` (502 при недоступном MCP) |
+| `day17/Day17CliRunner.java` | CLI: `--day=17 --check/--tools/--prompt=<текст>` |
+| `static/day17.html` | UI: соединение, список инструментов, запрос к агенту с примерами |
+
+Настройки:
+
+```bash
+DAY17_SERVER_PORT=9090
+DAY17_PATH=/mcp
+DAY17_NAME=ai-advent-tracker-mcp
+DAY17_VERSION=0.1.0
+DAY17_STORE_DIR=data/day17-tasks
+```
+
+## День 18. Планировщик и фоновые задачи
+
+Вместе с приложением стартует MCP-сервер планировщика (порт 9091) и фоновое ядро, которое работает 24/7: задания выполняются по расписанию и переживают перезапуск (состояние хранится в JSON). Есть три вида запланированных инструментов — напоминание (отложенный запуск), периодический сбор данных и регулярная сводка:
+
+- `scheduler_add_reminder(topic, delaySeconds)` — отложенное задание: напоминание сработает один раз через N секунд;
+- `scheduler_add_collector(feed, periodSeconds, url, sourceFeed)` — периодическое задание: каждый период происходит замер и сохраняется в поток `feed`; если задан `url` — проверка доступности сайта (пинг), если задан `sourceFeed` — регулярная сводка по ранее собранным данным;
+- `scheduler_list_jobs()` — список заданий со статусом, счётчиком запусков и временем следующего запуска;
+- `scheduler_summary(feed, sinceSeconds)` — агрегированный результат: сколько событий, первое/последнее, среднее/мин/макс значение, доля успешных проверок, последние записи;
+- `scheduler_run_now(jobId)` — мгновенный запуск задания для демонстрации без ожидания расписания.
+
+Как это устроено:
+
+- фоновый планировщик (`Day18SchedulerService`) тикает каждые 500 мс, находит задания, у которых наступило время запуска, и выполняет их; поток демон, работает с момента старта приложения;
+- каждое выполнение сохраняет замер в поток данных, а задание обновляет счётчик запусков и время следующего выполнения; всё состояние сохраняется в `data/day18-scheduler/scheduler.json` и восстанавливается при перезапуске;
+- агрегация (`Day18Aggregator`) считает статистику по собранным замерам — это и есть «регулярный summary»;
+- агент (`Day18AgentService`) распознаёт намерение («напомни через 10 секунд выпить чай», «собирай данные каждые 3 секунды по events», «пиши сводку каждые 4 секунды по events», «дай сводку по events»), вызывает инструмент планировщика через MCP и формулирует ответ;
+- CLI-режим `--live` показывает работу планировщика «вживую»: задания, счётчики и сводки обновляются каждые 2 секунды — агент «работает 24/7».
+
+Проверки дня:
+
+- напоминание срабатывает через заданную задержку ровно один раз и помечается `done`;
+- коллектор с периодом 1–2 секунды реально копит замеры по расписанию (без обращения к внешним сервисам в тестах);
+- коллектор со `sourceFeed` пишет регулярные сводки по накопленным данным;
+- `scheduler_run_now` запускает задание мгновенно;
+- `scheduler_summary` агрегирует замеры: счётчик, среднее, мин/макс, последняя запись;
+- агент по запросам «напомни…», «собирай…», «сводку…», «какие задания…» выбирает нужный инструмент и возвращает ответ.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=18"
+# UI: http://localhost:8080/day18.html
+# MCP-сервер: http://localhost:9091/mcp
+
+./gradlew bootRun --args="--day=18 --check --cli"
+./gradlew bootRun --args="--day=18 --tools --cli"
+./gradlew bootRun --args="--day=18 --reminder=\"выпить чай\" --delay=10 --cli"
+./gradlew bootRun --args="--day=18 --collect --feed=events --period=2 --cli"
+./gradlew bootRun --args="--day=18 --collect --feed=digest --period=4 --source=events --cli"
+./gradlew bootRun --args="--day=18 --summary --feed=events --cli"
+./gradlew bootRun --args="--day=18 --live --seconds=20 --cli"
+./gradlew bootRun --args="--day=18 --prompt=\"напомни через 10 секунд выпить чай\" --cli"
+./gradlew bootRun --args="--day=18 --prompt=\"дай сводку по events\" --cli"
+```
+
+### Как устроен код дня 18
+
+| Файл | Роль |
+|---|---|
+| `day18/Day18Properties.java` | настройки: `serverPort` (9091), `path` (`/mcp`), `name`, `version`, `storeDir`, `tickMillis` |
+| `day18/Day18Job.java`, `day18/Day18Sample.java` | модель задания планировщика и замера данных |
+| `day18/Day18Store.java` | файловое хранилище заданий и замеров (JSON, Jackson) |
+| `day18/Day18Summary.java`, `day18/Day18Aggregator.java` | агрегированный результат и его расчёт |
+| `day18/Day18HttpProbe.java` | проверка доступности URL (пинг) с замером времени ответа |
+| `day18/Day18SchedulerApi.java` | интерфейс планировщика для MCP-инструментов |
+| `day18/Day18SchedulerService.java` | фоновое ядро 24/7: тик, выполнение задания, персистентность расписания |
+| `day18/Day18Tool.java`, `day18/Day18Connection.java`, `day18/Day18ToolInfo.java`, `day18/Day18ToolResult.java` | DTO MCP-инструментов |
+| `day18/Day18McpException.java` | ошибки MCP |
+| `day18/Day18McpServer.java` | MCP-сервер на JDK `HttpServer`: JSON-RPC `initialize`/`tools/list`/`tools/call`, сессии |
+| `day18/Day18McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day18/Day18AgentService.java` | агент: распознавание намерения → вызов инструмента планировщика через MCP → ответ LLM |
+| `day18/Day18Controller.java` | `/api/day18/health`, `/tools`, `/agent`, `/jobs`, `/summary`, `/samples`, `/reminder`, `/collector`, `/run` |
+| `day18/Day18CliRunner.java` | CLI: `--day=18 --check/--tools/--jobs/--reminder/--collect/--run/--summary/--live/--prompt` |
+| `static/day18.html` | UI: напоминания, периодический сбор, список заданий, сводка, запрос к агенту |
+
+Настройки:
+
+```bash
+DAY18_SERVER_PORT=9091
+DAY18_PATH=/mcp
+DAY18_NAME=ai-advent-scheduler-mcp
+DAY18_VERSION=0.1.0
+DAY18_STORE_DIR=data/day18-scheduler
+DAY18_TICK_MILLIS=500
+```
+
+## День 19. Композиция MCP-инструментов
+
+Вместе с приложением стартует MCP-сервер витрины (порт 9092) с тремя инструментами, которые можно вызывать по отдельности и складывать в автоматический пайплайн «поиск → сводка → файл»:
+
+- `search(query, category, maxResults, sort)` — ищет товары в каталоге магазинов и возвращает JSON-список: название, категория, продавец, цена, рейтинг, ссылка на сайт и ключевые параметры;
+- `summarize(query, data, format)` — принимает результат `search` (проверяет его на пустоту и корректность), строит сводную таблицу «Сравнение по запросу» в markdown или csv: колонки «Товар | Продавец | Цена, ₽ | Рейтинг | Ключевые параметры | Ссылка»;
+- `saveToFile(data, summary, format, fileName)` — принимает результат `summarize` и складывает файл (`md`, `txt`, `csv` или `json`) в `data/day19-market`; возвращает имя, путь и размер.
+
+Композиция — главная идея дня: результат одного инструмента передаётся в следующий, и каждый шаг проверяет переданные данные (пустой список, отсутствие заголовка таблицы, нулевой размер файла считаются ошибкой передачи). Полный пайплайн выполняется автоматически в `Day19AgentService.pipeline()`.
+
+Как это устроено:
+
+- MCP-сервер (`Day19McpServer`) сам не знает о пайплайне: он предоставляет три независимых инструмента, а их последовательное выполнение и проверка передачи данных — забота клиента (`Day19McpClient`) и оркестратора (`Day19AgentService`);
+- три шага пайплайна возвращаются в ответе как `steps` с пометкой успеха и пояснением: «получено N товаров», «таблица готова к сохранению», «файл записан»;
+- агент (`Day19AgentService`) распознаёт намерение: «найди ноутбуки» → только `search`, «сравни смартфоны в таблицу» → `search` + `summarize`, «сохрани телевизоры в файл csv» → полный пайплайн; запрос и формат (markdown/csv/json/txt) выделяются из текста;
+- каталог — 13 мок-товаров (`Day19CatalogService`), продавцы с сайтами и параметрами, поиск по категориям «ноутбуки», «смартфоны», «телевизоры», «наушники», сортировка по цене и рейтингу;
+- CLI-режим `--pipeline=<запрос>` запускает весь конвейер и печатает успех каждого шага и сохранённый файл.
+
+Проверки дня:
+
+- инструмент `search` возвращает корректный JSON и по запросу «ноутбук» находит 5 товаров;
+- `summarize` принимает результат `search` и строит markdown/csv таблицу с заголовком «Сравнение по запросу»; на пустом или битом `data` отвечает ошибкой -32602;
+- `saveToFile` сохраняет файл в нужном формате и возвращает путь и размер; указание неизвестного формата — ошибка;
+- полный пайплайн выполняет три шага автоматически, каждый шаг подтверждает успех, файл реально создаётся;
+- МСР-сервер без сессии отвечает 400 (-32600), неизвестный метод — -32601, агент по фразам «найди…», «сравни…», «сохрани … в файл» выбирает нужную композицию.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=19"
+# UI: http://localhost:8080/day19.html
+# MCP-сервер: http://localhost:9092/mcp
+
+./gradlew bootRun --args="--day=19 --check --cli"
+./gradlew bootRun --args="--day=19 --tools --cli"
+./gradlew bootRun --args="--day=19 --search=ноутбук --cli"
+./gradlew bootRun --args="--day=19 --summarize=ноутбук --format=csv --cli"
+./gradlew bootRun --args="--day=19 --save=телевизоры --format=csv --file=телевизоры-2026 --cli"
+./gradlew bootRun --args="--day=19 --pipeline=ноутбуки --cli"
+./gradlew bootRun --args="--day=19 --prompt=\"сравни ноутбуки в таблицу\" --cli"
+./gradlew bootRun --args="--day=19 --prompt=\"сохрани телевизоры в файл csv\" --cli"
+./gradlew bootRun --args="--day=19 --files --cli"
+```
+
+### Как устроен код дня 19
+
+| Файл | Роль |
+|---|---|
+| `day19/Day19Properties.java` | настройки: `serverPort` (9092), `path` (`/mcp`), `name`, `version`, `storeDir` |
+| `day19/Day19Product.java` | мок-модель товара: id, название, категория, продавец, сайт, цена, рейтинг, параметры |
+| `day19/Day19CatalogService.java` | каталог из 13 товаров, поиск по подстроке, категориям, лимиту и сортировке, разбор JSON-списка товаров |
+| `day19/Day19TableBuilder.java` | markdown/csv-таблица «Сравнение по запросу» |
+| `day19/Day19SaveService.java` | сохранение сводки в файл (`md`/`txt`/`csv`/`json`), список сохранённых файлов |
+| `day19/Day19MarketApi.java`, `day19/Day19MarketService.java` | интерфейс и реализация витрины для MCP-инструментов |
+| `day19/Day19Tool.java`, `day19/Day19Connection.java`, `day19/Day19ToolInfo.java`, `day19/Day19ToolResult.java` | DTO MCP-инструментов |
+| `day19/Day19McpException.java` | ошибки MCP |
+| `day19/Day19McpServer.java` | MCP-сервер на JDK `HttpServer`: `initialize`/`tools/list`/`tools/call`, сессии |
+| `day19/Day19McpClient.java` | MCP-клиент на `java.net.http.HttpClient`: подключение, список инструментов, вызов |
+| `day19/Day19AgentService.java` | агент: распознавание намерения → пайплайн search/summarize/saveToFile через MCP → ответ LLM |
+| `day19/Day19Controller.java` | `/api/day19/health`, `/tools`, `/search`, `/summarize`, `/save`, `/pipeline`, `/agent`, `/files` |
+| `day19/Day19CliRunner.java` | CLI: `--day=19 --check/--tools/--search/--summarize/--save/--pipeline/--prompt/--files` |
+| `static/day19.html` | UI: проверка MCP, поиск, сводная таблица, кнопка полного пайплайна, список файлов, запрос к агенту |
+
+Настройки:
+
+```bash
+DAY19_SERVER_PORT=9092
+DAY19_PATH=/mcp
+DAY19_NAME=ai-advent-pipeline-mcp
+DAY19_VERSION=0.1.0
+DAY19_STORE_DIR=data/day19-market
+```

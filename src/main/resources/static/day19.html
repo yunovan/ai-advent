@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 19</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0f1220; --card: #1a2134; --line: #2c3550; --text: #eef2ff; --muted: #9aa6c4; --accent: #8a8aff; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #273b1d, var(--bg) 55%); color: var(--text); }
+        main { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0d101d; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #2c3550; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #2c3550; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #131a2e; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 90px; resize: vertical; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .tools { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .tool { padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+        .tool b { color: var(--text); }
+        .tool .desc { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .agent { margin-top: 14px; }
+        .step { border-top: 1px solid var(--line); padding: 10px 0; }
+        .step b { color: var(--accent); }
+        .step .okline { color: var(--ok); }
+        .step .badline { color: var(--danger); }
+        .agent pre { background: #0e1425; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #131a2e; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .examples { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .examples button { text-align: left; margin: 0; }
+        table.agg { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+        table.agg td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+        table.agg td:first-child { color: var(--muted); white-space: nowrap; }
+        table.market { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+        table.market th, table.market td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+        table.market th { color: var(--muted); font-weight: 600; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/">День 1</a><a href="/day2.html">День 2</a><a href="/day3.html">День 3</a>
+        <a href="/day4.html">День 4</a><a href="/day5.html">День 5</a><a href="/day6.html">День 6</a>
+        <a href="/day7.html">День 7</a><a href="/day8.html">День 8</a><a href="/day9.html">День 9</a>
+        <a href="/day10.html">День 10</a><a href="/day11.html">День 11</a><a href="/day12.html">День 12</a>
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a>
+    </nav>
+    <span class="badge">AI Advent · Day 19</span>
+    <h1>Композиция MCP-инструментов</h1>
+    <p class="lead">Три инструмента — <code>search</code>, <code>summarize</code>, <code>saveToFile</code> — складываются в автоматический пайплайн: поиск → сводная таблица → файл. Модуль проверяет, что результат каждого шага корректно передаётся следующему. Данные живут в <code>data/day19-market</code>.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Соединение агента с MCP</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить соединение</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Инструменты MCP</h3>
+        <button class="secondary" id="toolsBtn" type="button">Список инструментов</button>
+        <div class="tools" id="tools"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Поиск и сводная таблица</h3>
+        <div class="pair">
+            <div><label>Запрос</label><input id="queryInput" value="ноутбук"></div>
+            <div>
+                <label>Формат</label>
+                <select id="formatInput">
+                    <option value="markdown">markdown</option>
+                    <option value="csv">csv</option>
+                    <option value="json">json</option>
+                    <option value="txt">txt</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <span></span>
+            <div>
+                <button class="secondary" id="searchBtn" type="button">Поиск товаров</button>
+                <button class="secondary" id="tableBtn" type="button">Сводная таблица</button>
+            </div>
+        </div>
+        <div class="state" id="searchResult" style="display:none"></div>
+        <div class="state" id="tableResult" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Пайплайн search → summarize → saveToFile</h3>
+        <div class="row">
+            <div>
+                <label>Имя файла (пусто — comparison)</label>
+                <input id="fileNameInput" placeholder="ноутбуки-2026">
+            </div>
+            <button id="pipelineBtn" type="button">Запустить пайплайн</button>
+        </div>
+        <div class="state pipeline" id="pipelineResult" style="display:none"></div>
+        <div class="hint">Каждый шаг проверяет переданные данные: <code>search</code> возвращает JSON-список, <code>summarize</code> принимает его и проверяет на пустоту, <code>saveToFile</code> принимает результат <code>summarize</code> и складывает файл в <code>data/day19-market</code>. Пайплайн показывает успех каждого шага.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Сохранённые файлы</h3>
+        <div class="row">
+            <span></span>
+            <button class="secondary" id="filesBtn" type="button">Обновить список</button>
+        </div>
+        <div class="state" id="files" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент (композиция по запросу)</h3>
+        <textarea id="prompt" placeholder="Например: сравни ноутбуки в таблицу"></textarea>
+        <div class="row">
+            <span></span>
+            <button id="agentBtn" type="button">Выполнить через агента</button>
+        </div>
+        <div class="state agent" id="agentResult" style="display:none"></div>
+        <div class="examples" id="examples"></div>
+    </div>
+
+    <div class="hint">MCP-сервер пайплайна стартует вместе с приложением: <code>http://localhost:9092/mcp</code>. Скрипт видео: 1) «Проверить соединение» — агент подключается к MCP и читает 3 инструмента <code>search</code>, <code>summarize</code>, <code>saveToFile</code>; 2) «Поиск товаров» — инструмент <code>search</code> возвращает JSON-список товаров; 3) «Сводная таблица» — результат <code>search</code> передаётся в <code>summarize</code>, строится таблица «Сравнение по запросу»; 4) «Запустить пайплайн» — весь конвейер выполняется автоматически, каждый шаг подтверждает успех, файл появляется в списке; 5) агент по-русски: «сравни ноутбуки в таблицу», «сохрани телевизоры в файл csv».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function post(url, body) {
+        const resp = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body || {})});
+        return resp;
+    }
+
+    async function json(url, body) {
+        const resp = body ? await post(url, body) : await fetch(url);
+        let data = null;
+        try { data = await resp.json(); } catch(e) {}
+        if (!resp.ok) { toast((data && (data.error || data.detail)) || ("HTTP " + resp.status)); return null; }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Подключаемся к MCP-серверу пайплайна…");
+        try {
+            const data = await json("/api/day19/health");
+            if (!data) return;
+            health.style.display = "block";
+            health.innerHTML = (data.connected
+                ? "<span class='activeLine'>Агент подключён к MCP-серверу</span>"
+                : "<span style='color:var(--danger)'>Нет соединения</span>")
+                + "<br>сервер: " + esc(data.serverName) + " " + esc(data.serverVersion)
+                + "<br>инструментов: " + data.toolCount;
+            toast("Подключено, инструментов: " + data.toolCount);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function loadTools() {
+        toolsBtn.disabled = true;
+        toast("Запрашиваем инструменты по MCP…");
+        try {
+            const data = await json("/api/day19/tools");
+            if (!data) return;
+            toolsEl.innerHTML = "";
+            if (!data.length) { toolsEl.innerHTML = "<div style='color:var(--muted)'>Инструментов нет.</div>"; return; }
+            data.forEach(t => {
+                const div = document.createElement("div");
+                div.className = "tool";
+                const b = document.createElement("b"); b.textContent = t.name;
+                const desc = document.createElement("div"); desc.className = "desc"; desc.textContent = t.description;
+                div.appendChild(b); div.appendChild(desc);
+                toolsEl.appendChild(div);
+            });
+            toast("Инструментов из MCP: " + data.map(t => t.name).join(", "));
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { toolsBtn.disabled = false; }
+    }
+
+    async function doSearch() {
+        const query = queryInput.value.trim();
+        if (!query) { toast("Введите запрос"); return; }
+        searchBtn.disabled = true;
+        toast("Вызываем инструмент search…");
+        try {
+            const data = await json("/api/day19/search", {query});
+            if (!data) return;
+            searchResult.style.display = "block";
+            if (!data.length) { searchResult.innerHTML = "<div style='color:var(--muted)'>Товаров не найдено.</div>"; return; }
+            let html = "<span class='activeLine'>search: " + data.length + " товаров</span><table class='market'><tr><th>Товар</th><th>Категория</th><th>Цена</th><th>Рейтинг</th><th>Продавец</th></tr>";
+            data.forEach(p => {
+                html += "<tr><td>" + esc(p.title) + "</td><td>" + esc(p.category) + "</td><td>" + p.price + " " + esc(p.currency) + "</td><td>" + p.rating + "</td><td>" + esc(p.seller) + "</td></tr>";
+            });
+            html += "</table>";
+            searchResult.innerHTML = html;
+            toast("search вернул " + data.length + " товаров (данные готовы к summarize)");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { searchBtn.disabled = false; }
+    }
+
+    async function doTable() {
+        const query = queryInput.value.trim();
+        if (!query) { toast("Введите запрос"); return; }
+        const format = formatInput.value;
+        tableBtn.disabled = true;
+        toast("search → summarize: строим сводную таблицу…");
+        try {
+            const data = await json("/api/day19/summarize", {query, format});
+            if (data == null) return;
+            tableResult.style.display = "block";
+            tableResult.innerHTML = "<span class='activeLine'>summarize (" + format + ")</span><pre>" + esc(data) + "</pre>";
+            toast("Сводная таблица готова");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { tableBtn.disabled = false; }
+    }
+
+    async function runPipeline() {
+        const query = queryInput.value.trim();
+        if (!query) { toast("Введите запрос"); return; }
+        const format = formatInput.value;
+        const fileName = fileNameInput.value.trim() || null;
+        pipelineBtn.disabled = true;
+        toast("Выполняем полный пайплайн search → summarize → saveToFile…");
+        try {
+            const data = await json("/api/day19/pipeline", {query, format, fileName});
+            if (!data) return;
+            pipelineEl.style.display = "block";
+            let html = "<span class='activeLine'>Пайплайн выполнен: " + esc(data.query) + " (" + esc(data.format) + ")</span>";
+            data.steps.forEach(s => {
+                html += "<div class='step'><b>" + esc(s.tool) + "</b>: "
+                    + (s.success ? "<span class='okline'>OK</span>" : "<span class='badline'>СБОЙ</span>")
+                    + " — " + esc(s.note) + "</div>";
+            });
+            if (data.saved) {
+                html += "<div class='step'><b>файл</b>: " + esc(data.saved.fileName) + " (" + data.saved.bytes + " байт)<br><span style='color:var(--muted)'>" + esc(data.saved.path) + "</span></div>";
+            }
+            pipelineEl.innerHTML = html;
+            toast("Пайплайн: все шаги " + (data.steps.every(s => s.success) ? "успешны" : "частично") + ", файл сохранён");
+            loadFiles();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { pipelineBtn.disabled = false; }
+    }
+
+    async function loadFiles() {
+        filesBtn.disabled = true;
+        try {
+            const data = await json("/api/day19/files");
+            if (!data) return;
+            files.style.display = "block";
+            if (!data.length) { files.innerHTML = "<div style='color:var(--muted)'>Файлов пока нет.</div>"; return; }
+            let html = "<span class='activeLine'>Сохранено файлов: " + data.length + "</span>";
+            data.forEach(f => {
+                html += "<div class='step'><b>" + esc(f.fileName) + "</b> [" + esc(f.format) + "] "
+                    + f.bytes + " байт<br><span style='color:var(--muted)'>" + esc(f.path) + "</span></div>";
+            });
+            files.innerHTML = html;
+            toast("Файлов: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { filesBtn.disabled = false; }
+    }
+
+    async function runAgent() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        agentBtn.disabled = true;
+        toast("Агент выбирает инструменты и собирает пайплайн…");
+        try {
+            const data = await json("/api/day19/agent", {prompt});
+            if (!data) return;
+            agentEl.style.display = "block";
+            let html = "";
+            if (data.tool) {
+                html += "<div class='step'><b>Композиция:</b> intent=" + esc(data.intent)
+                    + "<br><b>Инструмент MCP:</b> " + esc(data.tool)
+                    + "<br><b>Аргументы:</b> " + esc(JSON.stringify(data.arguments))
+                    + (data.toolResult ? "<br><b>Результат:</b><pre>" + esc(data.toolResult) + "</pre>" : "")
+                    + "</div>";
+            }
+            html += "<div><b>Ответ агента:</b> " + esc(data.answer) + "</div>";
+            agentEl.innerHTML = html;
+            toast(data.tool ? ("Агент выполнил " + data.tool) : "Агент не нашёл подходящий инструмент");
+            loadFiles();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { agentBtn.disabled = false; }
+    }
+
+    const examples = [
+        "найди ноутбуки",
+        "сравни смартфоны в таблицу",
+        "сохрани телевизоры в файл csv",
+        "найди наушники и сохрани в файл",
+        "сравни ноутбуки и сохрани в файл ноутбуки-2026"
+    ];
+    const listEl = document.getElementById("examples");
+    examples.forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "small"; btn.type = "button"; btn.textContent = text;
+        btn.addEventListener("click", () => { promptEl.value = btn.textContent; runAgent(); });
+        listEl.appendChild(btn);
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("toolsBtn").addEventListener("click", loadTools);
+    document.getElementById("searchBtn").addEventListener("click", doSearch);
+    document.getElementById("tableBtn").addEventListener("click", doTable);
+    document.getElementById("pipelineBtn").addEventListener("click", runPipeline);
+    document.getElementById("filesBtn").addEventListener("click", loadFiles);
+    document.getElementById("agentBtn").addEventListener("click", runAgent);
+
+    const health = document.getElementById("health");
+    const toolsEl = document.getElementById("tools");
+    const queryInput = document.getElementById("queryInput");
+    const formatInput = document.getElementById("formatInput");
+    const fileNameInput = document.getElementById("fileNameInput");
+    const searchResult = document.getElementById("searchResult");
+    const tableResult = document.getElementById("tableResult");
+    const pipelineEl = document.getElementById("pipelineResult");
+    const files = document.getElementById("files");
+    const promptEl = document.getElementById("prompt");
+
+    (function init() {
+        toast("Пайплайн из 3 MCP-инструментов. MCP-сервер: http://localhost:9092/mcp. Нажмите «Проверить соединение».");
+    })();
+</script>
+</body>
+</html>

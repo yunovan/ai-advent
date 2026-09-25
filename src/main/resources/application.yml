@@ -92,3 +92,25 @@ day16:
   name: ${DAY16_NAME:ai-advent-mcp}
   version: ${DAY16_VERSION:0.1.0}
 
+day17:
+  server-port: ${DAY17_SERVER_PORT:9090}
+  path: ${DAY17_PATH:/mcp}
+  name: ${DAY17_NAME:ai-advent-tracker-mcp}
+  version: ${DAY17_VERSION:0.1.0}
+  store-dir: ${DAY17_STORE_DIR:data/day17-tasks}
+
+day18:
+  server-port: ${DAY18_SERVER_PORT:9091}
+  path: ${DAY18_PATH:/mcp}
+  name: ${DAY18_NAME:ai-advent-scheduler-mcp}
+  version: ${DAY18_VERSION:0.1.0}
+  store-dir: ${DAY18_STORE_DIR:data/day18-scheduler}
+  tick-millis: ${DAY18_TICK_MILLIS:500}
+
+day19:
+  server-port: ${DAY19_SERVER_PORT:9092}
+  path: ${DAY19_PATH:/mcp}
+  name: ${DAY19_NAME:ai-advent-pipeline-mcp}
+  version: ${DAY19_VERSION:0.1.0}
+  store-dir: ${DAY19_STORE_DIR:data/day19-market}
+
