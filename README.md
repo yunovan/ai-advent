@@ -1315,3 +1315,71 @@ DAY19_NAME=ai-advent-pipeline-mcp
 DAY19_VERSION=0.1.0
 DAY19_STORE_DIR=data/day19-market
 ```
+
+## День 20. Оркестрация MCP-серверов
+
+Два независимых MCP-сервера дней 18 и 19 живут рядом, и их инструменты можно звать из одной точки: оркестратор (порт 9093) подключается к обоим по протоколу MCP как клиент, держит единый каталог инструментов и сам становится MCP-сервером для внешнего мира. Инструменты размножены по серверам: `scheduler` (день 18, порт 9091) держит `scheduler_*`, `market` (день 19, порт 9092) — `search`, `summarize`, `saveToFile`. Оркестратор сам решает, где запускать инструмент, как обычные приложения решают, на каком хосте выполнить запрос.
+
+Главное — длинный флоу с инструментами разных серверов. Флоу `market-report` четыре шага: `search` → `summarize` → `saveToFile` (всё на сервере `market`), а затем `scheduler_add_reminder` уже на сервере `scheduler` — и в тему напоминания подставляется путь к файлу, созданному двумя шагами раньше. Эстафета данных работает через ссылки `{0}`, `{1}`, `{2}`: результат каждого шага становится аргументом следующего. Регистр ссылок (ключ → значение) при этом не виден извне: сервер `scheduler` получил уже готовый JSON, а не шаблон.
+
+Как это устроено:
+
+- единый реестр (`Day20Registry`) отображает инструмент → сервер: `scheduler_*` → `scheduler`, `search`/`summarize`/`saveToFile` → `market`;
+- `Day20Orchestrator` держит ленивые MCP-клиенты к обоим серверам, маршрутизирует одиночный вызов (`orchestrator.route(tool, args)`) и выполняет цепочки шагов (`orchestrator.runFlow`); ошибки MCP любых серверов оборачиваются в `Day20McpException`;
+- MCP-сервер оркестратора (`Day20McpServer`) — «коммутатор» из пяти инструментов: `orchestrator_servers`, `orchestrator_tools`, `orchestrator_route`, `orchestrator_call`, `orchestrator_run_flow`;
+- агент `Day20AgentService` распознаёт три намерения: «… и сохрани в файл …» → полный флоу `market-report`, «сводку/список джобов/напомни» → сервер `scheduler`, «найди/сравни в таблицу» → сервер `market`; LLM даёт фолбэк-ответ, если запрос не похож на работу с инструментами;
+- CLI-режим открывает те же возможности: `--tools`, `--route`, `--call`, `--flow`, `--servers`, `--check`.
+
+Проверки дня:
+
+- оркестратор подключается к обоим серверам и показывает агрегированный каталог (6 + 3 инструмента);
+- `route("search")` идёт на сервер `market`, `route("scheduler_summary")` — на `scheduler`; неизвестный инструмент или неизвестный сервер в `call` — ошибка;
+- флоу `market-report` выполняет 4 шага в строгом порядке, подставляет `{0}`/`{1}`/`{2}`, файл реально создаётся в `data/day19-market`, а напоминание в шаге 4 содержит путь к этому файлу;
+- флоу `scheduler-brief` общается только с сервером `scheduler` (`scheduler_add_collector` → `scheduler_summary`);
+- MCP-сервер оркестратора отвечает на все пять `orchestrator_*` инструментов, неизвестный метод — -32601, пустой объект `arguments` — -32602;
+- REST: неизвестный инструмент → 400, недоступный сервер → 502;
+- агент по фразам «… и сохрани в файл …», «сводку по событиям планировщика», «сравни смартфоны в таблицу» выбирает правильный сервер, инструмент и аргументы.
+
+### Запуск
+
+```bash
+./gradlew bootRun --args="--day=20"
+# UI: http://localhost:8080/day20.html
+# MCP-сервер оркестратора: http://localhost:9093/mcp
+# (рядом работают MCP-серверы дней 18 и 19)
+
+./gradlew bootRun --args="--day=20 --check --cli"
+./gradlew bootRun --args="--day=20 --servers --cli"
+./gradlew bootRun --args="--day=20 --tools --cli"
+./gradlew bootRun --args="--day=20 --flows --cli"
+./gradlew bootRun --args="--day=20 --route=search --json={\"query\":\"ноутбук\"} --cli"
+./gradlew bootRun --args="--day=20 --call=scheduler_summary --server=scheduler --cli"
+./gradlew bootRun --args="--day=20 --flow=market-report --json={\"query\":\"ноутбук\",\"format\":\"markdown\",\"fileName\":\"отчёт-2026\"} --cli"
+./gradlew bootRun --args="--day=20 --prompt=\"составь полный отчёт по ноутбукам и сохрани в файл csv\" --cli"
+./gradlew bootRun --args="--day=20 --prompt=\"сводку по событиям планировщика\" --cli"
+./gradlew bootRun --args="--day=20 --prompt=\"сравни смартфоны в таблицу\" --cli"
+```
+
+### Как устроен код дня 20
+
+| Файл | Роль |
+|---|---|
+| `day20/Day20Properties.java` | настройки: `serverPort` (9093), `path` (`/mcp`), `name`, `version` |
+| `day20/Day20Registry.java` | реестр: id серверов (`scheduler`, `market`) и отображение инструмент → сервер |
+| `day20/Day20Orchestrator.java` | ядро: ленивые MCP-клиенты к дням 18/19, health/каталог/маршрут/вызов/флоу, строковая эстафета `{0}`/`{1}`/`{n}` между шагами |
+| `day20/Day20FlowDefinition.java` | описание флоу: ключ, имя, шаги, вшитый словарь входных аргументов |
+| `day20/Day20McpException.java` | ошибки оркестрации (оборачивает ошибки MCP-серверов) |
+| `day20/Day20McpServer.java` | MCP-сервер-коммутатор на JDK `HttpServer`: 5 инструментов `orchestrator_*`, сессии |
+| `day20/Day20AgentService.java` | агент: намерения (флоу/планировщик/витрина) → маршрут или флоу через оркестратор → ответ LLM |
+| `day20/Day20Controller.java` | `/api/day20/health`, `/servers`, `/tools`, `/flows`, `/call`, `/route`, `/flow`, `/agent` |
+| `day20/Day20CliRunner.java` | CLI: `--day=20 --check/--servers/--tools/--flows/--route/--call/--flow/--prompt` |
+| `static/day20.html` | UI: проверка соединения, каталог инструментов, маршрутизация, запуск флоу с шагами и подстановкой, запрос к агенту |
+
+Настройки:
+
+```bash
+DAY20_SERVER_PORT=9093
+DAY20_PATH=/mcp
+DAY20_NAME=ai-advent-orchestrator-mcp
+DAY20_VERSION=0.1.0
+```

@@ -114,3 +114,9 @@ day19:
   version: ${DAY19_VERSION:0.1.0}
   store-dir: ${DAY19_STORE_DIR:data/day19-market}
 
+day20:
+  server-port: ${DAY20_SERVER_PORT:9093}
+  path: ${DAY20_PATH:/mcp}
+  name: ${DAY20_NAME:ai-advent-orchestrator-mcp}
+  version: ${DAY20_VERSION:0.1.0}
+

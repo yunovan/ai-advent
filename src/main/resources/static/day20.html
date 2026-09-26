@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 20</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #5ad4c8; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #0f3a3a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 960px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1714; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .server { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; margin-top: 8px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .server .tag { padding: 2px 8px; border-radius: 999px; background: #1e2c42; color: var(--accent); font-size: 12px; font-weight: 700; }
+        .server .up { color: var(--ok); }
+        .server .down { color: var(--danger); }
+        .tool { padding: 8px 12px; border-left: 3px solid var(--accent); background: #101a29; border-radius: 8px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+        .tool b { color: var(--text); }
+        .step { border-top: 1px solid var(--line); padding: 12px 0; }
+        .step b { color: var(--accent); }
+        .step .okline { color: var(--ok); }
+        .step .badline { color: var(--danger); }
+        .step pre { background: #0b1322; border: 1px solid var(--line); border-radius: 8px; padding: 8px; overflow-x: auto; font-size: 11px; white-space: pre-wrap; }
+        .agent pre { background: #0b1322; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+        .agentKeys { color: var(--muted); }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .examples { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .examples button { text-align: left; margin: 0; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a>
+    </nav>
+    <span class="badge">AI Advent · Day 20</span>
+    <h1>Оркестрация MCP-серверов</h1>
+    <p class="lead">Оркестратор регистрирует два независимых MCP-сервера — планировщик (день 18, порт <code>9091</code>) и витрину (день 19, порт <code>9092</code>) — сам является MCP-сервером на порту <code>9093</code>, маршрутизирует любой инструмент на правильный сервер и выполняет длинные флоу с инструментами разных серверов, передавая результат каждого шага следующему.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Соединение оркестратора</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить соединение</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+        <div class="row">
+            <span></span>
+            <button class="secondary" id="toolsBtn" type="button">Обновить каталог инструментов</button>
+        </div>
+        <div id="tools" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Маршрутизация инструмента</h3>
+        <label>Инструмент (сервер выберет оркестратор)</label>
+        <select id="toolSelect"></select>
+        <div class="row">
+            <div>
+                <label>Аргументы (JSON)</label>
+                <textarea id="routeArgs">{"query":"ноутбук"}</textarea>
+            </div>
+            <button id="routeBtn" type="button">Маршрутизировать</button>
+        </div>
+        <div class="state" id="routeResult" style="display:none"></div>
+        <div class="hint">Tools: <code>search</code>, <code>summarize</code>, <code>saveToFile</code> живут на сервере <code>market</code>; <code>scheduler_*</code> — на сервере <code>scheduler</code>. Оркестратор знает, куда идти.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Длинный флоу с инструментами разных серверов</h3>
+        <label>Флоу</label>
+        <select id="flowSelect"></select>
+        <div class="row">
+            <div>
+                <label>Аргументы флоу (JSON)</label>
+                <textarea id="flowArgs">{&quot;query&quot;:&quot;ноутбук&quot;,&quot;format&quot;:&quot;markdown&quot;,&quot;fileName&quot;:&quot;отчёт-2026&quot;}</textarea>
+            </div>
+            <button id="flowBtn" type="button">Запустить флоу</button>
+        </div>
+        <div class="state" id="flowResult" style="display:none"></div>
+        <div class="hint">Флоу <code>market-report</code>: <code>search</code> → <code>summarize</code> → <code>saveToFile</code> (сервер <code>market</code>), затем <code>scheduler_add_reminder</code> (сервер <code>scheduler</code>) с путём к файлу из шага 3 — результат предыдущего шага подставляется как <code>{0}</code>, <code>{1}</code>, <code>{2}</code>. Файл ложится в <code>data/day19-market</code>.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент (оркестрация по запросу)</h3>
+        <textarea id="prompt" placeholder="Например: составь полный отчёт по ноутбукам и сохрани в файл csv"></textarea>
+        <div class="row">
+            <span></span>
+            <button id="agentBtn" type="button">Выполнить через агента</button>
+        </div>
+        <div class="state agent" id="agentResult" style="display:none"></div>
+        <div class="examples" id="examples"></div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) «Проверить соединение» — оркестратор подключается к обоим серверам и показывает их (scheduler, market); 2) каталог инструментов — все инструменты двух серверов в одном списке; 3) «Маршрутизировать» — инструмент <code>search</code> отправляется на сервер <code>market</code>, <code>scheduler_summary</code> — на <code>scheduler</code>; 4) «Запустить флоу» <code>market-report</code> — результат search передаётся в summarize, затем в saveToFile, а путь к файлу шага 3 попадает в напоминание планировщика шага 4 (видно подстановку <code>{0}</code>/<code>{1}</code>/<code>{2}</code>); 5) агент по-русски: «составь полный отчёт ... и сохрани в файл csv», «сводку по событиям планировщика», «сравни смартфоны в таблицу».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function json(url, body) {
+        const opts = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)};
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch(e) {}
+        if (!resp.ok) { toast((data && (data.error || data.detail)) || ("HTTP " + resp.status)); return null; }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Подключаемся к обоим MCP-серверам…");
+        try {
+            const data = await json("/api/day20/health");
+            if (!data) return;
+            health.style.display = "block";
+            let html = (data.connected
+                ? "<span class='activeLine'>Оркестратор подключён к обоим серверам</span>"
+                : "<span style='color:var(--danger)'>Частичное соединение</span>")
+                + ", всего инструментов: " + data.toolCount;
+            data.servers.forEach(s => {
+                html += "<div class='server'><span class='tag'>" + esc(s.server) + "</span>"
+                    + "<span>" + esc(s.name) + " " + esc(s.version) + " (" + s.toolCount + " инструментов)</span>"
+                    + "<span class='" + (s.connected ? "up'>подключён" : "down'>недоступен") + "</span></div>";
+            });
+            health.innerHTML = html;
+            toast("Подключено: " + data.servers.map(s => s.server).join(", "));
+            loadTools();
+            loadFlows();
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function loadTools() {
+        toolsBtn.disabled = true;
+        toast("Запрашиваем инструменты всех серверов…");
+        try {
+            const data = await json("/api/day20/tools");
+            if (!data) return;
+            toolSelect.innerHTML = "";
+            const toolsEl = document.getElementById("tools");
+            toolsEl.innerHTML = "";
+            data.forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t.name;
+                opt.textContent = t.name + "  [" + t.server + "]";
+                toolSelect.appendChild(opt);
+                const div = document.createElement("div");
+                div.className = "tool";
+                div.innerHTML = "<b>" + esc(t.name) + "</b> на сервере <code>" + esc(t.server) + "</code> — " + esc(t.description);
+                toolsEl.appendChild(div);
+            });
+            toast("Инструментов: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { toolsBtn.disabled = false; }
+    }
+
+    async function loadFlows() {
+        const data = await json("/api/day20/flows");
+        if (!data) return;
+        flowSelect.innerHTML = "";
+        data.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f.key;
+            opt.textContent = f.key;
+            flowSelect.appendChild(opt);
+        });
+        flowSelect.addEventListener("change", () => {
+            const key = flowSelect.value;
+            flowArgs.value = key === "market-report"
+                ? '{"query":"ноутбук","format":"markdown","fileName":"отчёт-2026"}'
+                : '{"feed":"events","periodSeconds":2,"url":"https://demo.local/events","sinceSeconds":10}';
+        });
+    }
+
+    async function runRoute() {
+        const tool = toolSelect.value;
+        if (!tool) { toast("Сначала обновите каталог инструментов"); return; }
+        routeBtn.disabled = true;
+        toast("Маршрутизируем " + tool + "…");
+        try {
+            let arguments = {};
+            try { arguments = JSON.parse(routeArgs.value || "{}"); }
+            catch(e) { toast("JSON аргументов некорректен: " + e); return; }
+            const data = await json("/api/day20/route", {tool, arguments});
+            if (!data) return;
+            routeResult.style.display = "block";
+            routeResult.innerHTML = "<span class='activeLine'>Сервер: " + esc(data.server) + " · Инструмент: " + esc(data.tool)
+                + (data.success ? " · OK" : " · СБОЙ") + "</span><pre>" + esc(data.result) + "</pre>";
+            toast("Маршрут: " + tool + " → " + data.server);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { routeBtn.disabled = false; }
+    }
+
+    async function runFlow() {
+        const flow = flowSelect.value;
+        if (!flow) { toast("Выберите флоу"); return; }
+        flowBtn.disabled = true;
+        toast("Выполняем длинный флоу " + flow + "…");
+        try {
+            let arguments = {};
+            try { arguments = JSON.parse(flowArgs.value || "{}"); }
+            catch(e) { toast("JSON аргументов некорректен: " + e); return; }
+            const data = await json("/api/day20/flow", {flow, arguments});
+            if (!data) return;
+            flowResult.style.display = "block";
+            let html = "<span class='activeLine'>Флоу: " + esc(data.flow) + "</span><br>"
+                + "<span style='color:var(--muted)'>" + esc(data.summary) + "</span>";
+            data.steps.forEach((s, i) => {
+                html += "<div class='step'><b>#" + (i + 1) + "</b> [" + esc(s.server) + "] " + esc(s.tool)
+                    + (s.success ? " <span class='okline'>OK</span>" : " <span class='badline'>СБОЙ</span>")
+                    + "<br><span class='agentKeys'>аргументы:</span><pre>" + esc(JSON.stringify(s.arguments, null, 2)) + "</pre>"
+                    + "<span class='agentKeys'>результат:</span><pre>" + esc(s.snippet) + "</pre></div>";
+            });
+            flowResult.innerHTML = html;
+            toast("Флоу выполнен: " + data.summary);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { flowBtn.disabled = false; }
+    }
+
+    async function runAgent() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        agentBtn.disabled = true;
+        toast("Агент выбирает сервер и инструменты…");
+        try {
+            const data = await json("/api/day20/agent", {prompt});
+            if (!data) return;
+            agentEl.style.display = "block";
+            let html = "";
+            if (data.tool) {
+                html += "<div class='step'><b>Оркестрация:</b><br>intent = " + esc(data.intent)
+                    + "<br>server = <span class='activeLine'>" + esc(data.server || "—") + "</span>"
+                    + "<br>tool = " + esc(data.tool)
+                    + "<br>arguments = <span class='agentKeys'>" + esc(JSON.stringify(data.arguments)) + "</span>"
+                    + (data.toolResult ? "<br><span class='agentKeys'>результат инструмента:</span><pre>" + esc(data.toolResult) + "</pre>" : "")
+                    + "</div>";
+            }
+            html += "<div><b>Ответ агента:</b> " + esc(data.answer) + "</div>";
+            agentEl.innerHTML = html;
+            toast(data.server ? ("Маршрут: " + data.server + "/" + data.tool) : "Инструменты выбраны");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { agentBtn.disabled = false; }
+    }
+
+    const examples = [
+        "составь полный отчёт по ноутбукам и сохрани в файл csv",
+        "найди наушники",
+        "сравни смартфоны в таблицу",
+        "сводку по событиям планировщика",
+        "покажи список джобов планировщика",
+        "собери отчёт по телевизорам и сохрани в файл тв-2026"
+    ];
+    const listEl = document.getElementById("examples");
+    examples.forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "small"; btn.type = "button"; btn.textContent = text;
+        btn.addEventListener("click", () => { promptEl.value = btn.textContent; runAgent(); });
+        listEl.appendChild(btn);
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("toolsBtn").addEventListener("click", loadTools);
+    document.getElementById("routeBtn").addEventListener("click", runRoute);
+    document.getElementById("flowBtn").addEventListener("click", runFlow);
+    document.getElementById("agentBtn").addEventListener("click", runAgent);
+
+    const health = document.getElementById("health");
+    const toolSelect = document.getElementById("toolSelect");
+    const flowSelect = document.getElementById("flowSelect");
+    const routeArgs = document.getElementById("routeArgs");
+    const flowArgs = document.getElementById("flowArgs");
+    const routeResult = document.getElementById("routeResult");
+    const flowResult = document.getElementById("flowResult");
+    const promptEl = document.getElementById("prompt");
+    const agentEl = document.getElementById("agentResult");
+
+    (function init() {
+        toast("Оркестратор двух MCP-серверов: scheduler (9091) и market (9092). Нажмите «Проверить соединение».");
+    })();
+</script>
+</body>
+</html>
