@@ -25,3 +25,7 @@ day19:
   server-port: 0
   path: /mcp
   store-dir: build/day19-tests-market
+
+day20:
+  server-port: 0
+  path: /mcp
