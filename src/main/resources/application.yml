@@ -120,3 +120,14 @@ day20:
   name: ${DAY20_NAME:ai-advent-orchestrator-mcp}
   version: ${DAY20_VERSION:0.1.0}
 
+day21:
+  server-port: ${DAY21_SERVER_PORT:9094}
+  path: ${DAY21_PATH:/mcp}
+  name: ${DAY21_NAME:ai-advent-index-mcp}
+  version: ${DAY21_VERSION:0.1.0}
+  store-dir: ${DAY21_STORE_DIR:data/day21-index}
+  corpus-dir: ${DAY21_CORPUS_DIR:data/day21-corpus}
+  chunk-size: ${DAY21_CHUNK_SIZE:600}
+  chunk-overlap: ${DAY21_CHUNK_OVERLAP:80}
+  dimensions: ${DAY21_DIMENSIONS:512}
+

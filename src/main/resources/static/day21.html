@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 21</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #5ad4c8; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #0f3a3a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 960px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1714; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .strategy { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; margin-top: 8px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .strategy .tag { padding: 2px 8px; border-radius: 999px; background: #1e2c42; color: var(--accent); font-size: 12px; font-weight: 700; }
+        .strategy .up { color: var(--ok); }
+        .strategy .down { color: var(--warn); }
+        .hit { padding: 8px 12px; border-left: 3px solid var(--accent); background: #101a29; border-radius: 8px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+        .hit b { color: var(--text); }
+        .hit .score { color: var(--accent); font-weight: 700; }
+        .metric { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; margin-top: 8px; }
+        .metric b { color: var(--accent); }
+        .metric .win { color: var(--ok); font-weight: 700; }
+        .agent pre { background: #0b1322; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+        .agentKeys { color: var(--muted); }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .examples { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .examples button { text-align: left; margin: 0; }
+        .chunk { padding: 8px 12px; border-left: 3px solid #f0c850; background: #101a29; border-radius: 8px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; color: var(--muted); }
+        .chunk b { color: var(--text); }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a>
+    </nav>
+    <span class="badge">AI Advent · Day 21</span>
+    <h1>Индексация документов</h1>
+    <p class="lead">Корпус документов (~130&nbsp;тысяч символов: README проекта, статьи, исходный код и PDF-гайд, сгенерированный в рантайме) нарезается на чанки двумя стратегиями — фиксированным окном и по структуре — каждый чанк получает вектор-эмбеддинг и метаданные, индексы сохраняются в JSON, а сравнение стратегий на пробных запросах выносит вердикт. Локальный индекс доступен и как MCP-сервер на порту <code>9094</code>.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Состояние индекса</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить корпус и индекс</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Построение индекса</h3>
+        <div class="row">
+            <div>
+                <label>Стратегия чанкинга</label>
+                <select id="strategySelect">
+                    <option value="fixed">fixed — фиксированное окно (~600 симв.)</option>
+                    <option value="structural">structural — по заголовкам и параграфам</option>
+                </select>
+            </div>
+            <button id="ingestBtn" type="button">Построить индекс</button>
+        </div>
+        <div class="state" id="ingestResult" style="display:none"></div>
+        <div class="hint">Каждый чанк получает метаданные: <code>source</code>, <code>title</code>, <code>section</code>, <code>chunk_id</code>, позицию и размер. Индекс сохраняется в <code>data/day21-index/index-&lt;стратегия&gt;.json</code>.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Семантический поиск</h3>
+        <div class="pair">
+            <div>
+                <label>Запрос</label>
+                <input id="query" value="что такое эмбеддинги" type="text">
+            </div>
+            <div>
+                <label>Стратегия</label>
+                <select id="searchStrategy">
+                    <option value="fixed">fixed</option>
+                    <option value="structural">structural</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <span></span>
+            <button id="searchBtn" type="button">Найти</button>
+        </div>
+        <div class="state" id="searchResult" style="display:none"></div>
+        <div class="hint">Запрос превращается в эмбеддинг и сравнивается с чанками по косинусной близости; в ответе — источник, заголовок и секция каждого чанка.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Сравнение стратегий чанкинга</h3>
+        <div class="row">
+            <span></span>
+            <button id="compareBtn" type="button">Сравнить стратегии</button>
+        </div>
+        <div class="state" id="compareResult" style="display:none"></div>
+        <div class="hint">Метрики: средний/мин/макс размер чанка, коэффициент вариации (равномерность) и покрытие пробных запросов — 5 известных вопросов должны попадать в топ-3, один заведомый промах (рецепт борща) — не находиться.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Чанки индекса</h3>
+        <div class="row">
+            <div>
+                <label>Стратегия</label>
+                <select id="chunksStrategy">
+                    <option value="fixed">fixed</option>
+                    <option value="structural">structural</option>
+                </select>
+            </div>
+            <button id="chunksBtn" type="button">Показать чанки</button>
+        </div>
+        <div id="chunks" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент (поиск по документам)</h3>
+        <textarea id="prompt" placeholder="Например: найди что такое MCP"></textarea>
+        <div class="row">
+            <span></span>
+            <button id="agentBtn" type="button">Выполнить через агента</button>
+        </div>
+        <div class="state agent" id="agentResult" style="display:none"></div>
+        <div class="examples" id="examples"></div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) «Проверить корпус» — показаны документы, объём (~130&nbsp;тыс. символов ≈ 30+ страниц) и статус индексов; 2) «Построить индекс» по fixed и structural — видны чанки и файлы индекса; 3) «Найти» «что такое эмбеддинги» и «память агента» — найденный чанк, секция и score; 4) «Сравнить стратегии» — метрики CV и покрытие проб, вердикт; 5) «Показать чанки» — метаданные каждого чанка; 6) агент по-русски: «найди что такое MCP», «сравни стратегии чанкинга», «проиндексируй корпус».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function json(url, body) {
+        const opts = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)};
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch(e) {}
+        if (!resp.ok) { toast((data && (data.error || data.detail)) || ("HTTP " + resp.status)); return null; }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Читаем корпус и состояние индексов…");
+        try {
+            const data = await json("/api/day21/health");
+            if (!data) return;
+            health.style.display = "block";
+            let html = "<span class='activeLine'>Документов в корпусе: " + data.documents
+                + "</span><br>объём: " + data.corpusChars + " символов ≈ " + data.pagesEstimate + " страниц";
+            data.strategies.forEach(s => {
+                html += "<div class='strategy'><span class='tag'>" + esc(s.name) + "</span>"
+                    + "<span>" + esc(s.description) + "</span>"
+                    + "<span class='" + (s.indexed ? "up'>индекс построен, " : "down'>не проиндексирован, ") + s.chunkCount + " чанков</span></div>";
+            });
+            health.innerHTML = html;
+            toast("Корпус: " + data.documents + " документов, " + data.corpusChars + " символов");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function ingest() {
+        ingestBtn.disabled = true;
+        const strategy = strategySelect.value;
+        toast("Индексируем корпус по стратегии " + strategy + "…");
+        try {
+            const data = await json("/api/day21/ingest", {strategy});
+            if (!data) return;
+            ingestResult.style.display = "block";
+            ingestResult.innerHTML = "<span class='activeLine'>Индекс «" + esc(data.strategy) + "» построен</span><br>"
+                + "документов: " + data.documents + " · чанков: " + data.chunks
+                + " · объём: " + data.corpusChars + " символов<br>файл: <code>" + esc(data.indexFile) + "</code>";
+            toast("Построено " + data.chunks + " чанков");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { ingestBtn.disabled = false; }
+    }
+
+    async function search() {
+        const q = query.value.trim();
+        if (!q) { toast("Введите запрос"); return; }
+        searchBtn.disabled = true;
+        toast("Ищем «" + q + "» по косинусной близости…");
+        try {
+            const data = await json("/api/day21/search", {query: q, strategy: searchStrategy.value, k: 3});
+            if (!data) return;
+            searchResult.style.display = "block";
+            if (!data.hits.length) {
+                searchResult.innerHTML = "<span style='color:var(--warn)'>Ничего не найдено по запросу «" + esc(data.query) + "» (стратегия " + esc(data.strategy) + ")</span>";
+                toast("Пусто");
+                return;
+            }
+            let html = "<span class='activeLine'>Запрос: " + esc(data.query) + " · стратегия: " + esc(data.strategy) + " · результатов: " + data.hits.length + "</span>";
+            data.hits.forEach((h, i) => {
+                html += "<div class='hit'><b>#" + (i + 1) + "</b> <span class='score'>[" + h.score.toFixed(3) + "]</span> "
+                    + esc(h.chunk.chunkId)
+                    + "<br><span class='agentKeys'>source=" + esc(h.chunk.source)
+                    + " | title=" + esc(h.chunk.title)
+                    + " | section=" + esc(h.chunk.section || "—") + "</span><br>«" + esc(h.snippet) + "»</div>";
+            });
+            searchResult.innerHTML = html;
+            toast("Топ-результат: " + data.hits[0].chunk.source);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { searchBtn.disabled = false; }
+    }
+
+    async function compare() {
+        compareBtn.disabled = true;
+        toast("Считаем метрики обеих стратегий на пробных запросах…");
+        try {
+            const data = await json("/api/day21/compare");
+            if (!data) return;
+            compareResult.style.display = "block";
+            let html = "<span style='color:var(--muted)'>Пробных запросов: " + data.probes.length + "</span>";
+            data.strategies.forEach((m, idx) => {
+                const win = data.verdict.indexOf(m.strategy) !== -1;
+                html += "<div class='metric'><b>" + esc(m.strategy) + (win ? " <span class='win'>← вердикт</span>" : "") + "</b><br>"
+                    + "чанков: " + m.chunks + " · средний: " + m.avgChunkChars.toFixed(0)
+                    + " · min: " + m.minChunkChars.toFixed(0) + " · max: " + m.maxChunkChars.toFixed(0)
+                    + " · CV: " + m.coefficientOfVariation.toFixed(2) + "<br>"
+                    + "покрытие проб: " + m.probeCoveragePercent.toFixed(1) + "% (" + m.probeHits + "/" + m.probeTotal + ")</div>";
+            });
+            html += "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> " + esc(data.verdict) + "</div>";
+            compareResult.innerHTML = html;
+            toast("Метрики посчитаны");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { compareBtn.disabled = false; }
+    }
+
+    async function chunks() {
+        chunksBtn.disabled = true;
+        toast("Загружаем чанки (" + chunksStrategy.value + ")…");
+        try {
+            const data = await json("/api/day21/chunks?strategy=" + encodeURIComponent(chunksStrategy.value));
+            if (!data) return;
+            const el = document.getElementById("chunks");
+            el.innerHTML = "";
+            data.forEach(c => {
+                const div = document.createElement("div");
+                div.className = "chunk";
+                div.innerHTML = "<b>" + esc(c.chunkId) + "</b> (" + c.charCount + " симв.)"
+                    + "<br>source = " + esc(c.source) + " | title = " + esc(c.title)
+                    + "<br>section = " + esc(c.section || "—");
+                el.appendChild(div);
+            });
+            toast("Чанков показано: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { chunksBtn.disabled = false; }
+    }
+
+    async function runAgent() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        agentBtn.disabled = true;
+        toast("Агент выбирает инструмент индекса…");
+        try {
+            const data = await json("/api/day21/agent", {prompt});
+            if (!data) return;
+            agentEl.style.display = "block";
+            let html = "<div class='step'><b>Инструмент:</b><br>intent = " + esc(data.intent)
+                + "<br>tool = <span class='activeLine'>" + esc(data.tool) + "</span>"
+                + "<br>arguments = <span class='agentKeys'>" + esc(JSON.stringify(data.arguments)) + "</span>"
+                + (data.toolResult ? "<br><span class='agentKeys'>результат инструмента:</span><pre>" + esc(data.toolResult) + "</pre>" : "")
+                + "</div>";
+            html += "<div><b>Ответ агента:</b> " + esc(data.answer) + "</div>";
+            agentEl.innerHTML = html;
+            toast("Инструмент: " + data.tool);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { agentBtn.disabled = false; }
+    }
+
+    const examples = [
+        "найди что такое эмбеддинги",
+        "найди что такое MCP",
+        "что такое чанкинг",
+        "где говорится про долговременную память",
+        "сравни стратегии чанкинга",
+        "проиндексируй корпус"
+    ];
+    const listEl = document.getElementById("examples");
+    examples.forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "small"; btn.type = "button"; btn.textContent = text;
+        btn.addEventListener("click", () => { promptEl.value = btn.textContent; runAgent(); });
+        listEl.appendChild(btn);
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("ingestBtn").addEventListener("click", ingest);
+    document.getElementById("searchBtn").addEventListener("click", search);
+    document.getElementById("compareBtn").addEventListener("click", compare);
+    document.getElementById("chunksBtn").addEventListener("click", chunks);
+    document.getElementById("agentBtn").addEventListener("click", runAgent);
+
+    const health = document.getElementById("health");
+    const strategySelect = document.getElementById("strategySelect");
+    const ingestResult = document.getElementById("ingestResult");
+    const searchStrategy = document.getElementById("searchStrategy");
+    const searchResult = document.getElementById("searchResult");
+    const compareResult = document.getElementById("compareResult");
+    const chunksStrategy = document.getElementById("chunksStrategy");
+    const promptEl = document.getElementById("prompt");
+    const agentEl = document.getElementById("agentResult");
+
+    (function init() {
+        toast("Локальный индекс документов: корпус нарезается чанкерами (fixed/structural), эмбеддинги локальные, индекс в JSON, MCP-сервер на 9094. Нажмите «Проверить корпус и индекс».");
+    })();
+</script>
+</body>
+</html>

@@ -216,6 +216,16 @@ class Day01CliRunnerTest {
     }
 
     @Test
+    void skipsWhenDayIsTwentyOne() {
+        LlmClient llmClient = mock(LlmClient.class);
+        Day01CliRunner runner = new Day01CliRunner(llmClient, mock(ApplicationContext.class));
+
+        runner.run(new DefaultApplicationArguments("--day=21", "--prompt=Hello"));
+
+        verifyNoInteractions(llmClient);
+    }
+
+    @Test
     void printsLlmResponseForPromptOption() {
         LlmClient llmClient = mock(LlmClient.class);
         when(llmClient.complete("Hello from CLI")).thenReturn("CLI answer");
