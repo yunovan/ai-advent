@@ -131,3 +131,8 @@ day21:
   chunk-overlap: ${DAY21_CHUNK_OVERLAP:80}
   dimensions: ${DAY21_DIMENSIONS:512}
 
+day22:
+  strategy: ${DAY22_STRATEGY:fixed}
+  top-k: ${DAY22_TOP_K:5}
+  answer-max-tokens: ${DAY22_ANSWER_MAX_TOKENS:400}
+

@@ -37,3 +37,8 @@ day21:
   corpus-dir: build/day21-tests-corpus
   chunk-size: 120
   chunk-overlap: 20
+
+day22:
+  strategy: fixed
+  top-k: 5
+  answer-max-tokens: 400
