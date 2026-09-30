@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI Advent — День 22</title>
+    <title>AI Advent — День 23</title>
     <style>
         :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #5ad4c8; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
         * { box-sizing: border-box; }
@@ -49,6 +49,9 @@
         .expect { display: flex; gap: 8px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-size: 12px; }
         .expect .qid { color: var(--accent); font-weight: 700; }
         .expect .src { color: var(--muted); }
+        .pipe { margin: 8px 0; padding: 10px 12px; background: #101a29; border: 1px solid var(--line); border-radius: 10px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.7; }
+        .pipe .step { color: var(--accent); font-weight: 700; }
+        .pipe .cut { color: var(--warn); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -56,12 +59,12 @@
     <nav class="nav">
         <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a>
     </nav>
-    <span class="badge">AI Advent · Day 22</span>
-    <h1>Первый RAG-запрос</h1>
-    <p class="lead">Вопрос → поиск релевантных чанков в локальном индексе дня 21 → контекст подставляется к вопросу → LLM формулирует ответ. Агент работает в двух режимах: с RAG (контекст из источников) и без RAG (только память модели), а качество измеряется на 10 контрольных вопросах с известными ожиданиями и источниками.</p>
+    <span class="badge">AI Advent · Day 23</span>
+    <h1>Реранкинг и фильтрация</h1>
+    <p class="lead">Второй этап после поиска: кандидаты из индекса (dense + BM25) сортируются по релевантности и проходят через фильтр с порогом отсечения. Недостаточно релевантные чанки выкидываются, остаётся топ-K. Запрос перед поиском можно переписать — расширить синонимами и доменными терминами. Четыре режима сравниваются между собой по качеству на 10 контрольных вопросах.</p>
 
     <div class="card">
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Состояние RAG / индекса</h3>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Состояние пайплайна</h3>
         <div class="row">
             <span></span>
             <button id="checkBtn" type="button">Проверить</button>
@@ -70,14 +73,27 @@
     </div>
 
     <div class="card" style="margin-top:20px">
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Ответ агента: с RAG или без RAG</h3>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Переписывание запроса (query rewrite)</h3>
+        <input id="rewriteQuestion" value="что такое эмбеддинги документов и как они получаются?" type="text">
+        <div class="row">
+            <span></span>
+            <button id="rewriteBtn" type="button">Переписать</button>
+        </div>
+        <div class="state" id="rewriteResult" style="display:none"></div>
+        <div class="hint">Эвристический rewrite: вопрос расширяется синонимами и терминами корпуса (эмбеддинг → вектор, n-грамм; MCP → протокол, json-rpc и т.д.). Правила детерминированы и видны как «применённые расширения».</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Ответ агента: режим пайплайна</h3>
         <textarea id="question" placeholder="Например: что такое эмбеддинги документов и как они получаются?"></textarea>
         <div class="pair">
             <div>
                 <label>Режим</label>
                 <select id="modeSelect">
-                    <option value="rag">rag — вопрос + контекст из индекса</option>
-                    <option value="plain">plain — только вопрос, без контекста</option>
+                    <option value="full">full — rewrite + фильтр по порогу (по умолчанию)</option>
+                    <option value="base">base — без rewrite и без фильтра</option>
+                    <option value="filter">filter — только фильтр по порогу</option>
+                    <option value="rewrite">rewrite — только переписывание запроса</option>
                 </select>
             </div>
             <div></div>
@@ -91,14 +107,14 @@
     </div>
 
     <div class="card" style="margin-top:20px">
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Сравнение: один вопрос в двух режимах</h3>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Сравнение: base против full</h3>
         <input id="compareQuestion" value="что такое эмбеддинги документов и как они получаются?" type="text">
         <div class="row">
             <span></span>
-            <button id="compareBtn" type="button">Сравнить RAG / без RAG</button>
+            <button id="compareBtn" type="button">Сравнить base / full</button>
         </div>
         <div class="state" id="compareResult" style="display:none"></div>
-        <div class="hint">Показывается, какие источники нашёл индекс, ответ модели с контекстом и ответ модели по памяти — рядом.</div>
+        <div class="hint">Показывает, сколько кандидатов рассмотрено до фильтрации, сколько отсеяно как нерелевантные, какие источники остались в контексте.</div>
     </div>
 
     <div class="card" style="margin-top:20px">
@@ -111,18 +127,18 @@
     </div>
 
     <div class="card" style="margin-top:20px">
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Качество: 10 контрольных вопросов</h3>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Качество: base против full на 10 вопросах</h3>
         <div class="row">
             <span></span>
-            <button id="evaluateBtn" type="button">Прогнать оценку</button>
+            <button id="evaluateBtn" type="button">Прогнать сравнение</button>
         </div>
         <div class="state" id="evaluateResult" style="display:none"></div>
-        <div class="hint">Метрики: recall (в скольких вопросах найден ожидаемый источник), среднее покрытие ключевых слов ответа с RAG и без RAG, разница (gap). В офлайн-демо LLM недоступен, поэтому модель честно отдаёт фрагменты контекста индекса.</div>
+        <div class="hint">Метрики: recall ожидаемого источника в base и в full, сколько кандидатов отсеял фильтр суммарно, среднее покрытие ключевых слов ответа и прирост coverage. В офлайн-демо LLM недоступен, поэтому модель честно отдаёт фрагменты контекста индекса.</div>
     </div>
 
     <div class="card" style="margin-top:20px">
-        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент (автоопределение режима)</h3>
-        <textarea id="prompt" placeholder="Обычный вопрос → RAG; «ответь без контекста …» → plain"></textarea>
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент (автоопределение пайплайна)</h3>
+        <textarea id="prompt" placeholder="Обычный вопрос → full; «ответь без фильтра …» → base; «перепиши и найди …» → rewrite"></textarea>
         <div class="row">
             <span></span>
             <button id="agentBtn" type="button">Выполнить</button>
@@ -130,7 +146,7 @@
         <div class="state agent" id="agentResult" style="display:none"></div>
     </div>
 
-    <div class="hint">Скрипт видео: 1) «Проверить» — корпус дня 21 доступен, стратегия поиска, top-K, лимит токенов ответа; 2) «Ответить» в режиме rag «что такое эмбеддинги документов и как они получаются?» — видны найденный источник embeddings.md и ответ, опирающийся на контекст; 3) то же в режиме plain — модель отвечает по памяти, источников нет; 4) «Сравнить» — рядом два ответа и вердикт; 5) «Показать 10 вопросов» — ожидания и источники; 6) «Прогнать оценку» — recall, покрытие RAG против без-RAG, вердикт; 7) агент: «что такое MCP», «ответь без контекста: что такое эмбеддинги».</div>
+    <div class="hint">Скрипт видео: 1) «Проверить» — корпус дня 21, топ-K до/после фильтрации, порог отсечения, включён ли rewrite; 2) «Переписать» «что такое эмбеддинги…» — показано, как запрос расширился синонимами; 3) «Ответить» в режиме full — видны кандидаты до фильтрации, сколько отсеяно, и ответ только по релевантным источникам; 4) «Сравнить base / full» — один вопрос, четыре числа: до/после, вердикт; 5) «Прогнать сравнение» — recall и покрытие, прирост от фильтра; 6) агент: «что такое эмбеддинги?», «ответь без фильтра: что такое эмбеддинги?», «перепиши и найди: как устроено логирование в QueuedLogger?».</div>
     <div class="meta" id="meta"></div>
 </main>
 <script>
@@ -158,14 +174,17 @@
 
     async function check() {
         checkBtn.disabled = true;
-        toast("Читаем состояние RAG и индекса…");
+        toast("Читаем состояние пайплайна…");
         try {
-            const data = await json("/api/day22/health");
+            const data = await json("/api/day23/health");
             if (!data) return;
             health.style.display = "block";
             let html = "<span class='activeLine'>Документов в корпусе: " + data.documents
                 + "</span><br>объём: " + data.corpusChars + " символов ≈ " + data.pagesEstimate + " страниц"
-                + "<br>стратегия поиска: " + esc(data.strategy) + " · top-K: " + data.topK
+                + "<br>стратегия поиска: " + esc(data.strategy)
+                + " · топ-K до фильтрации: " + data.topKBefore + " · после: " + data.topKAfter
+                + " · порог score: " + data.threshold.toFixed(2)
+                + " · rewrite: " + (data.rewrite ? "вкл" : "выкл")
                 + " · ответ до " + data.answerMaxTokens + " токенов";
             data.strategies.forEach(s => {
                 html += "<div class='strategy'><span class='tag'>" + esc(s.name) + "</span>"
@@ -173,25 +192,52 @@
                     + "<span class='" + (s.indexed ? "up'>индекс построен, " : "down'>не проиндексирован, ") + s.chunkCount + " чанков</span></div>";
             });
             health.innerHTML = html;
-            toast("RAG готов, стратегия: " + data.strategy);
+            toast("Пайплайн готов, стратегия: " + data.strategy);
         } catch(e) { toast("Ошибка: " + e); }
         finally { checkBtn.disabled = false; }
+    }
+
+    async function runRewrite() {
+        const q = rewriteQuestion.value.trim();
+        if (!q) { toast("Введите вопрос"); return; }
+        rewriteBtn.disabled = true;
+        toast("Переписываем запрос…");
+        try {
+            const data = await json("/api/day23/rewrite", {question: q});
+            if (!data) return;
+            rewriteResult.style.display = "block";
+            let html = "<span class='activeLine'>Исходный: " + esc(data.original) + "</span><br>"
+                + "переписанный: <b>" + esc(data.rewritten) + "</b>"
+                + (data.applied ? " (запрос был расширен)" : " (правила не применились)");
+            if (data.expansions.length) {
+                html += "<br>применённые расширения:";
+                data.expansions.forEach(e => { html += "<div class='hit'><span class='score'>+</span> «" + esc(e) + "»</div>"; });
+            }
+            rewriteResult.innerHTML = html;
+            toast("Переписан: " + data.rewritten);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { rewriteBtn.disabled = false; }
     }
 
     async function answer() {
         const question = questionEl.value.trim();
         if (!question) { toast("Введите вопрос"); return; }
         answerBtn.disabled = true;
-        toast("Достаём контекст и зовём LLM…");
+        toast("Гоним пайплайн и зовём LLM…");
         try {
-            const data = await json("/api/day22/answer", {question, mode: modeSelect.value});
+            const data = await json("/api/day23/answer", {question, mode: modeSelect.value});
             if (!data) return;
             answerResult.style.display = "block";
-            let html = "<span class='activeLine'>Режим: " + esc(data.mode) + (data.fallback ? " · fallback (LLM недоступен)" : "") + "</span><br>"
+            let html = "<span class='activeLine'>Режим: " + esc(data.mode)
+                + (data.fallback ? " · fallback (LLM недоступен)" : "") + "</span><br>"
+                + "<div class='pipe'><span class='step'>запрос для поиска:</span> " + esc(data.matchedQuery)
+                + (data.rewritten ? " (переписан)" : "") + "<br>"
+                + "<span class='step'>кандидатов до фильтрации:</span> " + data.candidatesBefore
+                + " · <span class='cut'>отсеяно по порогу:</span> " + data.filteredOut + "</div>"
                 + "источники:<br>" + hitsHtml(data.retrievedHits)
                 + "<div style='margin-top:10px'><b>Ответ:</b></div><pre>" + esc(data.answer) + "</pre>";
             answerResult.innerHTML = html;
-            toast("Режим: " + data.mode);
+            toast("Режим: " + data.mode + ", отсеяно: " + data.filteredOut);
         } catch(e) { toast("Ошибка: " + e); }
         finally { answerBtn.disabled = false; }
     }
@@ -200,16 +246,21 @@
         const q = compareQuestion.value.trim();
         if (!q) { toast("Введите вопрос"); return; }
         compareBtn.disabled = true;
-        toast("Сравниваем два режима…");
+        toast("Сравниваем base и full…");
         try {
-            const data = await json("/api/day22/compare", {question: q});
+            const data = await json("/api/day23/compare", {question: q});
             if (!data) return;
             compareResult.style.display = "block";
-            let html = "<span class='activeLine'>Источники с RAG: "
-                + (data.retrievedSources.length ? esc(data.retrievedSources.join(", ")) : "—") + "</span>"
+            let html = "<div class='pipe'><span class='step'>base:</span> кандидатов "
+                + data.first.candidatesBefore + ", отсеяно " + data.first.filteredOut
+                + ", источники: " + (data.sourcesBefore.length ? esc(data.sourcesBefore.join(", ")) : "—")
+                + "<br><span class='step'>full:</span> кандидатов "
+                + data.second.candidatesBefore + ", отсеяно <span class='cut'>" + data.second.filteredOut
+                + "</span>, источники: " + (data.sourcesAfter.length ? esc(data.sourcesAfter.join(", ")) : "—")
+                + "</div>"
                 + "<div class='compareCols'>"
-                + "<div class='compareCol'><h4 style='color:var(--accent)'>С RAG</h4><pre>" + esc(data.rag.answer) + "</pre></div>"
-                + "<div class='compareCol'><h4 style='color:var(--muted)'>Без RAG</h4><pre>" + esc(data.plain.answer) + "</pre></div>"
+                + "<div class='compareCol'><h4 style='color:var(--accent)'>base (без фильтра)</h4><pre>" + esc(data.first.answer) + "</pre></div>"
+                + "<div class='compareCol'><h4 style='color:var(--muted)'>full (rewrite + фильтр)</h4><pre>" + esc(data.second.answer) + "</pre></div>"
                 + "</div>"
                 + "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> " + esc(data.verdict) + "</div>";
             compareResult.innerHTML = html;
@@ -222,7 +273,7 @@
         questionsBtn.disabled = true;
         toast("Загружаем контрольные вопросы…");
         try {
-            const data = await json("/api/day22/questions");
+            const data = await json("/api/day23/questions");
             if (!data) return;
             questionsResult.style.display = "block";
             let html = "<span class='activeLine'>Контрольных вопросов: " + data.length + "</span>";
@@ -240,26 +291,28 @@
 
     async function evaluate() {
         evaluateBtn.disabled = true;
-        toast("Гоняем 10 контрольных вопросов в двух режимах…");
+        toast("Гоняем 10 контрольных вопросов в режимах base и full…");
         try {
-            const data = await json("/api/day22/evaluate");
+            const data = await json("/api/day23/evaluate");
             if (!data) return;
             evaluateResult.style.display = "block";
-            let html = "<span class='activeLine'>Recall источников: " + data.retrievalHits + "/" + data.total
-                + " = " + data.retrievalRecallPercent.toFixed(1) + "%</span><br>"
-                + "среднее покрытие ключевых слов: с RAG <b>" + data.ragAvgCoveragePercent.toFixed(1)
-                + "%</b> · без RAG " + data.plainAvgCoveragePercent.toFixed(1)
-                + "% · разница " + data.avgCoverageGapPercent.toFixed(1) + " п.п."
+            let html = "<span class='activeLine'>Recall источников: base " + data.baseRecallPercent.toFixed(1)
+                + "% · full " + data.fullRecallPercent.toFixed(1) + "%</span><br>"
+                + "отсеяно кандидатов фильтром суммарно: <span class='cut'>" + data.totalFilteredOut + "</span><br>"
+                + "среднее покрытие ключевых слов: base <b>" + data.avgCoverageBasePercent.toFixed(1)
+                + "%</b> · full <b>" + data.avgCoverageFullPercent.toFixed(1)
+                + "%</b> · прирост +" + data.coverageGapPercent.toFixed(1) + " п.п."
                 + "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> " + esc(data.verdict) + "</div>";
             data.items.forEach(item => {
                 html += "<div class='expect'><span class='qid'>" + esc(item.id) + "</span>"
                     + "<span>" + esc(item.question) + "</span>"
-                    + "<span class='src'>" + (item.retrievalHit ? "источник найден, " : "промах, ")
-                    + "RAG " + item.ragCoveragePercent.toFixed(0) + "% / plain "
-                    + item.plainCoveragePercent.toFixed(0) + "%</span></div>";
+                    + "<span class='src'>base: " + (item.baseHit ? "источник найден, " : "промах, ")
+                    + item.baseCoveragePercent.toFixed(0) + "% | full: "
+                    + (item.fullHit ? "источник найден, " : "промах, ")
+                    + item.fullCoveragePercent.toFixed(0) + "%, отсеяно " + item.filteredOut + "</span></div>";
             });
             evaluateResult.innerHTML = html;
-            toast("Recall: " + data.retrievalRecallPercent.toFixed(1) + "%");
+            toast("Coverage: " + data.avgCoverageFullPercent.toFixed(1) + "%");
         } catch(e) { toast("Ошибка: " + e); }
         finally { evaluateBtn.disabled = false; }
     }
@@ -268,13 +321,15 @@
         const prompt = promptEl.value.trim();
         if (!prompt) { toast("Введите запрос"); return; }
         agentBtn.disabled = true;
-        toast("Агент определяет режим и отвечает…");
+        toast("Агент определяет пайплайн и отвечает…");
         try {
-            const data = await json("/api/day22/ask", {prompt});
+            const data = await json("/api/day23/ask", {question: prompt});
             if (!data) return;
             agentEl.style.display = "block";
             let html = "<span class='activeLine'>Режим: " + esc(data.mode)
                 + (data.fallback ? " (LLM недоступен, ответ из контекста)" : "") + "</span><br>"
+                + "<div class='pipe'><span class='step'>запрос для поиска:</span> " + esc(data.matchedQuery)
+                + " · <span class='cut'>отсеяно:</span> " + data.filteredOut + "</div>"
                 + "источники:<br>" + hitsHtml(data.retrievedHits)
                 + "<div style='margin-top:10px'><b>Ответ:</b></div><pre>" + esc(data.answer) + "</pre>";
             agentEl.innerHTML = html;
@@ -285,10 +340,10 @@
 
     const examples = [
         "что такое эмбеддинги документов и как они получаются?",
-        "какие коды ошибок JSON-RPC определены у MCP-сервера?",
         "как устроено асинхронное логирование в QueuedLogger?",
-        "ответь без контекста: что такое эмбеддинги?",
-        "на каком порту работает MCP-сервер оркестратора?"
+        "какая стратегия чанкинга точнее: фиксированная или структурная?",
+        "ответь без фильтра: что такое эмбеддинги?",
+        "перепиши и найди: как устроена память агента?"
     ];
     const listEl = document.getElementById("examples");
     examples.forEach(text => {
@@ -299,6 +354,7 @@
     });
 
     document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("rewriteBtn").addEventListener("click", runRewrite);
     document.getElementById("answerBtn").addEventListener("click", answer);
     document.getElementById("compareBtn").addEventListener("click", compare);
     document.getElementById("questionsBtn").addEventListener("click", questions);
@@ -306,6 +362,8 @@
     document.getElementById("agentBtn").addEventListener("click", runAgent);
 
     const health = document.getElementById("health");
+    const rewriteQuestion = document.getElementById("rewriteQuestion");
+    const rewriteResult = document.getElementById("rewriteResult");
     const questionEl = document.getElementById("question");
     const modeSelect = document.getElementById("modeSelect");
     const answerResult = document.getElementById("answerResult");
@@ -317,7 +375,7 @@
     const agentEl = document.getElementById("agentResult");
 
     (function init() {
-        toast("RAG: вопрос → поиск чанков в индексе дня 21 (dense + lexical реранкинг) → контекст + вопрос → LLM. Режимы: с RAG и без RAG. Нажмите «Проверить» и задайте вопрос.");
+        toast("Реранкинг и фильтрация: поиск → реранк (dense+BM25) → порог отсечения → топ-K после. Режимы base/filter/rewrite/full. Нажмите «Проверить», затем «Переписать» или «Ответить».");
     })();
 </script>
 </body>

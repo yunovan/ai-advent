@@ -1,0 +1,6 @@
+package com.yunovan.aiadvent.day23;
+
+public record Day23AnswerRequest(
+        String question,
+        String mode) {
+}

@@ -42,3 +42,11 @@ day22:
   strategy: fixed
   top-k: 5
   answer-max-tokens: 400
+
+day23:
+  strategy: fixed
+  top-k-before: 10
+  top-k-after: 5
+  threshold: 0.5
+  rewrite: true
+  answer-max-tokens: 400

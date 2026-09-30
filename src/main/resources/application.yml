@@ -136,3 +136,11 @@ day22:
   top-k: ${DAY22_TOP_K:5}
   answer-max-tokens: ${DAY22_ANSWER_MAX_TOKENS:400}
 
+day23:
+  strategy: ${DAY23_STRATEGY:fixed}
+  top-k-before: ${DAY23_TOP_K_BEFORE:10}
+  top-k-after: ${DAY23_TOP_K_AFTER:5}
+  threshold: ${DAY23_THRESHOLD:0.5}
+  rewrite: ${DAY23_REWRITE:true}
+  answer-max-tokens: ${DAY23_ANSWER_MAX_TOKENS:400}
+
