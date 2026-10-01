@@ -42,7 +42,10 @@ public class Day01CliRunner implements ApplicationRunner {
                 || "17".equals(firstOption(args, "day"))
                 || "18".equals(firstOption(args, "day"))
                 || "19".equals(firstOption(args, "day"))
-                || "20".equals(firstOption(args, "day"))) {
+                || "20".equals(firstOption(args, "day"))
+                || "21".equals(firstOption(args, "day"))
+                || "22".equals(firstOption(args, "day"))
+                || "23".equals(firstOption(args, "day"))) {
             return;
         }
 

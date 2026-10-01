@@ -29,3 +29,24 @@ day19:
 day20:
   server-port: 0
   path: /mcp
+
+day21:
+  server-port: 0
+  path: /mcp
+  store-dir: build/day21-tests-index
+  corpus-dir: build/day21-tests-corpus
+  chunk-size: 120
+  chunk-overlap: 20
+
+day22:
+  strategy: fixed
+  top-k: 5
+  answer-max-tokens: 400
+
+day23:
+  strategy: fixed
+  top-k-before: 10
+  top-k-after: 5
+  threshold: 0.5
+  rewrite: true
+  answer-max-tokens: 400

@@ -120,3 +120,27 @@ day20:
   name: ${DAY20_NAME:ai-advent-orchestrator-mcp}
   version: ${DAY20_VERSION:0.1.0}
 
+day21:
+  server-port: ${DAY21_SERVER_PORT:9094}
+  path: ${DAY21_PATH:/mcp}
+  name: ${DAY21_NAME:ai-advent-index-mcp}
+  version: ${DAY21_VERSION:0.1.0}
+  store-dir: ${DAY21_STORE_DIR:data/day21-index}
+  corpus-dir: ${DAY21_CORPUS_DIR:data/day21-corpus}
+  chunk-size: ${DAY21_CHUNK_SIZE:600}
+  chunk-overlap: ${DAY21_CHUNK_OVERLAP:80}
+  dimensions: ${DAY21_DIMENSIONS:512}
+
+day22:
+  strategy: ${DAY22_STRATEGY:fixed}
+  top-k: ${DAY22_TOP_K:5}
+  answer-max-tokens: ${DAY22_ANSWER_MAX_TOKENS:400}
+
+day23:
+  strategy: ${DAY23_STRATEGY:fixed}
+  top-k-before: ${DAY23_TOP_K_BEFORE:10}
+  top-k-after: ${DAY23_TOP_K_AFTER:5}
+  threshold: ${DAY23_THRESHOLD:0.5}
+  rewrite: ${DAY23_REWRITE:true}
+  answer-max-tokens: ${DAY23_ANSWER_MAX_TOKENS:400}
+

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 22</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #5ad4c8; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #0f3a3a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 960px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1714; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button.small { margin: 0 0 0 6px; padding: 2px 8px; font-size: 11px; border-radius: 6px; background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .strategy { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; margin-top: 8px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .strategy .tag { padding: 2px 8px; border-radius: 999px; background: #1e2c42; color: var(--accent); font-size: 12px; font-weight: 700; }
+        .strategy .up { color: var(--ok); }
+        .hit { padding: 8px 12px; border-left: 3px solid var(--accent); background: #101a29; border-radius: 8px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+        .hit b { color: var(--text); }
+        .hit .score { color: var(--accent); font-weight: 700; }
+        .metric { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; margin-top: 8px; }
+        .metric b { color: var(--accent); }
+        .metric .win { color: var(--ok); font-weight: 700; }
+        .agent pre { background: #0b1322; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+        .agentKeys { color: var(--muted); }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .examples { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .examples button { text-align: left; margin: 0; }
+        .compareCols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .compareCol { border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.7; }
+        .compareCol h4 { margin: 0 0 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+        .expect { display: flex; gap: 8px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-size: 12px; }
+        .expect .qid { color: var(--accent); font-weight: 700; }
+        .expect .src { color: var(--muted); }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a>
+    </nav>
+    <span class="badge">AI Advent · Day 22</span>
+    <h1>Первый RAG-запрос</h1>
+    <p class="lead">Вопрос → поиск релевантных чанков в локальном индексе дня 21 → контекст подставляется к вопросу → LLM формулирует ответ. Агент работает в двух режимах: с RAG (контекст из источников) и без RAG (только память модели), а качество измеряется на 10 контрольных вопросах с известными ожиданиями и источниками.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Состояние RAG / индекса</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Ответ агента: с RAG или без RAG</h3>
+        <textarea id="question" placeholder="Например: что такое эмбеддинги документов и как они получаются?"></textarea>
+        <div class="pair">
+            <div>
+                <label>Режим</label>
+                <select id="modeSelect">
+                    <option value="rag">rag — вопрос + контекст из индекса</option>
+                    <option value="plain">plain — только вопрос, без контекста</option>
+                </select>
+            </div>
+            <div></div>
+        </div>
+        <div class="row">
+            <span></span>
+            <button id="answerBtn" type="button">Ответить</button>
+        </div>
+        <div class="state agent" id="answerResult" style="display:none"></div>
+        <div class="examples" id="examples"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Сравнение: один вопрос в двух режимах</h3>
+        <input id="compareQuestion" value="что такое эмбеддинги документов и как они получаются?" type="text">
+        <div class="row">
+            <span></span>
+            <button id="compareBtn" type="button">Сравнить RAG / без RAG</button>
+        </div>
+        <div class="state" id="compareResult" style="display:none"></div>
+        <div class="hint">Показывается, какие источники нашёл индекс, ответ модели с контекстом и ответ модели по памяти — рядом.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Контрольные вопросы</h3>
+        <div class="row">
+            <span></span>
+            <button id="questionsBtn" type="button">Показать 10 вопросов с ожиданиями</button>
+        </div>
+        <div class="state" id="questionsResult" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Качество: 10 контрольных вопросов</h3>
+        <div class="row">
+            <span></span>
+            <button id="evaluateBtn" type="button">Прогнать оценку</button>
+        </div>
+        <div class="state" id="evaluateResult" style="display:none"></div>
+        <div class="hint">Метрики: recall (в скольких вопросах найден ожидаемый источник), среднее покрытие ключевых слов ответа с RAG и без RAG, разница (gap). В офлайн-демо LLM недоступен, поэтому модель честно отдаёт фрагменты контекста индекса.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Агент (автоопределение режима)</h3>
+        <textarea id="prompt" placeholder="Обычный вопрос → RAG; «ответь без контекста …» → plain"></textarea>
+        <div class="row">
+            <span></span>
+            <button id="agentBtn" type="button">Выполнить</button>
+        </div>
+        <div class="state agent" id="agentResult" style="display:none"></div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) «Проверить» — корпус дня 21 доступен, стратегия поиска, top-K, лимит токенов ответа; 2) «Ответить» в режиме rag «что такое эмбеддинги документов и как они получаются?» — видны найденный источник embeddings.md и ответ, опирающийся на контекст; 3) то же в режиме plain — модель отвечает по памяти, источников нет; 4) «Сравнить» — рядом два ответа и вердикт; 5) «Показать 10 вопросов» — ожидания и источники; 6) «Прогнать оценку» — recall, покрытие RAG против без-RAG, вердикт; 7) агент: «что такое MCP», «ответь без контекста: что такое эмбеддинги».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function json(url, body) {
+        const opts = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)};
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch(e) {}
+        if (!resp.ok) { toast((data && (data.error || data.detail)) || ("HTTP " + resp.status)); return null; }
+        return data;
+    }
+
+    function hitsHtml(hits) {
+        if (!hits || !hits.length) return "<span style='color:var(--warn)'>Источники не найдены</span>";
+        return hits.map((h, i) => "<div class='hit'><b>#" + (i + 1) + "</b> <span class='score'>[" + h.score.toFixed(3) + "]</span> "
+            + esc(h.chunk.source)
+            + "<br><span class='agentKeys'>раздел: " + esc(h.chunk.section || h.chunk.title)
+            + " · чанк: " + esc(h.chunk.chunkId) + "</span><br>«" + esc(h.snippet) + "»</div>").join("");
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Читаем состояние RAG и индекса…");
+        try {
+            const data = await json("/api/day22/health");
+            if (!data) return;
+            health.style.display = "block";
+            let html = "<span class='activeLine'>Документов в корпусе: " + data.documents
+                + "</span><br>объём: " + data.corpusChars + " символов ≈ " + data.pagesEstimate + " страниц"
+                + "<br>стратегия поиска: " + esc(data.strategy) + " · top-K: " + data.topK
+                + " · ответ до " + data.answerMaxTokens + " токенов";
+            data.strategies.forEach(s => {
+                html += "<div class='strategy'><span class='tag'>" + esc(s.name) + "</span>"
+                    + "<span>" + esc(s.description) + "</span>"
+                    + "<span class='" + (s.indexed ? "up'>индекс построен, " : "down'>не проиндексирован, ") + s.chunkCount + " чанков</span></div>";
+            });
+            health.innerHTML = html;
+            toast("RAG готов, стратегия: " + data.strategy);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function answer() {
+        const question = questionEl.value.trim();
+        if (!question) { toast("Введите вопрос"); return; }
+        answerBtn.disabled = true;
+        toast("Достаём контекст и зовём LLM…");
+        try {
+            const data = await json("/api/day22/answer", {question, mode: modeSelect.value});
+            if (!data) return;
+            answerResult.style.display = "block";
+            let html = "<span class='activeLine'>Режим: " + esc(data.mode) + (data.fallback ? " · fallback (LLM недоступен)" : "") + "</span><br>"
+                + "источники:<br>" + hitsHtml(data.retrievedHits)
+                + "<div style='margin-top:10px'><b>Ответ:</b></div><pre>" + esc(data.answer) + "</pre>";
+            answerResult.innerHTML = html;
+            toast("Режим: " + data.mode);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { answerBtn.disabled = false; }
+    }
+
+    async function compare() {
+        const q = compareQuestion.value.trim();
+        if (!q) { toast("Введите вопрос"); return; }
+        compareBtn.disabled = true;
+        toast("Сравниваем два режима…");
+        try {
+            const data = await json("/api/day22/compare", {question: q});
+            if (!data) return;
+            compareResult.style.display = "block";
+            let html = "<span class='activeLine'>Источники с RAG: "
+                + (data.retrievedSources.length ? esc(data.retrievedSources.join(", ")) : "—") + "</span>"
+                + "<div class='compareCols'>"
+                + "<div class='compareCol'><h4 style='color:var(--accent)'>С RAG</h4><pre>" + esc(data.rag.answer) + "</pre></div>"
+                + "<div class='compareCol'><h4 style='color:var(--muted)'>Без RAG</h4><pre>" + esc(data.plain.answer) + "</pre></div>"
+                + "</div>"
+                + "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> " + esc(data.verdict) + "</div>";
+            compareResult.innerHTML = html;
+            toast("Сравнение готово");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { compareBtn.disabled = false; }
+    }
+
+    async function questions() {
+        questionsBtn.disabled = true;
+        toast("Загружаем контрольные вопросы…");
+        try {
+            const data = await json("/api/day22/questions");
+            if (!data) return;
+            questionsResult.style.display = "block";
+            let html = "<span class='activeLine'>Контрольных вопросов: " + data.length + "</span>";
+            data.forEach(q => {
+                html += "<div class='expect'><span class='qid'>" + esc(q.id) + "</span>"
+                    + "<span>" + esc(q.question) + "</span>"
+                    + "<span class='src'>ожидание: " + esc(q.expectedKeywords.join(", "))
+                    + " · источники: " + esc(q.expectedSources.join(", ")) + "</span></div>";
+            });
+            questionsResult.innerHTML = html;
+            toast("Вопросов: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { questionsBtn.disabled = false; }
+    }
+
+    async function evaluate() {
+        evaluateBtn.disabled = true;
+        toast("Гоняем 10 контрольных вопросов в двух режимах…");
+        try {
+            const data = await json("/api/day22/evaluate");
+            if (!data) return;
+            evaluateResult.style.display = "block";
+            let html = "<span class='activeLine'>Recall источников: " + data.retrievalHits + "/" + data.total
+                + " = " + data.retrievalRecallPercent.toFixed(1) + "%</span><br>"
+                + "среднее покрытие ключевых слов: с RAG <b>" + data.ragAvgCoveragePercent.toFixed(1)
+                + "%</b> · без RAG " + data.plainAvgCoveragePercent.toFixed(1)
+                + "% · разница " + data.avgCoverageGapPercent.toFixed(1) + " п.п."
+                + "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> " + esc(data.verdict) + "</div>";
+            data.items.forEach(item => {
+                html += "<div class='expect'><span class='qid'>" + esc(item.id) + "</span>"
+                    + "<span>" + esc(item.question) + "</span>"
+                    + "<span class='src'>" + (item.retrievalHit ? "источник найден, " : "промах, ")
+                    + "RAG " + item.ragCoveragePercent.toFixed(0) + "% / plain "
+                    + item.plainCoveragePercent.toFixed(0) + "%</span></div>";
+            });
+            evaluateResult.innerHTML = html;
+            toast("Recall: " + data.retrievalRecallPercent.toFixed(1) + "%");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { evaluateBtn.disabled = false; }
+    }
+
+    async function runAgent() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        agentBtn.disabled = true;
+        toast("Агент определяет режим и отвечает…");
+        try {
+            const data = await json("/api/day22/ask", {prompt});
+            if (!data) return;
+            agentEl.style.display = "block";
+            let html = "<span class='activeLine'>Режим: " + esc(data.mode)
+                + (data.fallback ? " (LLM недоступен, ответ из контекста)" : "") + "</span><br>"
+                + "источники:<br>" + hitsHtml(data.retrievedHits)
+                + "<div style='margin-top:10px'><b>Ответ:</b></div><pre>" + esc(data.answer) + "</pre>";
+            agentEl.innerHTML = html;
+            toast("Режим: " + data.mode);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { agentBtn.disabled = false; }
+    }
+
+    const examples = [
+        "что такое эмбеддинги документов и как они получаются?",
+        "какие коды ошибок JSON-RPC определены у MCP-сервера?",
+        "как устроено асинхронное логирование в QueuedLogger?",
+        "ответь без контекста: что такое эмбеддинги?",
+        "на каком порту работает MCP-сервер оркестратора?"
+    ];
+    const listEl = document.getElementById("examples");
+    examples.forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "small"; btn.type = "button"; btn.textContent = text;
+        btn.addEventListener("click", () => { questionEl.value = btn.textContent; answer(); });
+        listEl.appendChild(btn);
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("answerBtn").addEventListener("click", answer);
+    document.getElementById("compareBtn").addEventListener("click", compare);
+    document.getElementById("questionsBtn").addEventListener("click", questions);
+    document.getElementById("evaluateBtn").addEventListener("click", evaluate);
+    document.getElementById("agentBtn").addEventListener("click", runAgent);
+
+    const health = document.getElementById("health");
+    const questionEl = document.getElementById("question");
+    const modeSelect = document.getElementById("modeSelect");
+    const answerResult = document.getElementById("answerResult");
+    const compareResult = document.getElementById("compareResult");
+    const compareQuestion = document.getElementById("compareQuestion");
+    const questionsResult = document.getElementById("questionsResult");
+    const evaluateResult = document.getElementById("evaluateResult");
+    const promptEl = document.getElementById("prompt");
+    const agentEl = document.getElementById("agentResult");
+
+    (function init() {
+        toast("RAG: вопрос → поиск чанков в индексе дня 21 (dense + lexical реранкинг) → контекст + вопрос → LLM. Режимы: с RAG и без RAG. Нажмите «Проверить» и задайте вопрос.");
+    })();
+</script>
+</body>
+</html>
