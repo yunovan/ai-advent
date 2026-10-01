@@ -144,3 +144,15 @@ day23:
   rewrite: ${DAY23_REWRITE:true}
   answer-max-tokens: ${DAY23_ANSWER_MAX_TOKENS:400}
 
+day24:
+  strategy: ${DAY24_STRATEGY:fixed}
+  top-k-before: ${DAY24_TOP_K_BEFORE:10}
+  top-k-after: ${DAY24_TOP_K_AFTER:5}
+  threshold: ${DAY24_THRESHOLD:0.5}
+  unknown-threshold: ${DAY24_UNKNOWN_THRESHOLD:0.32}
+  rewrite: ${DAY24_REWRITE:true}
+  quotes-per-source: ${DAY24_QUOTES_PER_SOURCE:3}
+  quote-min-chars: ${DAY24_QUOTE_MIN_CHARS:24}
+  support-threshold: ${DAY24_SUPPORT_THRESHOLD:0.35}
+  answer-max-tokens: ${DAY24_ANSWER_MAX_TOKENS:400}
+

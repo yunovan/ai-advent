@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 24</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #5ad4c8; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #3a2420, var(--bg) 55%); color: var(--text); }
+        main { max-width: 960px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1714; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button.small { margin: 0 6px 6px 0; padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea, select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        select { font-family: ui-sans-serif, system-ui, sans-serif; }
+        textarea { min-height: 80px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .hit { padding: 8px 12px; border-left: 3px solid var(--accent); background: #101a29; border-radius: 8px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+        .hit b { color: var(--text); }
+        .hit .score { color: var(--accent); font-weight: 700; }
+        .quote { padding: 8px 12px; border-left: 3px solid var(--warn); background: #1a1a10; border-radius: 8px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--text); font-style: italic; }
+        .quote .src { color: var(--muted); font-style: normal; font-size: 12px; }
+        .quote .kw { color: var(--danger); font-style: normal; }
+        .metric { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; margin-top: 8px; }
+        .metric b { color: var(--accent); }
+        .metric .win { color: var(--ok); font-weight: 700; }
+        .nobadge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .bad { background: #3a1e1e; color: var(--danger); }
+        .good { background: #12321d; color: var(--ok); }
+        .unknown { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; background: #3a2c14; color: var(--warn); }
+        .bar { height: 8px; border-radius: 999px; background: #101a29; overflow: hidden; margin-top: 6px; }
+        .bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--ok)); }
+        pre { background: #0b1322; border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; }
+        .expect { display: flex; gap: 8px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-size: 12px; }
+        .expect .qid { color: var(--accent); font-weight: 700; }
+        .expect .src { color: var(--muted); }
+        .pipe { margin: 8px 0; padding: 10px 12px; background: #101a29; border: 1px solid var(--line); border-radius: 10px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.7; }
+        .pipe .step { color: var(--accent); font-weight: 700; }
+        .pipe .cut { color: var(--warn); font-weight: 700; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html" class="here">День 24</a>
+    </nav>
+    <span class="badge">AI Advent · Day 24</span>
+    <h1>Цитаты, источники и анти-галлюцинации</h1>
+    <p class="lead">Финальное звено RAG: каждый ответ обязан сопровождаться списком источников (источник + секция + chunk_id) и дословными цитатами — фрагментами из найденных чанков. По цитатам проверяется, что смысл ответа действительно опирается на контекст. Если релевантность ниже порога или цитаты не находят лексической опоры, ассистент обязан сказать «не знаю» и попросить уточнение, а не выдумывать.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Состояние пайплайна</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Ответ с источниками и цитатами</h3>
+        <textarea id="question" placeholder="Например: что такое эмбеддинги документов и как они получаются?"></textarea>
+        <div class="row">
+            <span></span>
+            <button id="answerBtn" type="button">Ответить</button>
+        </div>
+        <div class="state agent" id="answerResult" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Слабые вопросы — режим «не знаю»</h3>
+        <div>
+            <button id="weakWeatherBtn" type="button" class="small">Какая сегодня погода в Москве?</button>
+            <button id="weakTokyoBtn" type="button" class="small">Который час в Токио?</button>
+        </div>
+        <div class="state" id="weakResult" style="display:none"></div>
+        <div class="hint">Вопросы вне домена корпуса. Если нет ни релевантной выдачи, ни лексического подтверждения цитатами, ассистент не фантазирует, а честно отвечает «не знаю» и просит уточнить.</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Контрольные вопросы</h3>
+        <div class="row">
+            <span></span>
+            <button id="questionsBtn" type="button">Показать 10 вопросов с ожиданиями</button>
+        </div>
+        <div class="state" id="questionsResult" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Комплаентность: источники, цитаты, поддержка смысла</h3>
+        <div class="row">
+            <span></span>
+            <button id="evaluateBtn" type="button">Прогнать контрольные</button>
+        </div>
+        <div class="state" id="evaluateResult" style="display:none"></div>
+        <div class="hint">Для каждого из 10 вопросов: есть ли источники, есть ли цитаты, покрывают ли цитаты смысл ответа (процент опорных слов). Плюс 2 слабых вопроса — оба должны уйти в режим «не знаю».</div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) «Проверить» — корпус дня 21, пороги релевантности и «не знаю», лимиты цитат; 2) «Ответить» «что такое эмбеддинги документов?» — под ответом список источников (source · section · chunk_id) и дословные цитаты с подсветкой опорных слов, шкала поддержки смысла; 3) слабые вопросы — «Какая сегодня погода в Москве?» и «Который час в Токио?» — ассистент говорит «не знаю» и просит уточнение, никакой выдумки; 4) «Прогнать контрольные» — 10/10 с источниками и цитатами, поддержка смысла, анти-галлюцинация 2/2.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function json(url, body) {
+        const opts = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)};
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch(e) {}
+        if (!resp.ok) { toast((data && (data.error || data.detail)) || ("HTTP " + resp.status)); return null; }
+        return data;
+    }
+
+    function badgeOk(ok, textYes, textNo) {
+        return "<span class='" + (ok ? "nobadge good" : "nobadge bad") + "'>" + (ok ? textYes : textNo) + "</span>";
+    }
+
+    function sourcesHtml(sources) {
+        if (!sources || !sources.length) return "<span style='color:var(--warn)'>Источники не найдены</span>";
+        return sources.map((s, i) => "<div class='hit'><b>#" + (i + 1) + "</b> <span class='score'>[" + s.score.toFixed(3) + "]</span> "
+            + esc(s.source)
+            + " · секция: <span class='agentKeys'>" + esc(s.section)
+            + "</span> · <span class='agentKeys'>chunk " + esc(s.chunkId) + "</span><br>«" + esc(s.snippet) + "»</div>").join("");
+    }
+
+    function quotesHtml(quotes) {
+        if (!quotes || !quotes.length) return "<span style='color:var(--warn)'>Цитаты не найдены</span>";
+        return quotes.map((q, i) => "<div class='quote'>«" + esc(q.text) + "»<br><span class='src'>"
+            + "цитата #" + (i + 1) + " · " + esc(q.source) + " · " + esc(q.section)
+            + " · chunk " + esc(q.chunkId)
+            + " · совпадений с запросом: <b>" + q.matchedKeywords + "</b></span></div>").join("");
+    }
+
+    function supportHtml(r) {
+        const pct = r.supportCoveragePercent.toFixed(1);
+        const label = r.supported ? "<span class='nobadge good'>смысл поддержан цитатами</span>"
+            : "<span class='nobadge bad'>цитаты не покрывают смысл ответа</span>";
+        return "поддержка смысла: <b>" + pct + "%</b> " + label
+            + "<div class='bar'><div style='width:" + Math.min(pct, 100) + "%'></div></div>";
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Читаем состояние пайплайна…");
+        try {
+            const data = await json("/api/day24/health");
+            if (!data) return;
+            health.style.display = "block";
+            let html = "<span class='activeLine'>Документов в корпусе: " + data.documents
+                + "</span><br>объём: " + data.corpusChars + " символов ≈ " + data.pagesEstimate + " страниц"
+                + "<br>стратегия: " + esc(data.strategy)
+                + " · топ-K до фильтрации: " + data.topKBefore + " · после: " + data.topKAfter
+                + " · порог релевантности: " + data.threshold.toFixed(2)
+                + " · порог «не знаю»: " + data.unknownThreshold.toFixed(2)
+                + " · rewrite: " + (data.rewrite ? "вкл" : "выкл")
+                + "<br>цитат на источник: " + data.quotesPerSource
+                + " · мин. длина цитаты: " + data.quoteMinChars + " символов"
+                + " · порог поддержки: " + data.supportThreshold.toFixed(2)
+                + " · ответ до " + data.answerMaxTokens + " токенов"
+                + "<br>слабые вопросы: " + esc(data.weakQuestions.join(" / "));
+            data.strategies.forEach(s => {
+                html += "<div class='hit'>" + esc(s.name) + " — " + esc(s.description) + "</div>";
+            });
+            health.innerHTML = html;
+            toast("Пайплайн готов");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function answer(questionText) {
+        const question = (questionText || questionEl.value).trim();
+        if (!question) { toast("Введите вопрос"); return; }
+        answerBtn.disabled = true;
+        toast("Гоним пайплайн: поиск → реранк → фильтр → цитаты…");
+        try {
+            const data = await json("/api/day24/answer", {question});
+            if (!data) return;
+            answerResult.style.display = "block";
+            let head;
+            if (data.unknown) {
+                head = "<span class='unknown'>Ассистент не знает: релевантности нет</span>";
+            } else {
+                head = badgeOk(data.supported, "Ответ подтверждён цитатами", "Ответ слабо подтверждён")
+                    + (data.fallback ? " · <span class='nobadge bad'>fallback (LLM недоступен)</span>" : "");
+            }
+            let html = "<span class='activeLine'>bestScore: " + data.bestScore.toFixed(3) + "</span> " + head + "<br>"
+                + "<div class='pipe'><span class='step'>запрос для поиска:</span> " + esc(data.matchedQuery)
+                + (data.rewritten ? " (переписан)" : "") + "<br>"
+                + "кандидатов до фильтрации: <b>" + data.candidatesBefore + "</b>"
+                + " · <span class='cut'>отсеяно по порогу:</span> " + data.filteredOut + "</div>"
+                + "<div style='margin-top:8px'><b>Источники:</b> (" + data.sources.length + ")</div>"
+                + sourcesHtml(data.sources)
+                + "<div style='margin-top:10px'><b>Цитаты из чанков:</b> (" + data.quotes.length + ")</div>"
+                + quotesHtml(data.quotes)
+                + "<div style='margin-top:10px'><b>Ответ:</b></div><pre>" + esc(data.answer) + "</pre>"
+                + "<div class='metric'>" + supportHtml(data) + "</div>";
+            answerResult.innerHTML = html;
+            toast(data.unknown ? "Режим «не знаю»: " + data.bestScore.toFixed(3) + " < порога" : "Ответ готов, цитат: " + data.quotes.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { answerBtn.disabled = false; }
+    }
+
+    async function runWeak(q) {
+        toast("Слабый вопрос: «" + q + "»");
+        await answer(q);
+        weakResult.style.display = "block";
+        weakResult.textContent = "Проверено: «" + q + "» — результат выше в карточке «Ответ с источниками и цитатами».";
+    }
+
+    async function questions() {
+        questionsBtn.disabled = true;
+        toast("Загружаем контрольные вопросы…");
+        try {
+            const data = await json("/api/day24/questions");
+            if (!data) return;
+            questionsResult.style.display = "block";
+            let html = "<span class='activeLine'>Контрольных вопросов: " + data.length + "</span>";
+            data.forEach(q => {
+                html += "<div class='expect'><span class='qid'>" + esc(q.id) + "</span>"
+                    + "<span>" + esc(q.question) + "</span>"
+                    + "<span class='src'>ожидание: " + esc(q.expectedKeywords.join(", "))
+                    + " · источники: " + esc(q.expectedSources.join(", ")) + "</span></div>";
+            });
+            questionsResult.innerHTML = html;
+            toast("Вопросов: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { questionsBtn.disabled = false; }
+    }
+
+    async function evaluate() {
+        evaluateBtn.disabled = true;
+        toast("Гоняем 10 контрольных и 2 слабых вопроса…");
+        try {
+            const data = await json("/api/day24/evaluate");
+            if (!data) return;
+            evaluateResult.style.display = "block";
+            let html = "<span class='activeLine'>Контрольных: " + data.knownCount
+                + " · с источниками: " + data.sourcesPresent + " · с цитатами: " + data.quotesPresent
+                + " · смысл поддержан: " + data.supportedCount + "</span><br>"
+                + "средняя поддержка смысла цитатами: <b>" + data.avgSupportPercent.toFixed(1) + "%</b><br>"
+                + "слабых вопросов: " + data.weakCount + " · режим «не знаю»: <span class='cut'>"
+                + data.unknownTriggered + "/" + data.weakCount + "</span>"
+                + "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> " + esc(data.verdict) + "</div>";
+            data.questions.forEach(item => {
+                html += "<div class='expect'><span class='qid'>" + esc(item.id) + "</span>"
+                    + "<span>" + esc(item.question) + "</span>"
+                    + "<span class='src'>источники: " + badgeOk(item.hasSources, item.sourcesCount + " ✔", item.sourcesCount + " ✘")
+                    + " · цитаты: " + badgeOk(item.hasQuotes, item.quotesCount + " ✔", item.quotesCount + " ✘")
+                    + " · поддержка " + item.supportCoveragePercent.toFixed(0) + "% "
+                    + badgeOk(item.supported, "✔", "✘")
+                    + "</span></div>";
+            });
+            data.weak.forEach(w => {
+                html += "<div class='expect'><span class='qid'>" + esc(w.id) + "</span>"
+                    + "<span>" + esc(w.question) + "</span>"
+                    + "<span class='src'>best: " + w.bestScore.toFixed(3)
+                    + " · «не знаю»: " + badgeOk(w.unknown, "✔ сказал «не знаю»", "✘ сгенерировал ответ")
+                    + "</span></div>";
+            });
+            evaluateResult.innerHTML = html;
+            toast("Поддержка: " + data.avgSupportPercent.toFixed(1) + "%, «не знаю»: " + data.unknownTriggered + "/" + data.weakCount);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { evaluateBtn.disabled = false; }
+    }
+
+    document.getElementById("checkBtn").addEventListener("click", check);
+    document.getElementById("answerBtn").addEventListener("click", () => answer());
+    document.getElementById("questionsBtn").addEventListener("click", questions);
+    document.getElementById("evaluateBtn").addEventListener("click", evaluate);
+    document.getElementById("weakWeatherBtn").addEventListener("click", () => runWeak("Какая сегодня погода в Москве?"));
+    document.getElementById("weakTokyoBtn").addEventListener("click", () => runWeak("Который час в Токио?"));
+
+    const health = document.getElementById("health");
+    const questionEl = document.getElementById("question");
+    const answerResult = document.getElementById("answerResult");
+    const weakResult = document.getElementById("weakResult");
+
+    toast("День 24: ответ + источники + цитаты, шкала поддержки смысла, режим «не знаю» вместо галлюцинаций. Нажмите «Проверить», затем «Ответить» или «Прогнать контрольные».");
+</script>
+</body>
+</html>
