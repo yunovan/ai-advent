@@ -156,3 +156,19 @@ day24:
   support-threshold: ${DAY24_SUPPORT_THRESHOLD:0.35}
   answer-max-tokens: ${DAY24_ANSWER_MAX_TOKENS:400}
 
+day25:
+  strategy: ${DAY25_STRATEGY:fixed}
+  top-k-before: ${DAY25_TOP_K_BEFORE:10}
+  top-k-after: ${DAY25_TOP_K_AFTER:5}
+  threshold: ${DAY25_THRESHOLD:0.5}
+  unknown-threshold: ${DAY25_UNKNOWN_THRESHOLD:0.32}
+  rewrite: ${DAY25_REWRITE:true}
+  quotes-per-source: ${DAY25_QUOTES_PER_SOURCE:3}
+  quote-min-chars: ${DAY25_QUOTE_MIN_CHARS:24}
+  support-threshold: ${DAY25_SUPPORT_THRESHOLD:0.35}
+  answer-max-tokens: ${DAY25_ANSWER_MAX_TOKENS:400}
+  history-limit: ${DAY25_HISTORY_LIMIT:40}
+  max-sessions: ${DAY25_MAX_SESSIONS:200}
+  memory-terms-limit: ${DAY25_MEMORY_TERMS_LIMIT:8}
+  store-dir: ${DAY25_STORE_DIR:data/day25-chat}
+
