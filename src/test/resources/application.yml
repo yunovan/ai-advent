@@ -62,3 +62,19 @@ day24:
   quote-min-chars: 24
   support-threshold: 0.35
   answer-max-tokens: 400
+
+day25:
+  strategy: fixed
+  top-k-before: 10
+  top-k-after: 5
+  threshold: 0.5
+  unknown-threshold: 0.32
+  rewrite: true
+  quotes-per-source: 3
+  quote-min-chars: 24
+  support-threshold: 0.35
+  answer-max-tokens: 400
+  history-limit: 40
+  max-sessions: 50
+  memory-terms-limit: 8
+  store-dir: data/day25-chat-test
