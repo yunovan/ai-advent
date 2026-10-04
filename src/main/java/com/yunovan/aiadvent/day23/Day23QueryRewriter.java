@@ -38,7 +38,7 @@ public final class Day23QueryRewriter {
     public static Rewrite rewrite(String question) {
         String normalized = normalize(question);
         String lower = normalized.toLowerCase(Locale.ROOT);
-        Set<String> kept = new LinkedHashSet<>(Set.of(normalized.split("\\s+")));
+        Set<String> kept = new LinkedHashSet<>(List.of(normalized.split("\\s+")));
         List<String> expansions = new ArrayList<>();
         for (Rule rule : RULES) {
             if (lower.contains(rule.needle())) {

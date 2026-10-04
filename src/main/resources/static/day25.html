@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 25</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+        button { margin-top: 12px; margin-right: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button.small { margin: 0 6px 6px 0; padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        textarea { min-height: 80px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+        .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        label { display: block; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-bottom: 4px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .activeLine { color: var(--ok); font-weight: 700; }
+        .chat { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; max-height: 620px; overflow-y: auto; }
+        .msg { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.7; }
+        .msg.user { background: #1b2a44; }
+        .msg.bot { background: #14202f; }
+        .msg .who { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+        .msg.user .who { color: var(--accent); }
+        .src { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--muted); }
+        .src div { margin-top: 3px; }
+        .src b { color: var(--text); font-weight: 600; }
+        .quote { margin-top: 3px; padding-left: 8px; border-left: 2px solid var(--warn); font-style: italic; color: var(--text); }
+        .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag { padding: 2px 8px; border-radius: 999px; background: #1e2c42; color: var(--accent); font-size: 11px; font-weight: 700; }
+        .tag.warn { background: #3a2c14; color: var(--warn); }
+        .tag.ok { background: #12321d; color: var(--ok); }
+        .tag.bad { background: #3a1e1e; color: var(--danger); }
+        .memory { margin-top: 14px; }
+        .memory h4 { margin: 0 0 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--accent); }
+        .memrow { padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+        .memrow b { color: var(--text); }
+        .metric { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; margin-top: 8px; }
+        .metric b { color: var(--accent); }
+        .metric .win { color: var(--ok); font-weight: 700; }
+        .expect { display: flex; gap: 8px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-size: 12px; }
+        .expect .qid { color: var(--accent); font-weight: 700; }
+        .expect .src2 { color: var(--muted); }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+        .grid2 { display: grid; grid-template-columns: 1fr 300px; gap: 16px; margin-top: 20px; align-items: start; }
+        @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html" class="here">День 25</a>
+    </nav>
+    <span class="badge">AI Advent · Day 25</span>
+    <h1>Мини-чат с RAG и памятью задачи</h1>
+    <p class="lead">Диалог вместо разовых вопросов: ассистент помнит историю, держит цель разговора, уточнения и зафиксированные ограничения, подмешивает их в поиск по базе и на каждый ответ выводит источники с цитатами. Если контекста не хватает — говорит «не знаю», а не выдумывает.</p>
+
+    <div class="card">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Состояние</h3>
+        <div class="row">
+            <span></span>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="grid2">
+        <div class="card">
+            <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Мини-чат</h3>
+            <div class="pair">
+                <div>
+                    <label>Сессия</label>
+                    <input id="sessionId" value="demo" type="text">
+                </div>
+                <div style="align-self:end">
+                    <button id="resetBtn" type="button" class="secondary">Очистить память</button>
+                </div>
+            </div>
+            <div class="chat" id="chatLog"></div>
+            <textarea id="message" placeholder="Например: Моя цель: разобраться, как устроены эмбеддинги документов."></textarea>
+            <div class="row">
+                <span></span>
+                <button id="sendBtn" type="button">Отправить</button>
+            </div>
+            <div>
+                <button class="small" type="button">Моя цель: разобраться, как устроены эмбеддинги документов.</button>
+                <button class="small" type="button">Только по документации, без выдумок.</button>
+                <button class="small" type="button">Что такое эмбеддинги?</button>
+                <button class="small" type="button">А как их считают?</button>
+                <button class="small" type="button">Какая сегодня погода в Москве?</button>
+            </div>
+            <div class="hint">Короткие уточнения («а как их считают?») работают, потому что в поиск подмешиваются цель и термины из памяти задачи.</div>
+        </div>
+
+        <div class="card memory">
+            <h4>Память задачи</h4>
+            <div id="memoryBox"><div class="memrow">Память пока пуста — задайте цель первым сообщением.</div></div>
+            <h4 style="margin-top:14px">История</h4>
+            <div id="historyBox"><div class="memrow">История пуста.</div></div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3 style="font-family:ui-sans-serif,system-ui,sans-serif">Длинные сценарии: цель не теряется</h3>
+        <div class="row">
+            <span></span>
+            <button id="scenariosBtn" type="button">Показать сценарии</button>
+            <button id="evaluateBtn" type="button">Прогнать сценарии</button>
+        </div>
+        <div class="state" id="scenariosResult" style="display:none"></div>
+        <div class="state" id="evaluateResult" style="display:none"></div>
+        <div class="hint">Два диалога по 12–13 сообщений: минимум «что такое эмбеддинги?», уточнения, возврат к теме и смена подтемы. Проверяется, что на каждом ходу есть источники, цель диалога и ограничения остаются в памяти.</div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) «Проверить» — корпус, пороги, лимиты истории и сессий; 2) первое сообщение «Моя цель: …» — в правой панели появляется цель и термины; 3) короткое уточнение «А как их считают?» — поиск идёт с памятью задачи, у ответа есть источники; 4) «Только по документации, без выдумок» — ограничение фиксируется и показывается в памяти; 5) вопрос вне корпуса — «Не знаю» без источников; 6) «Прогнать сценарии» — 25 ходов, цель удержана на всех, источники на всех.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const metaEl = document.getElementById("meta");
+    const chatLog = document.getElementById("chatLog");
+    const messageEl = document.getElementById("message");
+    const sessionEl = document.getElementById("sessionId");
+    const health = document.getElementById("health");
+    const memoryBox = document.getElementById("memoryBox");
+    const historyBox = document.getElementById("historyBox");
+    const scenariosResult = document.getElementById("scenariosResult");
+    const evaluateResult = document.getElementById("evaluateResult");
+    const checkBtn = document.getElementById("checkBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const scenariosBtn = document.getElementById("scenariosBtn");
+    const evaluateBtn = document.getElementById("evaluateBtn");
+
+    function esc(t) { return String(t === null || t === undefined ? "" : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(msg) { metaEl.textContent = msg; }
+
+    async function json(url, body) {
+        const opts = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)};
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch(e) {}
+        if (!resp.ok) { toast((data && (data.error || data.detail)) || ("HTTP " + resp.status)); return null; }
+        return data;
+    }
+
+    function renderSources(turn) {
+        if (!turn.sources.length) {
+            return "<div class='src'>источники: <span style='color:var(--warn)'>—</span></div>";
+        }
+        let html = "<div class='src'>источники (" + turn.sources.length + "):";
+        turn.sources.forEach(s => {
+            html += "<div><b>" + esc(s.source) + "</b> · " + esc(s.section) + " · чанк " + esc(s.chunkId)
+                + " · " + s.score.toFixed(3) + "</div>";
+        });
+        if (turn.quotes.length) {
+            turn.quotes.slice(0, 2).forEach(q => {
+                html += "<div class='quote'>«" + esc(q.text) + "»</div>";
+            });
+        }
+        html += "<div style='margin-top:4px'>поддержка цитатами " + turn.supportCoveragePercent.toFixed(1)
+            + "%" + (turn.unknown ? " · режим «не знаю»" : "") + "</div></div>";
+        return html;
+    }
+
+    function appendMessage(role, text, turn) {
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        let html = "<div class='who'>" + (role === "user" ? "вы" : "ассистент") + "</div>"
+            + "<div>" + esc(text).replace(/\n/g, "<br>") + "</div>";
+        if (turn) {
+            html += renderSources(turn);
+            html += "<div class='tags'>"
+                + "<span class='tag'>ход " + turn.turn + "</span>"
+                + "<span class='tag'>источников: " + turn.sources.length + "</span>"
+                + "<span class='tag'>цитат: " + turn.quotes.length + "</span>"
+                + (turn.unknown ? "<span class='tag warn'>«не знаю»</span>"
+                    : "<span class='tag ok'>подтверждён цитатами</span>")
+                + (turn.rewritten ? "<span class='tag'>запрос переписан</span>" : "")
+                + "</div>";
+        }
+        div.innerHTML = html;
+        chatLog.appendChild(div);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function renderMemory(memory) {
+        if (!memory) { memoryBox.innerHTML = "<div class='memrow'>Память пока пуста — задайте цель первым сообщением.</div>"; return; }
+        memoryBox.innerHTML = "<div class='memrow'><b>цель:</b> " + esc(memory.goal || "пока не задана") + "</div>"
+            + "<div class='memrow'><b>уточнения (" + memory.clarifications.length + "):</b> "
+            + (memory.clarifications.length ? esc(memory.clarifications.join(" · ")) : "—") + "</div>"
+            + "<div class='memrow'><b>ограничения (" + memory.constraints.length + "):</b> "
+            + (memory.constraints.length ? esc(memory.constraints.join(" · ")) : "—") + "</div>"
+            + "<div class='memrow'><b>термины:</b> "
+            + (memory.terms.length ? esc(memory.terms.join(", ")) : "—") + "</div>";
+    }
+
+    function renderHistory(history) {
+        historyBox.innerHTML = history.length ? history.slice(-8).map(m =>
+            "<div class='memrow'>#" + m.turn + " " + (m.role === "user" ? "вы" : "ассистент") + ": "
+            + esc(m.text.length > 90 ? m.text.slice(0, 90) + "…" : m.text) + "</div>").join("")
+            : "<div class='memrow'>История пуста.</div>";
+    }
+
+    async function send() {
+        const text = messageEl.value.trim();
+        if (!text) { toast("Введите сообщение"); return; }
+        const sessionId = sessionEl.value.trim() || "demo";
+        sendBtn.disabled = true;
+        appendMessage("user", text, null);
+        messageEl.value = "";
+        toast("Ищем контекст с учётом памяти задачи…");
+        try {
+            const data = await json("/api/day25/chat", {sessionId, message: text});
+            if (!data) return;
+            appendMessage("bot", data.reply, data);
+            renderMemory(data.memory);
+            renderHistory(data.history);
+            toast("ход " + data.turn + ": источников " + data.sources.length + ", цитат " + data.quotes.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { sendBtn.disabled = false; }
+    }
+
+    async function resetSession() {
+        const sessionId = sessionEl.value.trim() || "demo";
+        const data = await json("/api/day25/reset", {sessionId});
+        if (!data) return;
+        chatLog.innerHTML = "";
+        renderMemory(null);
+        renderHistory([]);
+        toast("Память сессии " + sessionId + " очищена");
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        try {
+            const data = await json("/api/day25/health");
+            if (!data) return;
+            health.style.display = "block";
+            health.innerHTML = "<span class='activeLine'>документов: " + data.documents
+                + "</span> · объём " + data.corpusChars + " символов ≈ " + data.pagesEstimate + " страниц"
+                + "<br>стратегия: " + esc(data.strategy)
+                + " · топ-K до/после: " + data.topKBefore + "/" + data.topKAfter
+                + " · порог релевантности: " + data.threshold.toFixed(2)
+                + " · порог «не знаю»: " + data.unknownThreshold.toFixed(2)
+                + "<br>цитат на источник: " + data.quotesPerSource + " · порог поддержки: "
+                + data.supportThreshold.toFixed(2)
+                + "<br>история: до " + data.historyLimit + " сообщений · сессий: " + data.sessions + "/"
+                + data.maxSessions + " · терминов в памяти: " + data.memoryTermsLimit
+                + "<div class='metric'><b>Сценарии:</b> " + esc(data.scenarios.join(" | ")) + "</div>";
+            toast("Готово");
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function scenarios() {
+        scenariosBtn.disabled = true;
+        try {
+            const data = await json("/api/day25/scenarios");
+            if (!data) return;
+            scenariosResult.style.display = "block";
+            let html = "<span class='activeLine'>Сценариев: " + data.length + "</span>";
+            data.forEach(s => {
+                html += "<div class='expect'><span class='qid'>" + esc(s.id) + "</span><span>"
+                    + esc(s.title) + " — " + s.messages.length + " сообщений</span><span class='src2'>цель: "
+                    + esc(s.goal) + "</span></div>";
+            });
+            scenariosResult.innerHTML = html;
+            toast("Сценариев: " + data.length);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { scenariosBtn.disabled = false; }
+    }
+
+    async function evaluate() {
+        evaluateBtn.disabled = true;
+        toast("Гоняем 2 длинных сценария…");
+        try {
+            const data = await json("/api/day25/evaluate");
+            if (!data) return;
+            evaluateResult.style.display = "block";
+            let html = "<span class='activeLine'>сценариев: " + data.scenariosCount
+                + " · сообщений: " + data.totalTurns + "</span><br>"
+                + "ответы с источниками: <b>" + data.turnsWithSources + "/" + data.totalTurns + "</b>"
+                + " · с цитатами: <b>" + data.quotesTurns + "/" + data.totalTurns + "</b><br>"
+                + "цель диалога удержана: <span class='win'>" + data.goalRetainedTurns + "/"
+                + data.totalTurns + "</span> · ограничения удержаны: " + data.constraintsKeptTurns
+                + "/" + data.totalTurns + " · «не знаю»: " + data.unknownTurns + " ходов"
+                + "<div class='metric' style='border-top:1px solid var(--line);padding-top:10px'><b>Вердикт:</b> "
+                + esc(data.verdict) + "</div>";
+            data.scenarios.forEach(s => {
+                html += "<div class='expect'><span class='qid'>" + esc(s.id) + "</span><span>"
+                    + esc(s.title) + "</span><span class='src2'>ходов " + s.turns + " · источники "
+                    + s.turnsWithSources + "/" + s.turns + " · цель " + s.goalRetainedTurns + "/"
+                    + s.turns + "</span></div>";
+            });
+            evaluateResult.innerHTML = html;
+            toast("Источники: " + data.turnsWithSources + "/" + data.totalTurns + ", цель: " + data.goalRetainedTurns + "/" + data.totalTurns);
+        } catch(e) { toast("Ошибка: " + e); }
+        finally { evaluateBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    sendBtn.addEventListener("click", send);
+    resetBtn.addEventListener("click", resetSession);
+    scenariosBtn.addEventListener("click", scenarios);
+    evaluateBtn.addEventListener("click", evaluate);
+    messageEl.addEventListener("keydown", e => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { send(); }
+    });
+    document.querySelectorAll("button.small").forEach(btn => {
+        btn.addEventListener("click", () => {
+            messageEl.value = btn.textContent;
+            send();
+        });
+    });
+
+    toast("Мини-чат с RAG и памятью задачи. Задайте цель сообщением «Моя цель: …», затем уточняйте — ассистент держит цель и всегда показывает источники.");
+</script>
+</body>
+</html>
