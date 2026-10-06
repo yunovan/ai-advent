@@ -86,3 +86,9 @@ day26:
   read-timeout-ms: 180000
   temperature: 0.2
   max-tokens: 300
+
+day27:
+  system-prompt: "Ты — тестовый локальный ассистент."
+  history-limit: 6
+  max-sessions: 5
+  store-dir: build/day27-tests-chat

@@ -67,13 +67,36 @@ public class Day26LocalLlmClient {
         if (prompt == null || prompt.isBlank()) {
             throw new IllegalArgumentException("Запрос к локальной LLM не может быть пустым");
         }
-        List<Message> messages = new ArrayList<>();
+        List<Day26ChatMessage> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
-            messages.add(new Message("system", systemPrompt.trim()));
+            messages.add(new Day26ChatMessage("system", systemPrompt.trim()));
         }
-        messages.add(new Message("user", prompt.trim()));
+        messages.add(new Day26ChatMessage("user", prompt.trim()));
+        return chat(messages);
+    }
+
+    public Day26Answer chat(List<Day26ChatMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            throw new IllegalArgumentException("Список сообщений к локальной LLM не может быть пустым");
+        }
+        List<Message> payload = new ArrayList<>();
+        String prompt = "";
+        for (Day26ChatMessage item : messages) {
+            if (item == null || item.role() == null || item.role().isBlank()
+                    || item.content() == null || item.content().isBlank()) {
+                throw new IllegalArgumentException(
+                        "Каждое сообщение к локальной LLM должно иметь роль и непустой текст");
+            }
+            payload.add(new Message(item.role().trim(), item.content().trim()));
+            if ("user".equals(item.role().trim())) {
+                prompt = item.content().trim();
+            }
+        }
+        if (prompt.isEmpty()) {
+            prompt = payload.getLast().content();
+        }
         ChatRequest request = new ChatRequest(
-                properties.model(), messages, false,
+                properties.model(), payload, false,
                 new Options(properties.maxTokens(), properties.temperature()));
 
         long started = System.nanoTime();
