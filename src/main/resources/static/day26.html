@@ -112,8 +112,9 @@
     }
     function toast(msg) { meta.textContent = msg; }
 
-    async function json(url, method) {
+    async function json(url, method, body) {
         const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
         const resp = await fetch(url, opts);
         let data = null;
         try { data = await resp.json(); } catch (e) {}
@@ -208,7 +209,7 @@
         askBtn.disabled = true;
         toast("Спрашиваем локальную модель…");
         try {
-            const answer = await json("/api/day26/ask", "POST");
+            const answer = await json("/api/day26/ask", "POST", {prompt});
             askBox.style.display = "block";
             askBox.innerHTML = "<div><span class='ok-line'>ответ получен</span> · модель "
                 + esc(answer.model) + "</div><div class='task' style='margin-top:8px'><div class='reply'>"
