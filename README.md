@@ -1801,3 +1801,123 @@ DAY25_MAX_SESSIONS=200
 DAY25_MEMORY_TERMS_LIMIT=8
 DAY25_STORE_DIR=data/day25-chat
 ```
+
+## День 26. Запуск локальной LLM
+
+День уводит проект от внешнего API к локальной модели. Ollama ставится на Windows
+одной командой `winget install --id Ollama.Ollama --silent` (версия 0.35.1, бинарник
+`C:\Users\User\AppData\Local\Programs\Ollama\ollama.exe`), автозапуск стоит через
+ярлык в Startup, HTTP API слушает `http://localhost:11434`. Модель
+`ollama pull qwen2.5:3b` весит 1.9 GB, веса в квантовании Q4 и целиком работают
+на CPU — GPU не нужен.
+
+Код дня ходит в нативный API Ollama напрямую, без OpenAI-совместимой обёртки:
+`GET /api/version`, `GET /api/tags`, `POST /api/chat` с `stream=false`. Клиент держит
+собственные таймауты и разбирает `eval_count`, `prompt_eval_count`, `eval_duration`
+в токены и ток/с. Тонкость, которая ломает всё с кириллицей: тела запросов и ответы
+нужно кодировать в UTF-8 явно, байтами, иначе русский текст превращается в кракозябры.
+
+Суть проверяется тремя запросами разной сложности — от «кто ты такой» до кода
+на Java с объяснением сложности. Замеренные показатели на этой машине (CPU, без GPU):
+холодный старт с загрузкой весов — 3.1 с (45 входных + 11 выходных токенов),
+12.6 с (56 + 136) и 15.2 с (71 + 164); прогретая модель через CLI `--run` —
+1.5 с (41 + 13), 4.3 с (55 + 42) и 5.0 с (89 + 50), итого 10.7 с на три запроса.
+
+Проверяется:
+
+- `curl http://localhost:11434/api/version` → `{"version":"0.35.1"}`;
+- `curl http://localhost:11434/api/tags` → список установленных моделей с размером;
+- `curl http://localhost:11434/api/generate` или `/api/chat` с телом в UTF-8 → ответ модели;
+- `GET /api/day26/health` возвращает endpoint, версию сервера, установлена ли модель
+  и список моделей;
+- `POST /api/day26/run` прогоняет три запроса и собирает статус, ответ, задержку,
+  токены и ток/с; пустой `POST /api/day26/ask` → 400, недоступный LLM → 502.
+
+Установка и проверка API:
+
+```bash
+winget install --id Ollama.Ollama --silent
+ollama pull qwen2.5:3b
+curl http://localhost:11434/api/version
+curl http://localhost:11434/api/tags
+```
+
+Запуск:
+
+```bash
+./gradlew bootRun --args="--day=26"
+# UI: http://localhost:8080/day26.html
+```
+
+CLI:
+
+```bash
+./gradlew bootRun --args="--day=26 --check --cli"
+./gradlew bootRun --args="--day=26 --run --cli"
+./gradlew bootRun --args="--day=26 --tasks --cli"
+./gradlew bootRun --args="--day=26 --ask=\"Сколько будет 17*23?\" --cli"
+```
+
+Проверки дня:
+
+- `--check` показывает endpoint, версию сервера и установленную модель, а при
+  остановленной службе честно печатает «сервер запущен: НЕТ», а не падает;
+- `--run` выполняет три задачи: `simple` «Простой запрос», `medium` «Объяснение
+  двух мыслей», `complex` «Код и рассуждение» — с ответом, задержкой, токенами
+  и ток/с по каждой;
+- вердикт отчёта — «все 3 запросов выполнены: локальная LLM запущена и отвечает»;
+- `--tasks` печатает три запроса разной сложности без вызова модели;
+- `--ask` задаёт произвольный вопрос; пустой текст отклоняется до вызова модели
+  (в HTTP API — с кодом 400, в CLI — сообщением об ошибке);
+- `--cli` завершает процесс сразу после вывода результата.
+
+### Что показать на видео
+
+1. **Установка**  
+   `winget install --id Ollama.Ollama --silent` → `ollama pull qwen2.5:3b` (1.9 GB).
+
+2. **`--check`**  
+   Endpoint, версия `0.35.1`, установленная модель и её размер.
+
+3. **`--run`**  
+   Три запроса: ответы, задержки по задаче (прогретая модель ~1.5 / 4.3 / 5.0 с),
+   токены и ток/с, итоговый вердикт «все 3 запросов выполнены».
+
+4. **UI**  
+   http://localhost:8080/day26.html — та же команда и те же замеры кнопкой в браузере.
+
+5. **Остановка службы**  
+   Гасим службу Ollama → тот же `--check` показывает «сервер запущен: НЕТ».
+
+### Как устроен код дня 26
+
+| Файл | Роль |
+|---|---|
+| `day26/Day26Properties.java` | `endpoint` (`http://localhost:11434`), `model` (`qwen2.5:3b`), `connect-timeout-ms` (3000), `read-timeout-ms` (180000), `temperature` (0.2), `max-tokens` (300) |
+| `day26/Day26LocalLlmClient.java` | HTTP-клиент нативного API Ollama: `GET /api/version`, `GET /api/tags`, `POST /api/chat` (`stream=false`), свои таймауты, разбор `eval_count`/`prompt_eval_count`/`eval_duration` в токены и ток/с, кодирование в UTF-8 |
+| `day26/Day26Service.java` | `health()`, `tasks()`, `run()`, `ask(prompt)` |
+| `day26/Day26Task.java` | три запроса разной сложности: `simple`, `medium`, `complex` |
+| `day26/Day26TaskResult.java`, `Day26RunReport.java` | результаты: статус, ответ, задержка, токены, ток/с, вердикт прогона |
+| `day26/Day26HealthResponse.java`, `Day26InstalledModel.java` | endpoint, версия сервера, установлена ли модель, список моделей с размером |
+| `day26/Day26Answer.java`, `Day26AskRequest.java`, `Day26LlmException.java` | вход/выход `ask` и ошибка недоступного LLM |
+| `day26/Day26Controller.java` | `GET /api/day26/health`, `GET /api/day26/tasks`, `POST /api/day26/run`, `POST /api/day26/ask`; пустой запрос → 400, недоступный LLM → 502 |
+| `day26/Day26CliRunner.java` | CLI: `--day=26 --check`, `--tasks`, `--run`, `--ask="..."`, опция `--cli` завершает процесс |
+| `day26/Day26Configuration.java` | `@EnableConfigurationProperties` |
+| `static/day26.html` | UI: health, список задач, прогон и произвольный вопрос |
+
+Клиент и сервис тестируются на поднятом на эфемерном порту mock-HTTP-сервере
+(`com.sun.net.httpserver`): версия, список моделей, чат, UTF-8, HTTP-ошибка
+и недоступный endpoint. Отдельный тест `Day26LocalLlmRealTest` реально ходит
+в Ollama, но через `Assumptions.assumeTrue` пропускается, если сервер не поднят —
+поэтому CI и полный offline-прогон не зависят от наличия Ollama.
+
+Настройки:
+
+```bash
+DAY26_ENDPOINT=http://localhost:11434
+DAY26_MODEL=qwen2.5:3b
+DAY26_CONNECT_TIMEOUT_MS=3000
+DAY26_READ_TIMEOUT_MS=180000
+DAY26_TEMPERATURE=0.2
+DAY26_MAX_TOKENS=300
+```
