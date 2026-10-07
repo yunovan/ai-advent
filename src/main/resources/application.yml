@@ -172,3 +172,10 @@ day25:
   memory-terms-limit: ${DAY25_MEMORY_TERMS_LIMIT:8}
   store-dir: ${DAY25_STORE_DIR:data/day25-chat}
 
+day26:
+  endpoint: ${DAY26_ENDPOINT:http://localhost:11434}
+  model: ${DAY26_MODEL:qwen2.5:3b}
+  connect-timeout-ms: ${DAY26_CONNECT_TIMEOUT_MS:3000}
+  read-timeout-ms: ${DAY26_READ_TIMEOUT_MS:180000}
+  temperature: ${DAY26_TEMPERATURE:0.2}
+  max-tokens: ${DAY26_MAX_TOKENS:300}

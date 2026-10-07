@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 26</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .tasks { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+        .task { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #101a29; }
+        .task .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+        .tag { padding: 2px 8px; border-radius: 999px; background: #1e2c42; color: var(--accent); font-size: 11px; font-weight: 700; }
+        .tag.ok { background: #12321d; color: var(--ok); }
+        .tag.bad { background: #3a1e1e; color: var(--danger); }
+        .tag.wait { background: #3a2c14; color: var(--warn); }
+        .task .prompt { color: var(--muted); font-size: 13px; margin-top: 8px; }
+        .task .reply { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+        .task .metrics { margin-top: 8px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        .model { display: flex; gap: 8px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+        .model b { color: var(--text); }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+        .ask { display: flex; gap: 12px; align-items: center; margin-top: 14px; }
+        .ask input { flex: 1; }
+        #askResult { margin-top: 12px; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html" class="here">День 26</a>
+    </nav>
+    <span class="badge">AI Advent · Day 26</span>
+    <h1>Запуск локальной LLM</h1>
+    <p class="lead">Ollama установлен локально, модель <code style="color:var(--accent)">qwen2.5:3b</code>
+        (1.9 GB, Q4, CPU) отвечает по HTTP API на <code style="color:var(--accent)">localhost:11434</code>.
+        Три запроса разной сложности — от приветствия до кода с объяснением сложности.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние локального LLM</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Три запроса разной сложности</h3>
+            <button id="runBtn" type="button">Запустить 3 запроса</button>
+        </div>
+        <div class="state" id="report" style="display:none"></div>
+        <div class="tasks" id="tasks"></div>
+    </div>
+
+    <div class="card">
+        <h3>Свой запрос</h3>
+        <div class="ask">
+            <input id="prompt" value="Сколько будет 17*23? Ответь одним числом." type="text">
+            <button id="askBtn" type="button">Спросить</button>
+        </div>
+        <div class="state" id="askResult" style="display:none"></div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) <code>winget install --id Ollama.Ollama --silent</code> и
+        <code>ollama pull qwen2.5:3b</code> — 1.9 GB; 2) «Проверить» — endpoint, версия сервера,
+        установленная модель и её параметры; 3) «Запустить 3 запроса» — простой запрос, объяснение
+        и код: ответы, задержки, токены и скорость генерации; 4) свой запрос в этом же окне;
+        5) остановить службу Ollama и нажать «Проверить» — честное «сервер запущен: НЕТ».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const reportBox = document.getElementById("report");
+    const tasksBox = document.getElementById("tasks");
+    const askBox = document.getElementById("askResult");
+    const promptEl = document.getElementById("prompt");
+    const checkBtn = document.getElementById("checkBtn");
+    const runBtn = document.getElementById("runBtn");
+    const askBtn = document.getElementById("askBtn");
+
+    const TASK_PLACEHOLDERS = {
+        simple: "Привет! Ответь одной фразой: кто ты такой?",
+        medium: "Чем отличается CPU от GPU при запуске языковых моделей?",
+        complex: "Напиши функцию на Java, которая из списка строк убирает дубликаты, сохраняя порядок, и объясни сложность одной строкой."
+    };
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Проверяем http://localhost:11434 …");
+        try {
+            const h = await json("/api/day26/health");
+            healthBox.style.display = "block";
+            let html = "<div><span class='" + (h.available ? "ok-line" : "bad-line") + "'>сервер запущен: "
+                + (h.available ? "ДА" : "НЕТ") + "</span>"
+                + (h.available ? " (версия " + esc(h.version) + ")" : "") + "</div>"
+                + "<div>endpoint: " + esc(h.endpoint) + " · модель: " + esc(h.model) + "</div>"
+                + "<div>модель установлена: " + (h.modelInstalled ? "ДА" : "НЕТ") + "</div>";
+            if (h.error) { html += "<div style='color:var(--danger)'>" + esc(h.error) + "</div>"; }
+            if (h.installedModels.length) {
+                h.installedModels.forEach(m => {
+                    html += "<div class='model'><b>" + esc(m.name) + "</b><span>"
+                        + Math.max(1, Math.round(m.sizeBytes / 1048576)) + " МБ</span>"
+                        + (m.parameterSize ? "<span>" + esc(m.parameterSize) + "</span>" : "")
+                        + (m.quantizationLevel ? "<span>" + esc(m.quantizationLevel) + "</span>" : "")
+                        + "</div>";
+                });
+            }
+            healthBox.innerHTML = html;
+            toast(h.available ? ("Ollama " + h.version + ", моделей: " + h.installedModels.length)
+                : "Локальный LLM недоступен");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    function taskCard(task, result) {
+        const div = document.createElement("div");
+        div.className = "task";
+        let status = "<span class='tag'>ждёт</span>";
+        if (result && result.status === "ok") { status = "<span class='tag ok'>ответ получен</span>"; }
+        if (result && result.status === "failed") { status = "<span class='tag bad'>ошибка</span>"; }
+        let html = "<div class='head'><b>" + esc(task.title) + "</b>"
+            + "<span class='tag'>" + esc(task.complexity) + "</span>" + status + "</div>"
+            + "<div class='prompt'>→ " + esc(task.prompt) + "</div>";
+        if (result && result.status === "ok") {
+            html += "<div class='reply'>" + esc(result.reply) + "</div>"
+                + "<div class='metrics'>задержка " + result.latencyMs + " мс · токены "
+                + result.promptTokens + " вход / " + result.outputTokens + " выход · "
+                + result.tokensPerSecond.toFixed(1) + " ток/с · модель " + esc(result.model) + "</div>";
+        } else if (result) {
+            html += "<div class='reply' style='color:var(--danger)'>" + esc(result.error) + "</div>";
+        }
+        div.innerHTML = html;
+        return div;
+    }
+
+    async function loadTasks() {
+        try {
+            const tasks = await json("/api/day26/tasks");
+            tasksBox.innerHTML = "";
+            tasks.forEach(task => tasksBox.appendChild(taskCard(task, null)));
+            toast("Запросов разной сложности: " + tasks.length);
+        } catch (e) { toast("Ошибка: " + e.message); }
+    }
+
+    async function runAll() {
+        runBtn.disabled = true;
+        toast("Гоняем три запроса к локальной модели…");
+        try {
+            const report = await json("/api/day26/run", "POST");
+            tasksBox.innerHTML = "";
+            report.results.forEach(result => {
+                const task = {title: result.title, complexity: result.complexity, prompt: result.prompt};
+                tasksBox.appendChild(taskCard(task, result));
+            });
+            reportBox.style.display = "block";
+            reportBox.innerHTML = "<span class='" + (report.failureCount === 0 ? "ok-line" : "bad-line")
+                + "'>" + report.okCount + "/" + report.results.length + " запросов выполнены</span> · "
+                + report.totalLatencyMs + " мс<br>вердикт: " + esc(report.verdict)
+                + "<br>endpoint " + esc(report.endpoint) + " · модель " + esc(report.model);
+            toast("итого " + report.okCount + "/" + report.results.length + " за " + report.totalLatencyMs + " мс");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { runBtn.disabled = false; }
+    }
+
+    async function ask() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) { toast("Введите запрос"); return; }
+        askBtn.disabled = true;
+        toast("Спрашиваем локальную модель…");
+        try {
+            const answer = await json("/api/day26/ask", "POST", {prompt});
+            askBox.style.display = "block";
+            askBox.innerHTML = "<div><span class='ok-line'>ответ получен</span> · модель "
+                + esc(answer.model) + "</div><div class='task' style='margin-top:8px'><div class='reply'>"
+                + esc(answer.reply) + "</div><div class='metrics'>задержка " + answer.latencyMs
+                + " мс · токены " + answer.promptTokens + " вход / " + answer.outputTokens
+                + " выход · " + answer.tokensPerSecond.toFixed(1) + " ток/с</div></div>";
+            toast("ответ получен за " + answer.latencyMs + " мс");
+        } catch (e) {
+            askBox.style.display = "block";
+            askBox.innerHTML = "<span class='bad-line'>запрос не выполнен</span><div class='task' style='margin-top:8px'><div class='reply'>"
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { askBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    runBtn.addEventListener("click", runAll);
+    askBtn.addEventListener("click", ask);
+    promptEl.addEventListener("keydown", e => { if (e.key === "Enter") { ask(); } });
+
+    loadTasks();
+    check();
+</script>
+</body>
+</html>
