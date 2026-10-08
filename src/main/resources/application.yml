@@ -185,3 +185,12 @@ day27:
   history-limit: ${DAY27_HISTORY_LIMIT:40}
   max-sessions: ${DAY27_MAX_SESSIONS:50}
   store-dir: ${DAY27_STORE_DIR:data/day27-assistant}
+
+day28:
+  strategy: ${DAY28_STRATEGY:fixed}
+  top-k-before: ${DAY28_TOP_K_BEFORE:10}
+  top-k-after: ${DAY28_TOP_K_AFTER:5}
+  threshold: ${DAY28_THRESHOLD:0.5}
+  rewrite: ${DAY28_REWRITE:true}
+  answer-max-tokens: ${DAY28_ANSWER_MAX_TOKENS:400}
+  evaluate-runs: ${DAY28_EVALUATE_RUNS:2}
