@@ -1,9 +1,12 @@
 package com.yunovan.aiadvent.day26;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -76,6 +79,10 @@ public class Day26LocalLlmClient {
     }
 
     public Day26Answer chat(List<Day26ChatMessage> messages) {
+        return chat(messages, null);
+    }
+
+    public Day26Answer chat(List<Day26ChatMessage> messages, Day26ChatOptions options) {
         if (messages == null || messages.isEmpty()) {
             throw new IllegalArgumentException("Список сообщений к локальной LLM не может быть пустым");
         }
@@ -96,8 +103,7 @@ public class Day26LocalLlmClient {
             prompt = payload.getLast().content();
         }
         ChatRequest request = new ChatRequest(
-                properties.model(), payload, false,
-                new Options(properties.maxTokens(), properties.temperature()));
+                properties.model(), payload, false, requestOptions(options));
 
         long started = System.nanoTime();
         ChatResponse response;
@@ -131,6 +137,68 @@ public class Day26LocalLlmClient {
                 (int) response.promptEvalCount(),
                 (int) response.evalCount(),
                 tokensPerSecond(response));
+    }
+
+    public Day26LoadedModel loadedModel() {
+        try {
+            PsResponse response = restClient.get()
+                    .uri("/api/ps")
+                    .retrieve()
+                    .body(PsResponse.class);
+            if (response == null || response.models() == null || response.models().isEmpty()) {
+                return null;
+            }
+            PsModel model = response.models().getFirst();
+            return new Day26LoadedModel(nullSafe(model.name()), model.size(), model.sizeVram());
+        } catch (RestClientException ex) {
+            throw unavailable(ex);
+        }
+    }
+
+    public Day26ModelInfo modelInfo() {
+        try {
+            ShowResponse response = restClient.post()
+                    .uri("/api/show")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ShowRequest(properties.model()))
+                    .retrieve()
+                    .body(ShowResponse.class);
+            if (response == null || response.details() == null) {
+                return Day26ModelInfo.unavailable("Ollama не вернула описание модели");
+            }
+            Map<String, Object> info = response.modelInfo() == null ? Map.of() : response.modelInfo();
+            return new Day26ModelInfo(properties.model(),
+                    response.details().format() == null ? "" : response.details().format(),
+                    nullSafe(response.details().parameterSize()),
+                    nullSafe(response.details().quantizationLevel()),
+                    longValue(info.get("general.parameter_count")),
+                    contextLength(info), "");
+        } catch (RestClientException ex) {
+            return Day26ModelInfo.unavailable(unavailable(ex).getMessage());
+        }
+    }
+
+    private Options requestOptions(Day26ChatOptions options) {
+        if (options == null) {
+            return new Options(properties.maxTokens(), properties.temperature(), null);
+        }
+        return new Options(options.maxTokens(), options.temperature(), options.numCtx());
+    }
+
+    private static long contextLength(Map<String, Object> info) {
+        for (Map.Entry<String, Object> entry : info.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().endsWith(".context_length")) {
+                return longValue(entry.getValue());
+            }
+        }
+        return 0;
+    }
+
+    private static long longValue(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        return 0;
     }
 
     private Day26LlmException unavailable(RestClientException ex) {
@@ -176,8 +244,9 @@ public class Day26LocalLlmClient {
     private record TagModel(String name, long size, Details details) {
     }
 
-    private record Details(@JsonProperty("parameter_size") String parameterSize,
-                       @JsonProperty("quantization_level") String quantizationLevel) {
+    private record Details(String format,
+                           @JsonProperty("parameter_size") String parameterSize,
+                           @JsonProperty("quantization_level") String quantizationLevel) {
     }
 
     private record ChatRequest(String model, List<Message> messages, boolean stream, Options options) {
@@ -186,8 +255,24 @@ public class Day26LocalLlmClient {
     private record Message(String role, String content) {
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private record Options(@JsonProperty("num_predict") int numPredict,
-                           @JsonProperty("temperature") double temperature) {
+                           @JsonProperty("temperature") double temperature,
+                           @JsonProperty("num_ctx") Integer numCtx) {
+    }
+
+    private record ShowRequest(String model) {
+    }
+
+    private record ShowResponse(Details details,
+                                @JsonProperty("model_info") Map<String, Object> modelInfo) {
+    }
+
+    private record PsResponse(List<PsModel> models) {
+    }
+
+    private record PsModel(String name, long size,
+                           @JsonProperty("size_vram") long sizeVram) {
     }
 
     private record ChatResponse(Message message,

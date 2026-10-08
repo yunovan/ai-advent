@@ -29,6 +29,16 @@ public final class Day26MockOllama implements AutoCloseable {
             "eval_duration":4700000000,"prompt_eval_duration":200000000,
             "load_duration":100000000,"total_duration":5000000000}
             """.formatted(MODEL_TAG, CYRILLIC_REPLY);
+    private volatile String psJson = """
+            {"models":[{"name":"%s","size":2047774554,"size_vram":0,
+            "expires_at":"2026-10-08T14:35:58.582395+03:00"}]}
+            """.formatted(MODEL_TAG);
+    private volatile String showJson = """
+            {"details":{"format":"gguf","family":"qwen2","families":["qwen2"],
+            "parameter_size":"3.1B","quantization_level":"Q4_K_M","parent_model":"","license":"qwen-research"},
+            "model_info":{"general.architecture":"qwen2","general.parameter_count":3085938688,
+            "qwen2.context_length":32768}}
+            """;
     private volatile int chatStatus = 200;
     private volatile String lastChatBody = "";
 
@@ -43,6 +53,8 @@ public final class Day26MockOllama implements AutoCloseable {
             server.createContext("/api/version", mock::version);
             server.createContext("/api/tags", mock::tags);
             server.createContext("/api/chat", mock::chat);
+            server.createContext("/api/show", mock::show);
+            server.createContext("/api/ps", mock::ps);
             server.start();
             return mock;
         } catch (IOException ex) {
@@ -75,6 +87,14 @@ public final class Day26MockOllama implements AutoCloseable {
         this.tagsJson = json;
     }
 
+    public void showJson(String json) {
+        this.showJson = json;
+    }
+
+    public void psJson(String json) {
+        this.psJson = json;
+    }
+
     public int chatRequests() {
         return chatRequests.get();
     }
@@ -95,6 +115,15 @@ public final class Day26MockOllama implements AutoCloseable {
         chatRequests.incrementAndGet();
         lastChatBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         respond(exchange, chatStatus, chatJson);
+    }
+
+    private void show(HttpExchange exchange) throws IOException {
+        exchange.getRequestBody().readAllBytes();
+        respond(exchange, 200, showJson);
+    }
+
+    private void ps(HttpExchange exchange) throws IOException {
+        respond(exchange, 200, psJson);
     }
 
     private static void respond(HttpExchange exchange, int status, String body) throws IOException {

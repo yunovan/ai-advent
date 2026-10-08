@@ -194,3 +194,10 @@ day28:
   rewrite: ${DAY28_REWRITE:true}
   answer-max-tokens: ${DAY28_ANSWER_MAX_TOKENS:400}
   evaluate-runs: ${DAY28_EVALUATE_RUNS:2}
+
+day29:
+  benchmark-runs: ${DAY29_BENCHMARK_RUNS:1}
+  questions-limit: ${DAY29_QUESTIONS_LIMIT:10}
+  tuned-temperature: ${DAY29_TUNED_TEMPERATURE:0.1}
+  tuned-num-ctx: ${DAY29_TUNED_NUM_CTX:2048}
+  tuned-num-predict: ${DAY29_TUNED_NUM_PREDICT:240}

@@ -101,3 +101,10 @@ day28:
   rewrite: true
   answer-max-tokens: 400
   evaluate-runs: 2
+
+day29:
+  benchmark-runs: 1
+  questions-limit: 10
+  tuned-temperature: 0.1
+  tuned-num-ctx: 2048
+  tuned-num-predict: 240

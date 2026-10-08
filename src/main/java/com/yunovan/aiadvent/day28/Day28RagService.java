@@ -40,7 +40,7 @@ public class Day28RagService {
     public static final String RETRIEVAL_NOTE =
             "локальный: n-gram эмбеддинги + cosine + BM25-переранжирование, без сетевых вызовов";
 
-    private static final String SYSTEM =
+    public static final String SYSTEM =
             "Ты — ассистент проекта AI Advent. Отвечай пользователю по-русски, опираясь ТОЛЬКО "
                     + "на переданный контекст документов. Для каждого факта указывай источник (файл) "
                     + "и раздел. Если в контексте нет ответа — честно скажи об этом, не выдумывай факты.";
@@ -280,7 +280,7 @@ public class Day28RagService {
                 "", false, null, 0, 0, 0, 0.0, reason);
     }
 
-    private Pipeline retrieve(String question) {
+    public Pipeline retrieve(String question) {
         Day23QueryRewriter.Rewrite rewrite = properties.rewrite()
                 ? Day23QueryRewriter.rewrite(question)
                 : new Day23QueryRewriter.Rewrite(question, Day23QueryRewriter.normalize(question),
@@ -303,7 +303,7 @@ public class Day28RagService {
                 considered.size(), filteredOut, hits);
     }
 
-    private String prompt(String question, Pipeline pipeline) {
+    public String prompt(String question, Pipeline pipeline) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("Вопрос пользователя: «").append(question).append("»\n\n");
         if (pipeline.rewritten()) {
@@ -335,7 +335,7 @@ public class Day28RagService {
         return prompt.toString();
     }
 
-    private static String fallbackAnswer(String question, Pipeline pipeline) {
+    public static String fallbackAnswer(String question, Pipeline pipeline) {
         StringBuilder text = new StringBuilder();
         text.append("Запрос: «").append(question).append("»\n");
         text.append("Ответ собран из контекста локального индекса (локальная LLM недоступна):\n");
@@ -352,7 +352,7 @@ public class Day28RagService {
         return text.toString().trim();
     }
 
-    private static Double grounding(String answer, Pipeline pipeline) {
+    public static Double grounding(String answer, Pipeline pipeline) {
         if (pipeline.hits().isEmpty()) {
             return null;
         }
@@ -517,7 +517,7 @@ public class Day28RagService {
                 ? "" : cloudProperties.model().trim();
     }
 
-    private static String requireQuestion(String question) {
+    public static String requireQuestion(String question) {
         String questionText = question == null ? "" : question.trim();
         if (questionText.isBlank()) {
             throw new IllegalArgumentException("Вопрос не может быть пустым");
@@ -525,15 +525,15 @@ public class Day28RagService {
         return questionText;
     }
 
-    private static String section(Day21SearchHit hit) {
+    public static String section(Day21SearchHit hit) {
         return hit.chunk().section().isEmpty() ? hit.chunk().title() : hit.chunk().section();
     }
 
-    private static List<String> sources(List<Day21SearchHit> hits) {
+    public static List<String> sources(List<Day21SearchHit> hits) {
         return hits.stream().map(hit -> hit.chunk().fileName()).distinct().toList();
     }
 
-    static double keywordCoverage(List<String> keywords, String answer) {
+    public static double keywordCoverage(List<String> keywords, String answer) {
         if (keywords == null || keywords.isEmpty() || answer == null || answer.isBlank()) {
             return 0;
         }
@@ -606,7 +606,7 @@ public class Day28RagService {
     private record LocalProbe(boolean available, String version, boolean installed, String reason) {
     }
 
-    private record Pipeline(String question, String matchedQuery, boolean rewritten,
+    public record Pipeline(String question, String matchedQuery, boolean rewritten,
                             int candidatesBefore, int filteredOut, List<Day21SearchHit> hits) {
     }
 }
