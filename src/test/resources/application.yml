@@ -108,3 +108,16 @@ day29:
   tuned-temperature: 0.1
   tuned-num-ctx: 2048
   tuned-num-predict: 240
+
+day30:
+  host: localhost
+  port: 8080
+  max-messages: 12
+  max-prompt-chars: 6000
+  rate-limit-per-minute: 10
+  max-concurrent: 4
+  max-sessions: 50
+  stress-requests: 6
+  stress-concurrency: 3
+  temperature: 0.2
+  max-tokens: 300

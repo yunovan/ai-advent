@@ -24,6 +24,7 @@ import com.yunovan.aiadvent.day26.Day26Properties;
 import com.yunovan.aiadvent.day27.Day27Properties;
 import com.yunovan.aiadvent.day28.Day28Properties;
 import com.yunovan.aiadvent.day29.Day29Properties;
+import com.yunovan.aiadvent.day30.Day30Properties;
 import com.yunovan.aiadvent.llm.LlmHttpProperties;
 import com.yunovan.aiadvent.llm.LlmProperties;
 import org.springframework.boot.SpringApplication;
@@ -57,7 +58,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
     Day26Properties.class,
     Day27Properties.class,
     Day28Properties.class,
-    Day29Properties.class
+    Day29Properties.class,
+    Day30Properties.class
 })
 public class AiAdventApplication {
 

@@ -201,3 +201,18 @@ day29:
   tuned-temperature: ${DAY29_TUNED_TEMPERATURE:0.1}
   tuned-num-ctx: ${DAY29_TUNED_NUM_CTX:2048}
   tuned-num-predict: ${DAY29_TUNED_NUM_PREDICT:240}
+
+day30:
+  host: ${DAY30_HOST:localhost}
+  port: ${DAY30_PORT:8080}
+  api-key: ${DAY30_API_KEY:}
+  system-prompt: ${DAY30_SYSTEM_PROMPT:}
+  max-messages: ${DAY30_MAX_MESSAGES:12}
+  max-prompt-chars: ${DAY30_MAX_PROMPT_CHARS:6000}
+  rate-limit-per-minute: ${DAY30_RATE_LIMIT_PER_MINUTE:10}
+  max-concurrent: ${DAY30_MAX_CONCURRENT:4}
+  max-sessions: ${DAY30_MAX_SESSIONS:50}
+  stress-requests: ${DAY30_STRESS_REQUESTS:6}
+  stress-concurrency: ${DAY30_STRESS_CONCURRENCY:3}
+  temperature: ${DAY30_TEMPERATURE:0.2}
+  max-tokens: ${DAY30_MAX_TOKENS:300}
