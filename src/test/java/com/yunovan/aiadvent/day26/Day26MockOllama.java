@@ -9,11 +9,11 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
-final class Day26MockOllama implements AutoCloseable {
+public final class Day26MockOllama implements AutoCloseable {
 
-    static final String VERSION = "0.35.1";
-    static final String MODEL_TAG = "qwen2.5:3b";
-    static final String CYRILLIC_REPLY = "Я Qwen, языковая модель от Alibaba Cloud.";
+    public static final String VERSION = "0.35.1";
+    public static final String MODEL_TAG = "qwen2.5:3b";
+    public static final String CYRILLIC_REPLY = "Я Qwen, языковая модель от Alibaba Cloud.";
 
     private final HttpServer server;
     private final AtomicInteger chatRequests = new AtomicInteger();
@@ -36,7 +36,7 @@ final class Day26MockOllama implements AutoCloseable {
         this.server = server;
     }
 
-    static Day26MockOllama start() {
+    public static Day26MockOllama start() {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             Day26MockOllama mock = new Day26MockOllama(server);
@@ -50,7 +50,7 @@ final class Day26MockOllama implements AutoCloseable {
         }
     }
 
-    static String closedEndpoint() {
+    public static String closedEndpoint() {
         try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
             return "http://127.0.0.1:" + socket.getLocalPort();
@@ -59,27 +59,27 @@ final class Day26MockOllama implements AutoCloseable {
         }
     }
 
-    String endpoint() {
+    public String endpoint() {
         return "http://127.0.0.1:" + server.getAddress().getPort();
     }
 
-    void chatJson(String json) {
+    public void chatJson(String json) {
         this.chatJson = json;
     }
 
-    void chatStatus(int status) {
+    public void chatStatus(int status) {
         this.chatStatus = status;
     }
 
-    void tagsJson(String json) {
+    public void tagsJson(String json) {
         this.tagsJson = json;
     }
 
-    int chatRequests() {
+    public int chatRequests() {
         return chatRequests.get();
     }
 
-    String lastChatBody() {
+    public String lastChatBody() {
         return lastChatBody;
     }
 

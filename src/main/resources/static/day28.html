@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent · День 28</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .ask-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+        .ask-row input { flex: 1; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .result { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.7; }
+        .result .q { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .result .answer { white-space: pre-wrap; }
+        .result .metrics { margin-top: 10px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.8; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; margin-right: 6px; }
+        .pill.ok { color: var(--ok); border-color: var(--ok); }
+        .pill.warn { color: var(--warn); border-color: var(--warn); }
+        .pill.bad { color: var(--danger); border-color: var(--danger); }
+        .src { color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-top: 8px; }
+        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+        @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+        .side { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #101a29; font-size: 14px; line-height: 1.7; }
+        .side h4 { margin: 0 0 8px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+        .side .answer { white-space: pre-wrap; }
+        .verdict { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 12px; font-size: 14px; line-height: 1.7; background: #182642; }
+        .eval-lines { margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; }
+        .eval-lines .verdict-line b { color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html">День 27</a><a href="/day28.html" class="here">День 28</a>
+    </nav>
+    <span class="badge">AI Advent · Day 28</span>
+    <h1>Локальная LLM + RAG</h1>
+    <p class="lead">RAG-система целиком на вашей машине: поиск идёт по локальному индексу Недели 6
+        (n-gram эмбеддинги, cosine, BM25-переранжирование — без сетевых вызовов), а ответ генерирует
+        локальная модель <code style="color:var(--accent)">qwen2.5:3b</code> в Ollama.
+        Облачная модель участвует только в честном сравнении: один и тот же контекст уходит обеим,
+        а оценка меряет качество, скорость и стабильность на контрольных вопросах.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние системы</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <h3>Локальный ответ (только локальная модель)</h3>
+        <div class="ask-row">
+            <input id="askInput" type="text" placeholder="Спросите про документы проекта, например: Как устроен RAG?">
+            <button id="askBtn" type="button">Спросить</button>
+        </div>
+        <div id="askResult"></div>
+    </div>
+
+    <div class="card">
+        <h3>Сравнение: локальная против облачной</h3>
+        <div class="ask-row">
+            <input id="cmpInput" type="text" placeholder="Тот же вопрос — одинаковый контекст обеим моделям">
+            <button id="cmpBtn" type="button">Сравнить</button>
+        </div>
+        <div id="cmpResult"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Оценка: качество · скорость · стабильность</h3>
+            <button id="evalBtn" type="button">Запустить оценку</button>
+        </div>
+        <div class="hint">10 контрольных вопросов × повторы × обе доступные модели.
+            Качество — покрытие ключевых слов, стабильность — отклонение покрытия между повторами.
+            Вопросы можно посмотреть: <code>GET /api/day28/questions</code></div>
+        <div id="evalResult"></div>
+    </div>
+
+    <div class="hint">Подсказка для видео: 1) <code>./gradlew bootRun --args="--day=28"</code> и откройте
+        http://localhost:8080/day28.html — индекс Недели 6 и локальная LLM поднимаются без облака;
+        2) нажмите «Проверить»: виден локальный поиск, состояние Ollama и наличие облачного ключа;
+        3) задайте вопрос — ответ генерируется локальной моделью по найденным чанкам, с источниками
+        и метриками; 4) «Сравнить» отправляет один и тот же контекст обеим моделям и показывает
+        вердикт по качеству и скорости; 5) «Оценка» прогоняет контрольные вопросы и печатает
+        качество, скорость и стабильность обеих моделей, даже если Ollama сейчас остановлен.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const checkBtn = document.getElementById("checkBtn");
+    const askInput = document.getElementById("askInput");
+    const askBtn = document.getElementById("askBtn");
+    const askResult = document.getElementById("askResult");
+    const cmpInput = document.getElementById("cmpInput");
+    const cmpBtn = document.getElementById("cmpBtn");
+    const cmpResult = document.getElementById("cmpResult");
+    const evalBtn = document.getElementById("evalBtn");
+    const evalResult = document.getElementById("evalResult");
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+    function n1(v) { return v === null || v === undefined ? "—" : Number(v).toFixed(1); }
+    function n0(v) { return v === null || v === undefined ? "—" : Math.round(Number(v)); }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Проверяем индекс и локальную LLM…");
+        try {
+            const h = await json("/api/day28/health");
+            healthBox.style.display = "block";
+            let html = "<div>Индекс: " + h.documents + " документов, " + h.corpusChars
+                + " символов (~" + h.pagesEstimate + " страниц)</div>"
+                + "<div><span class='ok-line'>Поиск: " + esc(h.retrieval) + "</span></div>"
+                + "<div>Стратегия: " + esc(h.strategy) + " (top-k " + h.topKBefore + "→" + h.topKAfter
+                + ", порог " + Number(h.threshold).toFixed(2) + ", rewrite: "
+                + (h.rewrite ? "да" : "нет") + ", токенов: " + h.answerMaxTokens + ")</div>"
+                + "<div>Локальная LLM: " + esc(h.localEndpoint) + " / " + esc(h.localModel) + " — "
+                + (h.localAvailable
+                    ? "<span class='ok-line'>сервер запущен</span> (версия " + esc(h.localVersion)
+                        + ", модель " + (h.modelInstalled ? "установлена" : "не установлена") + ")"
+                    : "<span class='bad-line'>сервер не отвечает</span>") + "</div>"
+                + "<div>Облачное сравнение: "
+                + (h.cloudConfigured
+                    ? "ключ задан, модель " + esc(h.cloudModel)
+                    : "ключ не задан — сравнение покажет только локальный ответ") + "</div>"
+                + "<div><span class='ok-line'>Облачная генерация в ответах: нет</span> — "
+                + "поиск и ответы локальные (usesCloud: " + h.usesCloud + ")</div>"
+                + "<div>Повторов в оценке: " + h.evaluateRuns + "</div>";
+            if (h.localError) { html += "<div style='color:var(--danger)'>" + esc(h.localError) + "</div>"; }
+            healthBox.innerHTML = html;
+            toast(h.localAvailable ? "Локальная LLM отвечает" : "Локальная LLM недоступна");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    function metricsLine(a) {
+        return "задержка " + n0(a.latencyMs) + " мс | токены " + a.promptTokens + " вход / "
+            + a.outputTokens + " выход | " + n1(a.tokensPerSecond) + " ток/с"
+            + (a.groundingPercent === null || a.groundingPercent === undefined
+                ? "" : " | опора на контекст " + n1(a.groundingPercent) + "%");
+    }
+
+    function answerHtml(a, title) {
+        const pills = [];
+        if (a.fallback) { pills.push("<span class='pill warn'>фолбэк: LLM не ответила</span>"); }
+        if (a.unavailableReason) { pills.push("<span class='pill bad'>недоступна</span>"); }
+        let html = "<div class='q'>" + esc(title) + " · " + esc(a.model) + "</div>"
+            + pills.join("")
+            + (a.unavailableReason
+                ? "<div class='bad-line'>" + esc(a.unavailableReason) + "</div>"
+                : "<div class='answer'>" + esc(a.answer) + "</div>")
+            + "<div class='src'>Источники: " + (a.sources.length
+                ? esc(a.sources.join(", ")) : "ничего не найдено")
+            + (a.rewritten ? " · поиск по запросу «" + esc(a.matchedQuery) + "»" : "") + "</div>"
+            + "<div class='metrics'>" + metricsLine(a) + "</div>";
+        if (a.fallback && a.unavailableReason) {
+            html += "<div class='metrics'>причина фолбэка: " + esc(a.unavailableReason) + "</div>";
+        }
+        return html;
+    }
+
+    async function ask() {
+        const text = askInput.value.trim();
+        if (!text) { toast("Введите вопрос"); return; }
+        askBtn.disabled = true;
+        askResult.innerHTML = "<div class='result'><div class='metrics'>Локальная модель думает…</div></div>";
+        try {
+            const a = await json("/api/day28/ask", "POST", {question: text});
+            askResult.innerHTML = "<div class='result'>" + answerHtml(a, "Локальный ответ") + "</div>";
+            toast("Ответ за " + n0(a.latencyMs) + " мс");
+        } catch (e) {
+            askResult.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+        } finally { askBtn.disabled = false; }
+    }
+
+    async function compare() {
+        const text = cmpInput.value.trim();
+        if (!text) { toast("Введите вопрос"); return; }
+        cmpBtn.disabled = true;
+        cmpResult.innerHTML = "<div class='result'><div class='metrics'>Обе модели работают с одним контекстом…</div></div>";
+        try {
+            const c = await json("/api/day28/compare", "POST", {question: text});
+            cmpResult.innerHTML = "<div class='result'>"
+                + "<div class='q'>Общий контекст: "
+                + (c.sources.length ? esc(c.sources.join(", ")) : "по запросу ничего не найдено") + "</div>"
+                + "<div class='two'>"
+                + "<div class='side'><h4>Локальная модель</h4>"
+                + answerHtml(c.local, "Ответ") + "</div>"
+                + "<div class='side'><h4>Облачная модель</h4>"
+                + answerHtml(c.cloud, "Ответ") + "</div></div>"
+                + "<div class='verdict'>" + esc(c.verdict) + "</div></div>";
+            toast(c.cloud.unavailableReason ? "Сравнение: облако недоступно" : "Сравнение готово");
+        } catch (e) {
+            cmpResult.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+        } finally { cmpBtn.disabled = false; }
+    }
+
+    function engineLine(label, s) {
+        if (!s.available) {
+            return "<div class='verdict-line'><b>" + esc(label) + ":</b> недоступна — "
+                + esc(s.reason) + "</div>";
+        }
+        let line = "<div class='verdict-line'><b>" + esc(label) + ":</b> ответов " + s.answered;
+        if (s.avgCoveragePercent !== null && s.avgCoveragePercent !== undefined) {
+            line += " | покрытие " + n1(s.avgCoveragePercent) + "%";
+        }
+        if (s.coverageStdDev !== null && s.coverageStdDev !== undefined) {
+            line += " | отклонение ±" + n1(s.coverageStdDev) + " п.п.";
+        }
+        if (s.avgLatencyMs !== null && s.avgLatencyMs !== undefined) {
+            line += " | задержка " + n0(s.avgLatencyMs) + " мс";
+        }
+        if (s.avgTokensPerSecond !== null && s.avgTokensPerSecond !== undefined) {
+            line += " | " + n1(s.avgTokensPerSecond) + " ток/с";
+        }
+        if (s.fallbacks > 0) { line += " | фолбэков: " + s.fallbacks; }
+        if (s.reason) { line += " | " + esc(s.reason); }
+        return line + "</div>";
+    }
+
+    async function evaluate() {
+        evalBtn.disabled = true;
+        evalResult.innerHTML = "<div class='result'><div class='metrics'>Оценка идёт несколько минут: "
+            + "10 вопросов × повторы × обе модели. Не закрывайте вкладку…</div></div>";
+        toast("Оценка запущена…");
+        try {
+            const ev = await json("/api/day28/evaluate", "POST");
+            let rows = "";
+            ev.items.forEach(item => {
+                const avg = values => {
+                    if (!values.length) { return "—"; }
+                    return n1(values.reduce((a, b) => a + b, 0) / values.length) + "%";
+                };
+                rows += "<tr><td>" + esc(item.id) + "</td>"
+                    + "<td>" + esc(item.question) + "</td>"
+                    + "<td>" + (item.retrievalHit ? "да" : "НЕТ") + "</td>"
+                    + "<td class='num'>" + avg(item.localCoverages) + "</td>"
+                    + "<td class='num'>" + avg(item.cloudCoverages) + "</td>"
+                    + "<td class='num'>" + (item.localLatencies.length ? n0(item.localLatencies[0]) + " мс" : "—")
+                    + "</td><td class='num'>" + (item.cloudLatencies.length ? n0(item.cloudLatencies[0]) + " мс" : "—")
+                    + "</td></tr>";
+            });
+            evalResult.innerHTML = "<div class='result'>"
+                + "<div class='q'>" + ev.total + " вопросов × " + ev.runs + " повторов · "
+                + "источник найден в " + ev.retrievalHits + " из " + ev.total
+                + " (" + n1(ev.retrievalRecallPercent) + "%)</div>"
+                + "<div class='eval-lines'>"
+                + engineLine("Локальная модель", ev.local)
+                + engineLine("Облачная модель", ev.cloud)
+                + "<div class='verdict-line'><b>Качество:</b> " + esc(ev.qualityVerdict) + "</div>"
+                + "<div class='verdict-line'><b>Скорость:</b> " + esc(ev.speedVerdict) + "</div>"
+                + "<div class='verdict-line'><b>Стабильность:</b> " + esc(ev.stabilityVerdict) + "</div>"
+                + "</div>"
+                + "<table><tr><th>№</th><th>Вопрос</th><th>Ретрив</th><th>Лок. покрытие</th>"
+                + "<th>Обл. покрытие</th><th>Лок. задержка</th><th>Обл. задержка</th></tr>"
+                + rows + "</table></div>";
+            toast("Оценка завершена");
+        } catch (e) {
+            evalResult.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { evalBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    askBtn.addEventListener("click", ask);
+    cmpBtn.addEventListener("click", compare);
+    evalBtn.addEventListener("click", evaluate);
+    askInput.addEventListener("keydown", e => { if (e.key === "Enter") { ask(); } });
+    cmpInput.addEventListener("keydown", e => { if (e.key === "Enter") { compare(); } });
+
+    check();
+</script>
+</body>
+</html>

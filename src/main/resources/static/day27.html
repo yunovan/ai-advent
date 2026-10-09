@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent — День 27</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .chat { display: flex; flex-direction: column; gap: 10px; max-height: 460px; overflow-y: auto; padding: 4px 2px; min-height: 120px; }
+        .msg { border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; max-width: 86%; }
+        .msg.user { background: #1e2c42; border-color: #2f4463; margin-left: auto; }
+        .msg.assistant { background: #101a29; }
+        .msg.error { border-color: var(--danger); color: var(--danger); }
+        .msg .who { display: block; margin-bottom: 4px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .msg .metrics { margin-top: 8px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        .msg.waiting { color: var(--warn); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+        .chat-form { display: flex; gap: 12px; align-items: center; margin-top: 14px; }
+        .chat-form input { flex: 1; }
+        .session { display: flex; gap: 8px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-top: 6px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+        .session b { color: var(--text); }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html" class="here">День 27</a><a href="/day28.html">День 28</a>
+    </nav>
+    <span class="badge">AI Advent · Day 27</span>
+    <h1>Локальный ассистент</h1>
+    <p class="lead">Веб-приложение-чат ходит только в локальную Ollama
+        (<code style="color:var(--accent)">qwen2.5:3b</code> на <code style="color:var(--accent)">localhost:11434</code>):
+        мультитоновые диалоги с историей, сохранённой на диск, и метриками каждого ответа.
+        Облачные модели не используются — приложению не нужен ни API-ключ, ни сеть.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние подключения</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Диалог с локальной моделью</h3>
+            <div class="row">
+                <button id="historyBtn" class="secondary" type="button">Обновить историю</button>
+                <button id="resetBtn" class="secondary" type="button">Новый диалог</button>
+            </div>
+        </div>
+        <div class="chat" id="chat"></div>
+        <div class="chat-form">
+            <input id="message" type="text" placeholder="Напишите сообщение и нажмите Enter…">
+            <button id="sendBtn" type="button">Отправить</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Сессии приложения</h3>
+        <div id="sessions"></div>
+    </div>
+
+    <div class="hint">Скрипт видео: 1) <code>./gradlew bootRun --args="--day=27"</code> и открыть
+        http://localhost:8080/day27.html — приложение стартует без API-ключей; 2) поздороваться и
+        представиться («Меня зовут Аня»), затем спросить «Как меня зовут?» — модель помнит контекст,
+        потому что вся история уходит в локальный LLM; 3) метрики каждого ответа: задержка, токены,
+        ток/с; 4) «Новый диалог» и перезагрузка страницы — история восстанавливается с диска;
+        5) остановить Ollama → отправить сообщение → честная ошибка «Локальный LLM недоступен».</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const chatBox = document.getElementById("chat");
+    const messageEl = document.getElementById("message");
+    const sendBtn = document.getElementById("sendBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const historyBtn = document.getElementById("historyBtn");
+    const checkBtn = document.getElementById("checkBtn");
+    const sessionsBox = document.getElementById("sessions");
+    const sessionId = "web";
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    function bubble(role, text, metrics) {
+        const div = document.createElement("div");
+        div.className = "msg " + esc(role);
+        let html = "<span class='who'>" + (role === "user" ? "вы" : "локальная модель") + "</span>"
+            + esc(text);
+        if (metrics) {
+            html += "<div class='metrics'>задержка " + metrics.latencyMs + " мс · токены "
+                + metrics.promptTokens + " вход / " + metrics.outputTokens + " выход · "
+                + metrics.tokensPerSecond.toFixed(1) + " ток/с · модель " + esc(metrics.model)
+                + "</div>";
+        }
+        div.innerHTML = html;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return div;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Проверяем подключение к локальной модели…");
+        try {
+            const h = await json("/api/day27/health");
+            healthBox.style.display = "block";
+            let html = "<div><span class='" + (h.available ? "ok-line" : "bad-line") + "'>сервер запущен: "
+                + (h.available ? "ДА" : "НЕТ") + "</span>"
+                + (h.available ? " (версия " + esc(h.version) + ", модель "
+                    + (h.modelInstalled ? "установлена" : "НЕ установлена") + ")" : "") + "</div>"
+                + "<div>endpoint: " + esc(h.endpoint) + " · модель: " + esc(h.model) + "</div>"
+                + "<div><span class='ok-line'>облачные модели: НЕТ</span> — только локальный Ollama, API-ключ не нужен</div>"
+                + "<div>история: до " + h.historyLimit + " сообщений · сессий: " + h.sessions
+                + " (максимум " + h.maxSessions + ")</div>";
+            if (h.error) { html += "<div style='color:var(--danger)'>" + esc(h.error) + "</div>"; }
+            healthBox.innerHTML = html;
+            toast(h.available ? ("подключение к " + h.endpoint + " — ОК") : "локальный LLM недоступен");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function loadHistory() {
+        try {
+            const history = await json("/api/day27/history?sessionId=" + encodeURIComponent(sessionId));
+            chatBox.innerHTML = "";
+            history.forEach(item => bubble(item.role, item.text, item.role === "assistant" ? item : null));
+            toast("сообщений в истории: " + history.length);
+        } catch (e) { toast("Ошибка: " + e.message); }
+    }
+
+    async function loadSessions() {
+        try {
+            const sessions = await json("/api/day27/sessions");
+            sessionsBox.innerHTML = "";
+            if (!sessions.length) {
+                sessionsBox.innerHTML = "<div class='session'>сессий пока нет — напишите первое сообщение</div>";
+                return;
+            }
+            sessions.forEach(s => {
+                const div = document.createElement("div");
+                div.className = "session";
+                div.innerHTML = "<b>" + esc(s.sessionId) + "</b><span>ходов: " + s.turns
+                    + "</span><span>сообщений: " + s.historySize + "</span><span>"
+                    + esc(s.lastMessage === null ? "—" : s.lastMessage) + "</span>";
+                sessionsBox.appendChild(div);
+            });
+        } catch (e) { toast("Ошибка: " + e.message); }
+    }
+
+    async function send() {
+        const text = messageEl.value.trim();
+        if (!text) { toast("Введите сообщение"); return; }
+        sendBtn.disabled = true;
+        messageEl.value = "";
+        bubble("user", text, null);
+        const waiting = document.createElement("div");
+        waiting.className = "msg assistant waiting";
+        waiting.textContent = "локальная модель печатает…";
+        chatBox.appendChild(waiting);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        try {
+            const turn = await json("/api/day27/chat", "POST", {sessionId, message: text});
+            waiting.remove();
+            bubble("assistant", turn.reply, turn);
+            toast("ход " + turn.turn + " за " + turn.latencyMs + " мс");
+            loadSessions();
+        } catch (e) {
+            waiting.remove();
+            const div = document.createElement("div");
+            div.className = "msg error";
+            div.textContent = "запрос не выполнен: " + e.message;
+            chatBox.appendChild(div);
+            toast("Ошибка: " + e.message);
+        } finally { sendBtn.disabled = false; messageEl.focus(); }
+    }
+
+    async function reset() {
+        resetBtn.disabled = true;
+        try {
+            await json("/api/day27/reset", "POST", {sessionId});
+            chatBox.innerHTML = "";
+            toast("диалог очищен");
+            loadSessions();
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { resetBtn.disabled = false; }
+    }
+
+    sendBtn.addEventListener("click", send);
+    resetBtn.addEventListener("click", reset);
+    historyBtn.addEventListener("click", loadHistory);
+    checkBtn.addEventListener("click", check);
+    messageEl.addEventListener("keydown", e => { if (e.key === "Enter") { send(); } });
+
+    check();
+    loadHistory();
+    loadSessions();
+</script>
+</body>
+</html>
