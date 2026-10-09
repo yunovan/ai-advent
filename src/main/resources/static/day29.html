@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent · День 29</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .ask-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+        .ask-row input { flex: 1; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .result { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.7; }
+        .result .q { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .result .answer { white-space: pre-wrap; }
+        .result .metrics { margin-top: 10px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.8; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; margin-right: 6px; }
+        .pill.ok { color: var(--ok); border-color: var(--ok); }
+        .pill.warn { color: var(--warn); border-color: var(--warn); }
+        .pill.bad { color: var(--danger); border-color: var(--danger); }
+        .src { color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; margin-top: 8px; }
+        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+        @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+        .side { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #101a29; font-size: 14px; line-height: 1.7; }
+        .side h4 { margin: 0 0 8px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+        .side .answer { white-space: pre-wrap; }
+        .side .params { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.8; margin-bottom: 8px; }
+        .verdict { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 12px; font-size: 14px; line-height: 1.7; background: #182642; }
+        .eval-lines { margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; }
+        .eval-lines .verdict-line b { color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html">День 27</a><a href="/day28.html">День 28</a><a href="/day29.html" class="here">День 29</a><a href="/day30.html">День 30</a>
+    </nav>
+    <span class="badge">AI Advent · Day 29</span>
+    <h1>Оптимизация локальной LLM</h1>
+    <p class="lead">Одна и та же локальная модель <code style="color:var(--accent)">qwen2.5:3b</code> в двух
+        профилях: базовый (всё как в дне 28) и оптимизированный под задачу RAG —
+        temperature, num_ctx, num_predict и компактный prompt-шаблон. Сравниваем качество
+        (покрытие ключевых слов), скорость (задержка и ток/с) и потребление ресурсов
+        (токены на запрос, память модели), а квантование и контекстное окно читаем прямо
+        из Ollama.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние модели и профили</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <h3>Сравнение профилей на одном вопросе</h3>
+        <div class="ask-row">
+            <input id="askInput" type="text" placeholder="Например: Как устроен локальный поиск по документам?">
+            <button id="askBtn" type="button">Спросить</button>
+        </div>
+        <div class="hint">Один и тот же найденный контекст уходит в оба профиля — отличаются
+            только параметры генерации и шаблон промпта.</div>
+        <div id="askResult"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Бенчмарк: качество · скорость · ресурсы</h3>
+            <button id="runBtn" type="button">Запустить бенчмарк</button>
+        </div>
+        <div class="hint">Контрольные вопросы дня 22 × повторы × два профиля, последовательно —
+            чтобы задержка была честной.</div>
+        <div id="runResult"></div>
+    </div>
+
+    <div class="hint">Подсказка для видео: 1) <code>./gradlew bootRun --args="--day=29"</code> и откройте
+        http://localhost:8080/day29.html — «Проверить» покажет квантование Q4_K_M, размер модели
+        и память; 2) задайте вопрос — рядом два ответа одного «мозга» с разными профилями,
+        размер промпта и метрики каждого; 3) бенчмарк печатает покрытие, задержку, токены и три
+        вердикта — качество, скорость и ресурсы; 4) в CLI то же самое:
+        <code>--day=29 --check</code>, <code>--day=29 --ask="..."</code>, <code>--day=29 --run</code>.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const checkBtn = document.getElementById("checkBtn");
+    const askInput = document.getElementById("askInput");
+    const askBtn = document.getElementById("askBtn");
+    const askResult = document.getElementById("askResult");
+    const runBtn = document.getElementById("runBtn");
+    const runResult = document.getElementById("runResult");
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+    function n1(v) { return v === null || v === undefined ? "—" : Number(v).toFixed(1); }
+    function n0(v) { return v === null || v === undefined ? "—" : Math.round(Number(v)); }
+    function mb(bytes) { return bytes ? n0(bytes / 1048576) + " МБ" : "—"; }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    function profileLine(label, p) {
+        return "<div><b>" + esc(label) + ":</b> temperature " + p.temperature
+            + ", max_tokens " + p.maxTokens
+            + (p.numCtx !== null && p.numCtx !== undefined ? ", num_ctx " + p.numCtx : ", num_ctx по умолчанию")
+            + ", шаблон " + esc(p.promptTemplate)
+            + " <span style='color:var(--muted)'>(" + esc(p.description) + ")</span></div>";
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Запрашиваем Ollama…");
+        try {
+            const h = await json("/api/day29/health");
+            const m = h.model;
+            healthBox.style.display = "block";
+            let html = "<div>Модель: " + esc(m.endpoint) + " / " + esc(m.model) + " — "
+                + (m.available
+                    ? "<span class='ok-line'>сервер запущен</span> (версия " + esc(m.version)
+                        + ", модель " + (m.installed ? "установлена" : "НЕ установлена") + ")"
+                    : "<span class='bad-line'>сервер не отвечает</span>") + "</div>";
+            if (m.available && m.quantizationLevel) {
+                html += "<div><span class='pill ok'>квантование " + esc(m.quantizationLevel) + "</span>"
+                    + "<span class='pill'>формат " + esc(m.format) + "</span>"
+                    + "<span class='pill'>" + esc(m.parameterSize) + " (" + m.parameterCount + " параметров)</span>"
+                    + "<span class='pill'>контекстное окно " + m.contextLength + "</span></div>"
+                    + "<div>Размер на диске: " + mb(m.modelSizeBytes)
+                    + " | загружена в память: " + mb(m.loadedMemoryBytes) + "</div>";
+            }
+            html += profileLine("Базовый профиль", h.baseline);
+            html += profileLine("Оптимизированный профиль", h.tuned);
+            html += "<div style='color:var(--muted)'>Поиск: " + esc(h.retrieval)
+                + " · вопросов в бенчмарке: " + h.questionsLimit
+                + " · повторов на вопрос: " + h.benchmarkRuns + "</div>";
+            if (m.reason) { html += "<div class='bad-line'>" + esc(m.reason) + "</div>"; }
+            healthBox.innerHTML = html;
+            toast(m.available ? "Модель отвечает" : "Локальная LLM недоступна");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    function metricsLine(a) {
+        return "задержка " + n0(a.latencyMs) + " мс | токены " + a.promptTokens + " вход / "
+            + a.outputTokens + " выход | " + n1(a.tokensPerSecond) + " ток/с"
+            + (a.groundingPercent === null || a.groundingPercent === undefined
+                ? "" : " | опора на контекст " + n1(a.groundingPercent) + "%");
+    }
+
+    function sideHtml(a, params) {
+        return "<div class='side'><h4>" + esc(a.profileTitle) + "</h4>"
+            + "<div class='params'>" + esc(params) + "</div>"
+            + (a.fallback ? "<span class='pill warn'>фолбэк</span>" : "")
+            + "<div class='answer'>" + esc(a.answer) + "</div>"
+            + "<div class='metrics'>" + metricsLine(a) + "</div>"
+            + (a.fallback && a.unavailableReason
+                ? "<div class='metrics'>причина: " + esc(a.unavailableReason) + "</div>" : "")
+            + "</div>";
+    }
+
+    async function ask() {
+        const text = askInput.value.trim();
+        if (!text) { toast("Введите вопрос"); return; }
+        askBtn.disabled = true;
+        askResult.innerHTML = "<div class='result'><div class='metrics'>Оба профиля считают…</div></div>";
+        try {
+            const a = await json("/api/day29/ask", "POST", {question: text});
+            const bParams = "промпт " + a.promptCharsBaseline + " символов";
+            const tParams = "промпт " + a.promptCharsTuned + " символов (−"
+                + (a.promptCharsBaseline - a.promptCharsTuned) + ")";
+            askResult.innerHTML = "<div class='result'>"
+                + "<div class='q'>Источники: " + (a.sources.length
+                    ? esc(a.sources.join(", ")) : "ничего не найдено") + "</div>"
+                + "<div class='two'>" + sideHtml(a.baseline, bParams) + sideHtml(a.tuned, tParams) + "</div>"
+                + "<div class='verdict'><b>Качество:</b> " + esc(a.qualityVerdict) + "<br>"
+                + "<b>Скорость:</b> " + esc(a.speedVerdict) + "</div></div>";
+            toast("Готово: " + n0(a.baseline.latencyMs) + " мс → " + n0(a.tuned.latencyMs) + " мс");
+        } catch (e) {
+            askResult.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+        } finally { askBtn.disabled = false; }
+    }
+
+    function statsLine(label, s) {
+        let line = "<div class='verdict-line'><b>" + esc(label) + ":</b> ответов " + s.answers;
+        if (s.avgCoveragePercent !== null && s.avgCoveragePercent !== undefined) {
+            line += " | покрытие " + n1(s.avgCoveragePercent) + "%";
+        }
+        if (s.avgGroundingPercent !== null && s.avgGroundingPercent !== undefined) {
+            line += " | опора " + n1(s.avgGroundingPercent) + "%";
+        }
+        if (s.avgLatencyMs !== null && s.avgLatencyMs !== undefined) {
+            line += " | задержка " + n0(s.avgLatencyMs) + " мс";
+        }
+        if (s.avgTokensPerSecond !== null && s.avgTokensPerSecond !== undefined) {
+            line += " | " + n1(s.avgTokensPerSecond) + " ток/с";
+        }
+        if (s.avgInputTokens !== null && s.avgInputTokens !== undefined) {
+            line += " | токены " + n0(s.avgInputTokens) + " вход / " + n0(s.avgOutputTokens) + " выход";
+        }
+        if (s.fallbacks > 0) { line += " | фолбэков: " + s.fallbacks; }
+        return line + "</div>";
+    }
+
+    async function runBenchmark() {
+        runBtn.disabled = true;
+        runResult.innerHTML = "<div class='result'><div class='metrics'>Бенчмарк идёт несколько минут: "
+            + "вопросы × повторы × два профиля подряд. Не закрывайте вкладку…</div></div>";
+        toast("Бенчмарк запущен…");
+        try {
+            const r = await json("/api/day29/run", "POST");
+            runResult.innerHTML = "<div class='result'>"
+                + "<div class='q'>" + r.questions + " вопросов × " + r.runs + " повторов × 2 профиля</div>"
+                + "<div class='eval-lines'>"
+                + statsLine("Базовый профиль", r.baseline)
+                + statsLine("Оптимизированный профиль", r.tuned)
+                + (r.loadedMemoryBytes
+                    ? "<div class='verdict-line'><b>Память модели после прогона:</b> "
+                        + mb(r.loadedMemoryBytes) + "</div>" : "")
+                + "<div class='verdict-line'><b>Качество:</b> " + esc(r.qualityVerdict) + "</div>"
+                + "<div class='verdict-line'><b>Скорость:</b> " + esc(r.speedVerdict) + "</div>"
+                + "<div class='verdict-line'><b>Ресурсы:</b> " + esc(r.resourceVerdict) + "</div>"
+                + "</div></div>";
+            toast("Бенчмарк завершён");
+        } catch (e) {
+            runResult.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { runBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    askBtn.addEventListener("click", ask);
+    runBtn.addEventListener("click", runBenchmark);
+    askInput.addEventListener("keydown", e => { if (e.key === "Enter") { ask(); } });
+
+    check();
+</script>
+</body>
+</html>

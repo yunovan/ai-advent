@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent · День 30</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .ask-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+        .ask-row input { flex: 1; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .result { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.7; }
+        .result .q { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .result .answer { white-space: pre-wrap; }
+        .result .metrics { margin-top: 10px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.8; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; margin-right: 6px; }
+        .pill.ok { color: var(--ok); border-color: var(--ok); }
+        .pill.warn { color: var(--warn); border-color: var(--warn); }
+        .pill.bad { color: var(--danger); border-color: var(--danger); }
+        .chat-log { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+        .bubble { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+        .bubble.user { align-self: flex-end; background: #182642; border-color: var(--accent); max-width: 85%; }
+        .bubble.bot { align-self: flex-start; background: #101a29; max-width: 85%; }
+        .bubble .meta-line { margin-top: 6px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; }
+        .verdict { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 12px; font-size: 14px; line-height: 1.7; background: #182642; }
+        .eval-lines { margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.9; }
+        .eval-lines .verdict-line b { color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html">День 27</a><a href="/day28.html">День 28</a><a href="/day29.html">День 29</a><a href="/day30.html" class="here">День 30</a>
+    </nav>
+    <span class="badge">AI Advent · Day 30</span>
+    <h1>Локальная LLM как приватный сервис</h1>
+    <p class="lead">Локальная модель <code style="color:var(--accent)">qwen2.5:3b</code> поднята как
+        приватный HTTP-сервис: чат по сети, без облака. Проверяем доступ по сети, стабильность
+        под несколькими одновременными запросами и базовые ограничения — rate limit и лимит
+        контекста. Ни один запрос не уходит за пределы вашей машины.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние сервиса и ограничения</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Чат с приватным сервисом</h3>
+            <button id="resetBtn" type="button" class="secondary">Новый диалог</button>
+        </div>
+        <div class="ask-row">
+            <input id="chatInput" type="text" placeholder="Например: Кто ты и на какой модели работаешь?">
+            <button id="chatBtn" type="button">Отправить</button>
+        </div>
+        <div class="hint">Сессия хранится на сервере: контекст накапливается, но обрезается по лимиту
+            сообщений, а при переполнении лимита контекста сервис отвечает ошибкой 400.</div>
+        <div class="chat-log" id="chatLog"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Стабильность под нагрузкой</h3>
+            <button id="stressBtn" type="button">Запустить стресс-тест</button>
+        </div>
+        <div class="hint">Несколько одновременных запросов к сервису: считаем успех, отклонения по
+            rate limit, ошибки и задержки.</div>
+        <div id="stressResult"></div>
+    </div>
+
+    <div class="hint">Подсказка для видео: 1) <code>./gradlew bootRun --args="--day=30"</code> и
+        http://localhost:8080/day30.html — «Проверить» покажет адреса сервиса (включая сетевые),
+        лимиты и статистику; 2) поговорите в чате — видно, как растёт контекст и остаток лимита;
+        3) стресс-тест доказывает стабильность под несколькими запросами и показывает срабатывание
+        rate limit; 4) в CLI: <code>--day=30 --check</code>,
+        <code>--day=30 --chat="..."</code>, <code>--day=30 --stress</code>.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const checkBtn = document.getElementById("checkBtn");
+    const chatInput = document.getElementById("chatInput");
+    const chatBtn = document.getElementById("chatBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const chatLog = document.getElementById("chatLog");
+    const stressBtn = document.getElementById("stressBtn");
+    const stressResult = document.getElementById("stressResult");
+
+    let sessionId = null;
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+    function n0(v) { return v === null || v === undefined ? "—" : Math.round(Number(v)); }
+    function n1(v) { return v === null || v === undefined ? "—" : Number(v).toFixed(1); }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Запрашиваем состояние сервиса…");
+        try {
+            const h = await json("/api/day30/health");
+            const m = h.model;
+            const lim = h.limits;
+            const st = h.stats;
+            healthBox.style.display = "block";
+            let html = "<div>Статус: <span class='" + (h.status === "ok" ? "ok-line" : "bad-line") + "'>"
+                + esc(h.status) + "</span> · сервис <b>" + esc(h.serviceUrl) + "</b></div>";
+            html += "<div>Доступ по сети: "
+                + (h.networkUrls && h.networkUrls.length > 1
+                    ? esc(h.networkUrls.slice(1).join(", "))
+                    : "только локально")
+                + "</div>";
+            html += "<div>Модель: " + esc(m.endpoint) + " / " + esc(m.model) + " — "
+                + (m.available
+                    ? "<span class='ok-line'>сервер запущен</span> (версия " + esc(m.version)
+                        + ", модель " + (m.installed ? "установлена" : "НЕ установлена") + ")"
+                    : "<span class='bad-line'>сервер не отвечает</span>") + "</div>";
+            if (m.available && m.quantizationLevel) {
+                html += "<div><span class='pill ok'>" + esc(m.quantizationLevel) + "</span>"
+                    + "<span class='pill'>" + esc(m.parameterSize) + "</span>"
+                    + "<span class='pill'>контекст модели " + m.contextLength + "</span></div>";
+            }
+            html += "<div><span class='pill'>сообщений " + lim.maxMessages + "</span>"
+                + "<span class='pill'>контекст " + lim.maxPromptChars + " симв.</span>"
+                + "<span class='pill'>rate limit " + lim.rateLimitPerMinute + "/мин</span>"
+                + "<span class='pill'>одновременно " + lim.maxConcurrent + "</span>"
+                + "<span class='pill'>max_tokens " + lim.maxOutputTokens + "</span>"
+                + "<span class='pill " + (lim.apiKeyRequired ? "warn" : "ok") + "'>ключ "
+                + (lim.apiKeyRequired ? "требуется" : "не требуется") + "</span></div>";
+            html += "<div>Статистика: запросов " + st.totalRequests
+                + " · принято " + st.acceptedRequests
+                + " · отклонено (лимит " + st.rejectedByRateLimit
+                + ", контекст " + st.rejectedByContext
+                + ", занятость " + st.rejectedByConcurrency + ")"
+                + " · активно " + st.activeRequests + " (пик " + st.peakActiveRequests + ")"
+                + " · сессий " + st.sessions
+                + (st.avgLatencyMs !== null && st.avgLatencyMs !== undefined
+                    ? " · средняя задержка " + n0(st.avgLatencyMs) + " мс" : "")
+                + "</div>";
+            if (m.reason) { html += "<div class='bad-line'>" + esc(m.reason) + "</div>"; }
+            healthBox.innerHTML = html;
+            toast(m.available ? "Сервис отвечает" : "Локальная LLM недоступна");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    function bubble(role, text, metrics) {
+        const div = document.createElement("div");
+        div.className = "bubble " + role;
+        div.textContent = text;
+        if (metrics) {
+            const metaLine = document.createElement("div");
+            metaLine.className = "meta-line";
+            metaLine.textContent = metrics;
+            div.appendChild(metaLine);
+        }
+        chatLog.appendChild(div);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function send() {
+        const text = chatInput.value.trim();
+        if (!text) { toast("Введите сообщение"); return; }
+        chatBtn.disabled = true;
+        bubble("user", text);
+        chatInput.value = "";
+        try {
+            const a = await json("/api/day30/chat", "POST", {sessionId, message: text});
+            sessionId = a.sessionId;
+            bubble("bot", a.reply,
+                "ход " + a.turn + " · сообщений в контексте " + a.contextMessages
+                + (a.contextTrimmed ? " (обрезано)" : "")
+                + " · " + n0(a.latencyMs) + " мс · " + a.outputTokens + " выходных токенов"
+                + " · остаток лимита " + a.rateRemaining);
+            toast("Ответ получен за " + n0(a.latencyMs) + " мс");
+        } catch (e) {
+            bubble("bot", "Ошибка: " + e.message, "");
+            toast("Ошибка: " + e.message);
+        } finally { chatBtn.disabled = false; }
+    }
+
+    function reset() {
+        sessionId = null;
+        chatLog.innerHTML = "";
+        toast("Начат новый диалог");
+    }
+
+    async function stress() {
+        stressBtn.disabled = true;
+        stressResult.innerHTML = "<div class='result'><div class='metrics'>Шлём несколько "
+            + "одновременных запросов…</div></div>";
+        toast("Стресс-тест запущен…");
+        try {
+            const r = await json("/api/day30/stress", "POST", {});
+            let rows = "";
+            r.items.forEach(it => {
+                rows += "<tr><td>#" + it.index + "</td><td>"
+                    + (it.ok ? "<span class='pill ok'>ok</span>"
+                        : it.rateLimited ? "<span class='pill warn'>лимит</span>"
+                        : "<span class='pill bad'>ошибка</span>")
+                    + "</td><td class='num'>" + it.latencyMs + " мс</td><td>"
+                    + esc(it.error) + "</td></tr>";
+            });
+            stressResult.innerHTML = "<div class='result'>"
+                + "<div class='q'>" + r.requests + " запросов · одновременно " + r.concurrency
+                + " · всего " + r.totalMs + " мс</div>"
+                + "<div class='eval-lines'>"
+                + "<div class='verdict-line'><b>Успешно:</b> " + r.succeeded
+                + " · <b>отклонено лимитом:</b> " + r.rateLimited
+                + " · <b>ошибок:</b> " + r.failed + "</div>"
+                + (r.succeeded > 0 ? "<div class='verdict-line'><b>Задержки:</b> мин "
+                    + r.minLatencyMs + " / сред " + n0(r.avgLatencyMs) + " / макс "
+                    + r.maxLatencyMs + " мс · <b>пропускная способность:</b> "
+                    + n1(r.throughputPerSecond) + " зап/с</div>" : "")
+                + "<div class='verdict-line'><b>Вердикт:</b> " + esc(r.verdict) + "</div>"
+                + "</div>"
+                + "<table><thead><tr><th>#</th><th>итог</th><th>задержка</th>"
+                + "<th>комментарий</th></tr></thead><tbody>" + rows + "</tbody></table>"
+                + "</div>";
+            toast("Стресс-тест завершён");
+        } catch (e) {
+            stressResult.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { stressBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    chatBtn.addEventListener("click", send);
+    resetBtn.addEventListener("click", reset);
+    stressBtn.addEventListener("click", stress);
+    chatInput.addEventListener("keydown", e => { if (e.key === "Enter") { send(); } });
+
+    check();
+</script>
+</body>
+</html>
