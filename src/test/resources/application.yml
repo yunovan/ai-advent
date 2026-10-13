@@ -121,3 +121,21 @@ day30:
   stress-concurrency: 3
   temperature: 0.2
   max-tokens: 300
+
+day31:
+  server-port: 0
+  path: /mcp
+  name: ai-advent-git-mcp
+  version: 0.1.0
+  repository-dir: .
+  docs-dir: docs
+  readme-path: README.md
+  top-k: 5
+  candidate-k: 12
+  chunk-size: 700
+  chunk-overlap: 80
+  git-timeout-ms: 5000
+  answer-max-tokens: 400
+  max-files: 300
+  max-diff-chars: 6000
+  temperature: 0.2
