@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent · День 32</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; width: 100%; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .review-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+        .review-row input { flex: 1; min-width: 160px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .result { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.7; }
+        .result .q { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .result .answer { white-space: pre-wrap; }
+        .result .metrics { margin-top: 10px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.8; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; margin: 0 6px 4px 0; }
+        .pill.ok { color: var(--ok); border-color: var(--ok); }
+        .pill.warn { color: var(--warn); border-color: var(--warn); }
+        .pill.bad { color: var(--danger); border-color: var(--danger); }
+        .pill.high { color: var(--danger); border-color: var(--danger); }
+        .pill.medium { color: var(--warn); border-color: var(--warn); }
+        .pill.low { color: var(--muted); }
+        .sources { margin-top: 10px; }
+        .sources .pill { color: var(--accent); border-color: var(--accent); }
+        .section { margin-top: 12px; }
+        .section h4 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; font-size: 14px; color: var(--accent); }
+        .finding { margin: 0 0 6px; padding-left: 4px; }
+        .finding .loc { color: var(--muted); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        pre.out { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #101a29; overflow-x: auto; white-space: pre-wrap; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; line-height: 1.6; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html">День 27</a><a href="/day28.html">День 28</a><a href="/day29.html">День 29</a><a href="/day30.html">День 30</a><a href="/day31.html">День 31</a><a href="/day32.html" class="here">День 32</a>
+    </nav>
+    <span class="badge">AI Advent · Day 32</span>
+    <h1>Автоматическое ревью кода</h1>
+    <p class="lead">Пайплайн сам анализирует pull request: берёт <b>diff</b> и список изменённых файлов,
+        подтягивает релевантный контекст проекта из <b>RAG</b> (документация + код) и возвращает ревью:
+        потенциальные баги, архитектурные проблемы и рекомендации. Если локальная модель недоступна,
+        замечания собираются эвристиками.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние движка ревью</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Изменённые файлы</h3>
+            <button id="changedBtn" type="button" class="secondary">Показать</button>
+        </div>
+        <div class="review-row">
+            <input id="baseInput" type="text" value="main" placeholder="базовая ветка (base)">
+            <input id="headInput" type="text" value="HEAD" placeholder="верхняя ветка (head)">
+        </div>
+        <div id="changed"></div>
+    </div>
+
+    <div class="card">
+        <h3>Запустить ревью</h3>
+        <div class="review-row">
+            <input id="titleInput" type="text" placeholder="Название PR, например: День 32 — ревью кода">
+        </div>
+        <div class="review-row">
+            <input id="bodyInput" type="text" placeholder="Описание PR (необязательно)">
+        </div>
+        <div class="review-row">
+            <button id="reviewBtn" type="button">Ревью диапазона</button>
+            <button id="currentBtn" type="button" class="secondary">Ревью текущих изменений</button>
+        </div>
+        <div class="hint">Диапазон сравнивается как <code>base...head</code>; «текущие изменения» —
+            рабочее дерево против <code>HEAD</code>. Ответ содержит секции
+            <code>Потенциальные баги</code>, <code>Архитектурные проблемы</code>, <code>Рекомендации</code>.</div>
+        <div id="review"></div>
+    </div>
+
+    <div class="hint">Подсказка для видео: 1) <code>./gradlew bootRun --args="--day=32"</code> и
+        http://localhost:8080/day32.html — «Проверить» покажет индекс и модель;
+        2) «Показать» под списком изменённых файлов;
+        3) «Ревью диапазона» — видно три секции и источники RAG;
+        4) в CLI: <code>--day=32 --check</code> и
+        <code>--day=32 --review --base=main --out=ai-review.md</code>;
+        5) в GitHub Actions работает <code>.github/workflows/ai-review.yml</code> на каждый PR.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const checkBtn = document.getElementById("checkBtn");
+    const changedBtn = document.getElementById("changedBtn");
+    const changedBox = document.getElementById("changed");
+    const baseInput = document.getElementById("baseInput");
+    const headInput = document.getElementById("headInput");
+    const titleInput = document.getElementById("titleInput");
+    const bodyInput = document.getElementById("bodyInput");
+    const reviewBtn = document.getElementById("reviewBtn");
+    const currentBtn = document.getElementById("currentBtn");
+    const reviewBox = document.getElementById("review");
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+    function n0(v) { return v === null || v === undefined ? "—" : Math.round(Number(v)); }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Запрашиваем состояние движка ревью…");
+        try {
+            const h = await json("/api/day32/health");
+            const m = h.model;
+            healthBox.style.display = "block";
+            let html = "<div>Статус: <span class='" + (h.status === "ok" ? "ok-line" : "bad-line") + "'>"
+                + esc(h.status) + "</span></div>";
+            html += "<div>Репозиторий: " + esc(h.repositoryDir) + " (ветка " + esc(h.branch)
+                + ", база " + esc(h.baseRef) + ")</div>";
+            html += "<div>Индекс проекта: " + h.documents + " документов (кода " + h.codeFiles
+                + ") · " + h.chunks + " чанков · " + h.corpusChars + " символов</div>";
+            html += "<div>Локальная LLM: " + esc(m.endpoint) + " / " + esc(m.model) + " — "
+                + (m.available
+                    ? "<span class='ok-line'>сервер запущен</span> (версия " + esc(m.version)
+                        + ", модель " + (m.installed ? "установлена" : "НЕ установлена") + ")"
+                    : "<span class='bad-line'>недоступна</span> (ревью соберётся эвристиками)") + "</div>";
+            if (m.reason) { html += "<div class='bad-line'>" + esc(m.reason) + "</div>"; }
+            healthBox.innerHTML = html;
+            toast("Состояние получено");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function loadChanged() {
+        changedBtn.disabled = true;
+        toast("Запрашиваем список изменённых файлов…");
+        try {
+            const base = baseInput.value.trim();
+            const head = headInput.value.trim();
+            const list = await json("/api/day32/changed?base=" + encodeURIComponent(base)
+                + "&head=" + encodeURIComponent(head));
+            let rows = "";
+            list.forEach(f => {
+                rows += "<tr><td>" + esc(f.path) + "</td><td>" + esc(f.status) + "</td><td class='num'>"
+                    + f.additions + "</td><td class='num'>" + f.deletions + "</td></tr>";
+            });
+            changedBox.innerHTML = "<table><thead><tr><th>файл</th><th>статус</th>"
+                + "<th>+</th><th>-</th></tr></thead><tbody>" + rows + "</tbody></table>";
+            toast("Файлов: " + list.length);
+        } catch (e) {
+            changedBox.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { changedBtn.disabled = false; }
+    }
+
+    function findings(title, list) {
+        let html = "<div class='section'><h4>" + esc(title) + "</h4>";
+        if (!list || !list.length) { return html + "<div class='finding'>нет замечаний</div></div>"; }
+        list.forEach(f => {
+            const loc = f.file ? "<span class='loc'>" + esc(f.file) + (f.line > 0 ? ":" + f.line : "")
+                + "</span> " : "";
+            html += "<div class='finding'><span class='pill " + esc(f.severity) + "'>"
+                + esc(f.severity) + "</span>" + loc + esc(f.message) + "</div>";
+        });
+        return html + "</div>";
+    }
+
+    function renderReview(r) {
+        let html = "<div class='result'>";
+        html += "<div class='q'>" + esc(r.summary) + "</div>";
+        html += "<div class='sources'>"
+            + "<span class='pill'>файлов " + r.filesChanged + "</span>"
+            + "<span class='pill'>+" + r.addedLines + "/-" + r.removedLines + "</span>"
+            + "<span class='pill'>контекст " + r.retrieved + "</span>"
+            + (r.diffTruncated ? "<span class='pill warn'>diff обрезан</span>" : "")
+            + (r.fallback ? "<span class='pill warn'>эвристики</span>"
+                : "<span class='pill ok'>" + esc(r.model) + "</span>") + "</div>";
+        html += findings("Потенциальные баги", r.bugs);
+        html += findings("Архитектурные проблемы", r.architecture);
+        html += findings("Рекомендации", r.recommendations);
+        if (r.sources && r.sources.length) {
+            html += "<div class='sources'>источники RAG: "
+                + r.sources.map(s => "<span class='pill'>" + esc(s) + "</span>").join("") + "</div>";
+        }
+        html += "<pre class='out'>" + esc(r.review) + "</pre>";
+        html += "<div class='metrics'>" + n0(r.latencyMs) + " мс · токены " + r.promptTokens
+            + " вход / " + r.outputTokens + " выход · " + Number(r.tokensPerSecond || 0).toFixed(1)
+            + " ток/с" + (r.note ? " · " + esc(r.note) : "") + "</div>";
+        html += "</div>";
+        reviewBox.innerHTML = html;
+    }
+
+    async function runReview(current) {
+        const base = baseInput.value.trim();
+        const head = headInput.value.trim();
+        const payload = {base, title: titleInput.value.trim(), description: bodyInput.value.trim()};
+        if (!current) { payload.head = head; }
+        reviewBtn.disabled = true;
+        currentBtn.disabled = true;
+        reviewBox.innerHTML = "<div class='result'><div class='metrics'>Модель анализирует diff…</div></div>";
+        toast("Запускаем ревью…");
+        try {
+            const r = await json("/api/day32/" + (current ? "review-current" : "review"), "POST", payload);
+            renderReview(r);
+            toast("Ревью готово за " + n0(r.latencyMs) + " мс");
+        } catch (e) {
+            reviewBox.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { reviewBtn.disabled = false; currentBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    changedBtn.addEventListener("click", loadChanged);
+    reviewBtn.addEventListener("click", () => runReview(false));
+    currentBtn.addEventListener("click", () => runReview(true));
+
+    check();
+</script>
+</body>
+</html>

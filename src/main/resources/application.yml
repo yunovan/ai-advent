@@ -234,3 +234,20 @@ day31:
   max-files: ${DAY31_MAX_FILES:300}
   max-diff-chars: ${DAY31_MAX_DIFF_CHARS:6000}
   temperature: ${DAY31_TEMPERATURE:0.2}
+
+day32:
+  repository-dir: ${DAY32_REPOSITORY_DIR:.}
+  base-ref: ${DAY32_BASE_REF:main}
+  head-ref: ${DAY32_HEAD_REF:HEAD}
+  docs-dir: ${DAY32_DOCS_DIR:docs}
+  readme-path: ${DAY32_README_PATH:README.md}
+  code-dir: ${DAY32_CODE_DIR:src/main/java}
+  top-k: ${DAY32_TOP_K:6}
+  candidate-k: ${DAY32_CANDIDATE_K:12}
+  chunk-size: ${DAY32_CHUNK_SIZE:700}
+  chunk-overlap: ${DAY32_CHUNK_OVERLAP:80}
+  git-timeout-ms: ${DAY32_GIT_TIMEOUT_MS:5000}
+  max-diff-chars: ${DAY32_MAX_DIFF_CHARS:14000}
+  max-files: ${DAY32_MAX_FILES:100}
+  answer-max-tokens: ${DAY32_ANSWER_MAX_TOKENS:700}
+  temperature: ${DAY32_TEMPERATURE:0.1}

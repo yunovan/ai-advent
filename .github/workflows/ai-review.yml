@@ -1,0 +1,45 @@
+name: AI code review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Fetch base branch
+        run: git fetch --no-tags origin "${{ github.base_ref }}"
+
+      - name: Run AI review
+        env:
+          DAY32_PR_TITLE: ${{ github.event.pull_request.title }}
+          DAY32_PR_BODY: ${{ github.event.pull_request.body }}
+          SERVER_PORT: "8080"
+        run: |
+          ./gradlew --no-daemon bootRun -q --args="--day=32 --review --base=origin/${{ github.base_ref }} --head=${{ github.sha }} --out=ai-review.md --cli"
+
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file ai-review.md \
+            --edit-last \
+            --create-if-none
