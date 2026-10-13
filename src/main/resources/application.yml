@@ -216,3 +216,21 @@ day30:
   stress-concurrency: ${DAY30_STRESS_CONCURRENCY:3}
   temperature: ${DAY30_TEMPERATURE:0.2}
   max-tokens: ${DAY30_MAX_TOKENS:300}
+
+day31:
+  server-port: ${DAY31_SERVER_PORT:9095}
+  path: ${DAY31_PATH:/mcp}
+  name: ${DAY31_NAME:ai-advent-git-mcp}
+  version: ${DAY31_VERSION:0.1.0}
+  repository-dir: ${DAY31_REPOSITORY_DIR:.}
+  docs-dir: ${DAY31_DOCS_DIR:docs}
+  readme-path: ${DAY31_README_PATH:README.md}
+  top-k: ${DAY31_TOP_K:5}
+  candidate-k: ${DAY31_CANDIDATE_K:12}
+  chunk-size: ${DAY31_CHUNK_SIZE:700}
+  chunk-overlap: ${DAY31_CHUNK_OVERLAP:80}
+  git-timeout-ms: ${DAY31_GIT_TIMEOUT_MS:5000}
+  answer-max-tokens: ${DAY31_ANSWER_MAX_TOKENS:400}
+  max-files: ${DAY31_MAX_FILES:300}
+  max-diff-chars: ${DAY31_MAX_DIFF_CHARS:6000}
+  temperature: ${DAY31_TEMPERATURE:0.2}

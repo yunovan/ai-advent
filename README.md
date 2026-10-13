@@ -2414,7 +2414,7 @@ health, сессии, лимит контекста, rate limit, ключ, ст�
 (7) — HTTP-коды и jsonPath; `Day30CliRunnerTest` (6) — вывод
 `--check`/`--chat`/`--stress` и `ОШИБКА:`; `Day30LocalLlmRealTest` (3) через
 `Assumptions.assumeTrue` гоняет чат и стресс на живой Ollama и пропускается без
-сервера. Всего в проекте 1034 теста.
+сервера. Всего в проекте 1075 тестов.
 
 Настройки:
 
@@ -2432,4 +2432,147 @@ DAY30_STRESS_REQUESTS=6
 DAY30_STRESS_CONCURRENCY=3
 DAY30_TEMPERATURE=0.2
 DAY30_MAX_TOKENS=300
+```
+
+## День 31. Ассистент разработчика
+
+День 31 собирает всё пройденное в **ассистента по проекту**: он отвечает на
+вопросы о структуре кода, опираясь на **RAG по документации проекта**
+(`README.md` + папка `docs/`), а живую картину репозитория берёт **по MCP** —
+через собственный `Day31McpServer` с git-инструментами (`git_branch`,
+`git_status`, `git_files`, `git_diff`, `git_log`). То есть ассистент не выдумывает
+факты, а комбинирует два источника правды: **индекс документации** (что задумано)
+и **git-контекст репозитория** (что сейчас в коде).
+
+Индекс строится из `README.md` и рекурсивно из `docs/` (форматы md/txt/rst/adoc,
+а также yml/json/java/gradle/properties) — в этом проекте это 6 документов и 226
+чанков. Поиск — как в день 23/24: переписывание запроса, dense-эмбеддинги +
+BM25-реранкер. Чтобы большой `README.md` не вытеснял остальную документацию, в
+топ-фрагменты добавляется **диверсификация**: не более 2 чанков из одного файла,
+поэтому в ответ почти всегда попадают и `docs/*.md`. Git-контекст (ветка, чистота
+дерева) подмешивается в промпт, а локальная LLM (`qwen2.5:3b` через `Day26LocalLlmClient`)
+формулирует ответ по-русски и с указанием источников.
+
+Живая проверка на этой машине (Ollama 0.35.1, `qwen2.5:3b`, Q4_K_M, 3.1B):
+`--check` — статус `ok`, MCP `http://localhost:18097/mcp` (доступен, инструментов
+5), «Документация: 6 файлов, 226 чанков, 139239 символов», LLM `qwen2.5:3b`.
+`--tools` печатает каталог из 5 git-инструментов. `--git=branch` — «Ветка:
+cursor/day30-private-llm-service, Коммит: 4b7930f, Незакоммиченные изменения:
+есть». `--help=архитектура` — найдено 5 фрагментов, источники `README.md`,
+`architecture.md`, `mcp.md`, ответ ссылается на `docs/mcp.md`; 74 846 мс, 2 272
+входных / 248 выходных токенов, 6.2 ток/с, опора на источник 13%.
+
+Проверяется:
+
+- `GET /api/day31/health` → статус, адрес MCP-сервера (доступность и число
+  инструментов), репозиторий, git-ветка и чистота дерева, сводка по документации
+  (файлы, чанки, символы) и отчёт о локальной модели/Ollama;
+- `GET /api/day31/docs` → список документов индекса (источник, имя, заголовок,
+  тип, размер, число чанков);
+- `GET /api/day31/tools` → каталог git-инструментов MCP (имя, описание);
+- `POST /api/day31/git` (`{tool, arguments}`) → вызов git-инструмента через MCP;
+  неизвестный инструмент → 400, недоступный MCP/git → 502;
+- `POST /api/day31/help` (`{question}`) → ответ с гитом и источниками: ветка,
+  флаг MCP, найденные фрагменты и файлы-источники, процент опоры на источник,
+  задержка, токены и скорость; пустой вопрос → 400, ошибка LLM → 502.
+
+Запуск:
+
+```bash
+./gradlew bootRun --args="--day=31"
+# UI: http://localhost:8080/day31.html
+```
+
+CLI:
+
+```bash
+./gradlew bootRun --args="--day=31 --check --cli"
+./gradlew bootRun --args="--day=31 --tools --cli"
+./gradlew bootRun --args="--day=31 --git=branch --cli"
+./gradlew bootRun --args="--day=31 --help=архитектура --cli"
+```
+
+Проверки дня:
+
+- `--check` печатает статус, адрес MCP-сервера проекта, репозиторий, git-ветку,
+  сводку по документации и модель; при остановленной Ollama — честный статус с
+  причиной;
+- `--tools` печатает каталог git-инструментов MCP;
+- `--git=branch|status|files|diff|log` вызывает инструмент через MCP и печатает
+  результат;
+- `--help="..."` (алиас `--ask="..."`) задаёт вопрос ассистенту, печатает ответ,
+  git-ветку, найденные источники, задержку, токены и опору на источник;
+- `--cli` завершает процесс сразу после вывода результата.
+
+### Что показать на видео
+
+1. **Ассистент видит репозиторий**  
+   `--day=31` → http://localhost:8080/day31.html → «Проверить»: MCP-сервер
+   проекта доступен, git-ветка и чистота дерева, документация (6 файлов / 226
+   чанков) — ассистент подключён к проекту.
+
+2. **Инструменты по MCP**  
+   «Инструменты»: 5 git-инструментов (`git_branch`, `git_status`, `git_files`,
+   `git_diff`, `git_log`); в блоке git — вызов `git_branch` и вывод ветки/коммита.
+
+3. **Вопрос о коде с опорой на документацию**  
+   Вопрос вида «Какая архитектура у проекта?»: в ответе видно найденные
+   фрагменты и **файлы-источники** (`README.md`, `architecture.md`, `mcp.md`) —
+   ассистент отвечает по документации, а не наугад.
+
+4. **Git-контекст в ответе**  
+   Там же в ответе — текущая ветка и признак незакоммиченных изменений: ассистент
+   знает, что происходит в репозитории прямо сейчас.
+
+5. **CLI**  
+   `--check`, `--tools`, `--git=branch`, `--help=...` — то же без браузера,
+   удобно для CI и скриптов.
+
+### Как устроен код дня 31
+
+| Файл | Роль |
+|---|---|
+| `day31/Day31Properties.java` | дефолты ассистента (порт/path MCP, имя/версия, каталоги репозитория и документации, `readmePath`, `topK`/`candidateK`, размер чанка, таймаут git) |
+| `day31/Day31ProjectIndex.java` | индекс документации: ленивый `Snapshot`, чтение README и `docs/`, чанкинг, dense-поиск + BM25-реранк, диверсификация по файлам (≤2 чанка на файл) |
+| `day31/Day31GitTool.java` | git-операции `ProcessBuilder` в каталоге репозитория: ветка, статус, файлы, diff, log (таймаут, UTF-8, обрезка) |
+| `day31/Day31GitInfo.java`, `Day31GitException.java` | сводка git (ветка/коммит/чистота/причина) и ошибка git |
+| `day31/Day31McpServer.java` | MCP-сервер проекта: 5 git-инструментов, JSON-RPC 2.0, `@PostConstruct`/`@PreDestroy` |
+| `day31/Day31McpClient.java`, `Day31Connection.java`, `Day31ToolInfo.java`, `Day31ToolResult.java`, `Day31McpException.java` | MCP-клиент (`connect`/`listTools`/`callTool`) и DTO соединения/инструментов/результата |
+| `day31/Day31DeveloperAssistantService.java` | `health/docs/tools/git/help`: git-контекст по MCP → RAG-поиск → промпт → `Day26LocalLlmClient.chat`, фолбэк при недоступной LLM |
+| `day31/Day31Controller.java` | `GET /health`, `/docs`, `/tools`; `POST /git`, `/help`; 400/502 |
+| `day31/Day31CliRunner.java` | CLI: `--check`, `--tools`, `--git=...`, `--help="..."`/`--ask="..."`, опция `--cli` |
+| `day31/Day31HealthResponse.java`, `Day31McpStatus.java`, `Day31ModelStatus.java`, `Day31DocumentInfo.java`, `Day31ToolsResponse.java` | health-сводка, статус MCP и модели, документ индекса, каталог инструментов |
+| `day31/Day31GitRequest.java`, `Day31GitResponse.java`, `Day31HelpRequest.java`, `Day31HelpResponse.java` | тела запросов и ответы git/help с метриками и источниками |
+| `day21/`, `day23/`, `day24/`, `day26/` | переиспользованы эмбеддинги/чанкер (`Day21`), рерайтер/реранкер (`Day23`), локальная LLM (`Day26`) |
+| `docs/*.md` | корпус RAG: `architecture.md`, `api.md`, `data-schemas.md`, `mcp.md`, `development.md` |
+| `static/day31.html` | UI: health, документация, каталог инструментов, git-раннер, вопрос ассистенту с источниками и метриками |
+
+Тесты: 41 новый тест в семи классах. `Day31DeveloperAssistantServiceTest` (9) —
+health/docs/tools/git/help и фолбэки на mock-зависимостях; `Day31ControllerTest`
+(9) — HTTP-коды и jsonPath; `Day31CliRunnerTest` (8) — вывод
+`--check`/`--tools`/`--git`/`--help` и `ОШИБКА:`; `Day31GitToolTest` (5) — git на
+реальном репозитории; `Day31ProjectIndexTest` (4) — загрузка документации, поиск
+и диверсификация; `Day31McpRoundTripTest` (3) — round-trip JSON-RPC на свободном
+порту; `Day31LocalLlmRealTest` (3) через `Assumptions.assumeTrue` гоняет health
+и вопрос на живой Ollama и пропускается без сервера.
+
+Настройки:
+
+```bash
+DAY31_SERVER_PORT=9095
+DAY31_PATH=/mcp
+DAY31_NAME=ai-advent-git-mcp
+DAY31_VERSION=0.1.0
+DAY31_REPOSITORY_DIR=.
+DAY31_DOCS_DIR=docs
+DAY31_README_PATH=README.md
+DAY31_TOP_K=5
+DAY31_CANDIDATE_K=12
+DAY31_CHUNK_SIZE=700
+DAY31_CHUNK_OVERLAP=80
+DAY31_GIT_TIMEOUT_MS=5000
+DAY31_ANSWER_MAX_TOKENS=400
+DAY31_MAX_FILES=300
+DAY31_MAX_DIFF_CHARS=6000
+DAY31_TEMPERATURE=0.2
 ```
