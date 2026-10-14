@@ -2414,7 +2414,7 @@ health, сессии, лимит контекста, rate limit, ключ, ст�
 (7) — HTTP-коды и jsonPath; `Day30CliRunnerTest` (6) — вывод
 `--check`/`--chat`/`--stress` и `ОШИБКА:`; `Day30LocalLlmRealTest` (3) через
 `Assumptions.assumeTrue` гоняет чат и стресс на живой Ollama и пропускается без
-сервера. Всего в проекте 1075 тестов.
+сервера. Всего в проекте 1115 тестов.
 
 Настройки:
 
@@ -2575,4 +2575,145 @@ DAY31_ANSWER_MAX_TOKENS=400
 DAY31_MAX_FILES=300
 DAY31_MAX_DIFF_CHARS=6000
 DAY31_TEMPERATURE=0.2
+```
+
+## День 32. Автоматическое ревью кода
+
+День 32 замыкает тему на инженерную практику: ревью pull request'ов
+автоматизируется. Пайплайн сам получает **diff** и список изменённых файлов
+(`git diff base...head`), подтягивает **релевантный контекст проекта через RAG**
+— но теперь индекс строится не только по документации (`README.md` + `docs/`),
+а и **по исходному коду** (`src/main/java`, java/kt/kts/...). Затем локальная
+модель `qwen2.5:3b` (переиспользован `Day26LocalLlmClient`) формирует ревью
+ровно из трёх разделов: **«Потенциальные баги»**, **«Архитектурные проблемы»**,
+**«Рекомендации»**. Поиск — рерайтер + dense-эмбеддинги + BM25-реранкер с
+диверсификацией (≤2 чанка на файл), чтобы в контекст попадали и код, и
+документация.
+
+Ревью детерминированно дополняется **эвристиками** (`Day32Heuristics`),
+которые работают даже без модели: захардкоженные секреты, пустой
+`catch (Exception)`, отладочный вывод `System.out`/`printStackTrace`,
+`Thread.sleep`, устаревший `java.util.Date`, длинные строки, `TODO`/`FIXME`,
+большие и удалённые файлы, а также «код изменён — тестов нет». Итоговый markdown
+включает и найденные эвристиками замечания, и «Комментарий модели». Если Ollama
+недоступна, ревью целиком собирается эвристиками — пайплайн всё равно даёт
+полезный результат.
+
+Живая проверка на этой машине (Ollama 0.35.1, `qwen2.5:3b`, Q4_K_M, 3.1B):
+`--check` — статус `ok`, ветка `cursor/day31-developer-assistant`, индекс
+**506 документов (500 кода), 2500 чанков, 1 327 125 символов**, LLM
+`qwen2.5:3b`. Демо-ревью diff с секретом, `TODO` и `System.out.println` вернуло
+в «Потенциальные баги» захардкоженный секрет и отладочный вывод, в
+«Рекомендации» — TODO и «нет тестов», плюс «Комментарий модели».
+
+Проверяется:
+
+- `GET /api/day32/health` → статус, репозиторий/ветка/база, сводка индекса
+  (документы, из них кода, чанки, символы) и отчёт о локальной модели/Ollama;
+- `GET /api/day32/changed?base=&head=` → список изменённых файлов (путь, статус,
+  добавленные/удалённые строки);
+- `POST /api/day32/review` (`{base, head, diff, title, description}`) → ревью:
+  файлы, метрики diff, три списка замечаний, markdown, источники RAG, флаг
+  фолбэка, модель, токены;
+- `POST /api/day32/review-current` → ревью рабочего дерева против `HEAD`;
+  ошибка git/LLM → 502, некорректный аргумент → 400.
+
+Запуск:
+
+```bash
+./gradlew bootRun --args="--day=32"
+# UI: http://localhost:8080/day32.html
+```
+
+CLI:
+
+```bash
+./gradlew bootRun --args="--day=32 --check --cli"
+./gradlew bootRun --args="--day=32 --review --base=main --out=ai-review.md --cli"
+./gradlew bootRun --args="--day=32 --review --diff-file=pr.diff --out=ai-review.md --cli"
+```
+
+Заголовок и описание PR передаются через переменные `DAY32_PR_TITLE` и
+`DAY32_PR_BODY` (значения с пробелами рвутся при передаче через `--args`).
+
+Автоматизация PR (GitHub Actions):
+
+```yaml
+# .github/workflows/ai-review.yml
+on: pull_request
+# checkout с --fetch-depth 0 → setup-java 21 → git fetch origin <base> →
+# ./gradlew bootRun --args="--day=32 --review --base=origin/<base> --head=<sha> --out=ai-review.md --cli"
+# → gh pr comment --body-file ai-review.md --edit-last --create-if-none
+```
+
+В облачном раннере Ollama нет, поэтому срабатывают эвристики; с self-hosted
+раннером и переменной `DAY26_ENDPOINT` подключается локальная модель.
+
+### Что показать на видео
+
+1. **Состояние движка**  
+   `--day=32` → http://localhost:8080/day32.html → «Проверить»: индекс по коду
+   и документации (документы, из них кода, чанки, символы) и статус модели.
+
+2. **Изменённые файлы**  
+   Блок «Изменённые файлы» с полями base/head — таблица путей, статусов и
+   строк `+/-`.
+
+3. **Ревью диапазона**  
+   «Ревью диапазона»: три раздела с серьёзностью, `файл:строка`, источниками RAG
+   и метриками (задержка, токены, ток/с).
+
+4. **Ревью текущих изменений**  
+   «Ревью текущих изменений» — рабочее дерево против `HEAD`.
+
+5. **CLI и CI**  
+   `--check`, `--review --out=...`; в репозитории лежит
+   `.github/workflows/ai-review.yml`, который постит ревью комментарием в PR.
+
+### Как устроен код дня 32
+
+| Файл | Роль |
+|---|---|
+| `day32/Day32Properties.java` | дефолты ревью (каталоги репозитория/док/кода, `baseRef`/`headRef`, `topK`/`candidateK`, размер чанка, таймаут git, лимиты diff/файлов, температура) |
+| `day32/Day32DiffSource.java` | git через `ProcessBuilder`: ветка, `diff(base, head)` (или рабочее дерево), `changedFiles` |
+| `day32/Day32DiffParser.java`, `Day32FileDiff.java`, `Day32Line.java`, `Day32ChangedFile.java` | парсер unified diff (added/deleted/modified/renamed, номера добавленных строк) и DTO |
+| `day32/Day32ReviewIndex.java` | RAG-индекс по документации **и коду**: ленивый `Snapshot`, чанкинг, dense-поиск + BM25-реранк, диверсификация (≤2 чанка на файл) |
+| `day32/Day32Heuristics.java` | детерминированные правила по добавленным строкам (секреты, пустой catch, отладка, TODO, длинные строки, крупные/удалённые файлы, отсутствие тестов) |
+| `day32/Day32ReviewService.java` | `health/changedFiles/review`: diff → RAG-поиск → промпт → `Day26LocalLlmClient.chat`, парсинг трёх секций, слияние с эвристиками, фолбэк и рендер markdown |
+| `day32/Day32Controller.java` | `GET /health`, `/changed`; `POST /review`, `/review-current`; 400/502 |
+| `day32/Day32CliRunner.java` | CLI: `--check`, `--review`, `--base`, `--head`, `--title`, `--body`, `--diff-file`, `--out`, `--cli` |
+| `day32/Day32Finding.java`, `Day32ReviewRequest.java`, `Day32ReviewResponse.java`, `Day32HealthResponse.java`, `Day32ModelStatus.java`, `Day32GitException.java` | запись замечания, тела запросов и ответы health/review, ошибка git |
+| `day21/`, `day23/`, `day26/` | переиспользованы эмбеддинги/чанкер (`Day21`), рерайтер/реранкер (`Day23`), локальная LLM (`Day26`) |
+| `.github/workflows/ai-review.yml` | GitHub Action: по событию `pull_request` запускает `--day=32 --review` и постит результат комментарием |
+| `static/day32.html` | UI: health, изменённые файлы, запуск ревью диапазона и текущих изменений |
+
+Тесты: 40 новых тестов в восьми классах. `Day32ReviewServiceTest` (7) —
+health, слияние модели и эвристик, фолбэк, git-путь, пустой diff, парсинг секций;
+`Day32HeuristicsTest` (7) — секреты, пустой/широкий catch, отладка, TODO,
+отсутствие тестов, крупные и удалённые файлы; `Day32ControllerTest` (6) —
+HTTP-коды и jsonPath; `Day32CliRunnerTest` (6) — вывод `--check`/`--review`,
+запись `--out` и `ОШИБКА:`; `Day32DiffParserTest` (5) — modified/added/deleted/
+renamed и пустой diff; `Day32DiffSourceTest` (4) — git на реальном репозитории;
+`Day32ReviewIndexTest` (3) — загрузка кода и документации, поиск; 
+`Day32LocalLlmRealTest` (2) через `Assumptions.assumeTrue` гоняет ревью на
+живой Ollama и пропускается без сервера. Всего в проекте 1115 тестов.
+
+Настройки:
+
+```bash
+DAY32_REPOSITORY_DIR=.
+DAY32_BASE_REF=main
+DAY32_HEAD_REF=HEAD
+DAY32_DOCS_DIR=docs
+DAY32_README_PATH=README.md
+DAY32_CODE_DIR=src/main/java
+DAY32_TOP_K=6
+DAY32_CANDIDATE_K=12
+DAY32_CHUNK_SIZE=700
+DAY32_CHUNK_OVERLAP=80
+DAY32_GIT_TIMEOUT_MS=5000
+DAY32_MAX_DIFF_CHARS=14000
+DAY32_MAX_FILES=100
+DAY32_ANSWER_MAX_TOKENS=700
+DAY32_TEMPERATURE=0.1
 ```
