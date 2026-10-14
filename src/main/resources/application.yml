@@ -251,3 +251,17 @@ day32:
   max-files: ${DAY32_MAX_FILES:100}
   answer-max-tokens: ${DAY32_ANSWER_MAX_TOKENS:700}
   temperature: ${DAY32_TEMPERATURE:0.1}
+
+day33:
+  server-port: ${DAY33_SERVER_PORT:9096}
+  path: ${DAY33_PATH:/mcp}
+  name: ${DAY33_NAME:ai-advent-crm-mcp}
+  version: ${DAY33_VERSION:0.1.0}
+  kb-dir: ${DAY33_KB_DIR:data/day33-kb}
+  crm-dir: ${DAY33_CRM_DIR:data/day33-crm}
+  top-k: ${DAY33_TOP_K:5}
+  candidate-k: ${DAY33_CANDIDATE_K:12}
+  chunk-size: ${DAY33_CHUNK_SIZE:700}
+  chunk-overlap: ${DAY33_CHUNK_OVERLAP:80}
+  answer-max-tokens: ${DAY33_ANSWER_MAX_TOKENS:400}
+  temperature: ${DAY33_TEMPERATURE:0.2}

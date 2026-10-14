@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent · День 33</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, select { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        input { width: 100%; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .ask-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+        .ask-row input { flex: 1; min-width: 260px; }
+        .ask-row select { max-width: 260px; }
+        .git-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+        .git-row input { max-width: 260px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .result { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.7; }
+        .result .q { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .result .answer { white-space: pre-wrap; }
+        .result .metrics { margin-top: 10px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.8; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; margin: 0 6px 4px 0; }
+        .pill.ok { color: var(--ok); border-color: var(--ok); }
+        .pill.warn { color: var(--warn); border-color: var(--warn); }
+        .pill.bad { color: var(--danger); border-color: var(--danger); }
+        .sources { margin-top: 10px; }
+        .sources .pill { color: var(--accent); border-color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        pre.out { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #101a29; overflow-x: auto; white-space: pre-wrap; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; line-height: 1.6; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html">День 27</a><a href="/day28.html">День 28</a><a href="/day29.html">День 29</a><a href="/day30.html">День 30</a><a href="/day31.html">День 31</a><a href="/day32.html">День 32</a><a href="/day33.html" class="here">День 33</a>
+    </nav>
+    <span class="badge">AI Advent · Day 33</span>
+    <h1>Ассистент поддержки пользователей</h1>
+    <p class="lead">Мини-сервис поддержки: отвечает на вопросы о продукте по базе знаний
+        (FAQ и документация, локальный RAG-индекс) и учитывает контекст пользователя и обращения,
+        который получает из <b>CRM по MCP</b>. Пример: «Почему не работает авторизация?» —
+        ассистент поднимет тикет <code style="color:var(--accent)">T-1001</code>, его переписку,
+        тариф клиента и ответит со ссылками на документацию.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние ассистента</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>База знаний (корпус RAG)</h3>
+            <button id="kbBtn" type="button" class="secondary">Показать файлы</button>
+        </div>
+        <div id="kb"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>CRM: пользователи</h3>
+            <button id="usersBtn" type="button" class="secondary">Показать пользователей</button>
+        </div>
+        <div id="users"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>CRM: обращения</h3>
+            <button id="ticketsBtn" type="button" class="secondary">Показать обращения</button>
+        </div>
+        <div id="tickets"></div>
+    </div>
+
+    <div class="card">
+        <h3>Задать вопрос ассистенту поддержки</h3>
+        <div class="ask-row">
+            <select id="userSelect"><option value="">Пользователь: не указан</option></select>
+            <select id="ticketSelect"><option value="">Обращение: не указано</option></select>
+        </div>
+        <div class="ask-row">
+            <input id="askInput" type="text" placeholder="Например: Почему не работает авторизация?">
+            <button id="askBtn" type="button">Спросить</button>
+        </div>
+        <div class="hint">Ассистент вызовет инструменты CRM по MCP
+            (<code>crm_ticket</code>, <code>crm_user</code>, <code>crm_user_tickets</code>),
+            найдёт подходящие разделы базы знаний и ответит локальной моделью
+            <code>qwen2.5:3b</code>. Если модель недоступна — ответ собирается из базы знаний.</div>
+        <div id="answer"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>MCP-инструменты CRM</h3>
+            <button id="toolsBtn" type="button" class="secondary">Показать инструменты</button>
+        </div>
+        <div class="state" id="tools" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <h3>Вызвать инструмент CRM по MCP</h3>
+        <div class="git-row">
+            <select id="toolSelect"></select>
+            <input id="argInput" type="text" placeholder="U-1001 / T-1001 / запрос / лимит">
+            <button id="runBtn" type="button">Вызвать</button>
+        </div>
+        <div class="hint">Вызов идёт по MCP JSON-RPC на встроенный сервер дня 33. Инструменты:
+            <code>crm_user</code>, <code>crm_ticket</code>, <code>crm_user_tickets</code>,
+            <code>crm_search_tickets</code>, <code>crm_open_tickets</code>.</div>
+        <pre class="out" id="crmOut" style="display:none"></pre>
+    </div>
+
+    <div class="hint">Подсказка для видео: 1) <code>./gradlew bootRun --args="--day=33"</code> и
+        http://localhost:8080/day33.html — «Проверить» покажет базу знаний, CRM и MCP;
+        2) выберите обращение <code>T-1001</code>, задайте «Почему не работает авторизация?» —
+        видно контекст тикета и источники docs;
+        3) вызовите <code>crm_ticket</code> и <code>crm_search_tickets</code> во встроенном MCP;
+        4) в CLI: <code>--day=33 --check</code>, <code>--day=33 --tickets</code>,
+        <code>--day=33 --ask="..." --ticket=T-1001</code>.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const checkBtn = document.getElementById("checkBtn");
+    const kbBtn = document.getElementById("kbBtn");
+    const kbBox = document.getElementById("kb");
+    const usersBtn = document.getElementById("usersBtn");
+    const usersBox = document.getElementById("users");
+    const ticketsBtn = document.getElementById("ticketsBtn");
+    const ticketsBox = document.getElementById("tickets");
+    const toolsBtn = document.getElementById("toolsBtn");
+    const toolsBox = document.getElementById("tools");
+    const userSelect = document.getElementById("userSelect");
+    const ticketSelect = document.getElementById("ticketSelect");
+    const askInput = document.getElementById("askInput");
+    const askBtn = document.getElementById("askBtn");
+    const answerBox = document.getElementById("answer");
+    const toolSelect = document.getElementById("toolSelect");
+    const argInput = document.getElementById("argInput");
+    const runBtn = document.getElementById("runBtn");
+    const crmOut = document.getElementById("crmOut");
+
+    const TOOLS = ["crm_user", "crm_ticket", "crm_user_tickets", "crm_search_tickets", "crm_open_tickets"];
+    TOOLS.forEach(t => { const o = document.createElement("option"); o.value = t; o.textContent = t; toolSelect.appendChild(o); });
+
+    function esc(t) {
+        return String(t === null || t === undefined ? "" : t)
+            .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+    }
+    function toast(msg) { meta.textContent = msg; }
+    function n0(v) { return v === null || v === undefined ? "—" : Math.round(Number(v)); }
+    function n1(v) { return v === null || v === undefined ? "—" : Number(v).toFixed(1); }
+
+    async function json(url, method, body) {
+        const opts = method ? {method, headers: {"Content-Type": "application/json"}} : {};
+        if (body !== undefined) { opts.body = JSON.stringify(body); }
+        const resp = await fetch(url, opts);
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok) {
+            const message = (data && (data.message || data.error)) || ("HTTP " + resp.status);
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function check() {
+        checkBtn.disabled = true;
+        toast("Запрашиваем состояние ассистента…");
+        try {
+            const h = await json("/api/day33/health");
+            const m = h.model;
+            healthBox.style.display = "block";
+            let html = "<div>Статус: <span class='" + (h.status === "ok" ? "ok-line" : "bad-line") + "'>"
+                + esc(h.status) + "</span> · MCP CRM <b>" + esc(h.endpoint) + "</b></div>";
+            html += "<div>База знаний: " + esc(h.kbDir) + " — " + h.documents.length + " файлов · "
+                + h.chunks + " чанков · " + h.corpusChars + " символов</div>";
+            html += "<div>CRM: " + esc(h.crmDir) + " — пользователей <b>" + h.users
+                + "</b> · обращений <b>" + h.tickets + "</b></div>";
+            html += "<div>MCP: "
+                + (h.mcp.available
+                    ? "<span class='ok-line'>доступен</span> · инструментов " + h.mcp.tools
+                    : "<span class='bad-line'>недоступен</span> — " + esc(h.mcp.reason)) + "</div>";
+            html += "<div>Локальная LLM: " + esc(m.endpoint) + " / " + esc(m.model) + " — "
+                + (m.available
+                    ? "<span class='ok-line'>сервер запущен</span> (версия " + esc(m.version)
+                        + ", модель " + (m.installed ? "установлена" : "НЕ установлена") + ")"
+                    : "<span class='bad-line'>недоступна</span>") + "</div>";
+            if (m.reason) { html += "<div class='bad-line'>" + esc(m.reason) + "</div>"; }
+            html += "<div>" + h.documents.map(d => "<span class='pill'>" + esc(d) + "</span>").join("") + "</div>";
+            healthBox.innerHTML = html;
+            toast("Состояние получено");
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { checkBtn.disabled = false; }
+    }
+
+    async function loadKb() {
+        kbBtn.disabled = true;
+        toast("Загружаем базу знаний…");
+        try {
+            const list = await json("/api/day33/kb");
+            let rows = "";
+            list.forEach(d => {
+                rows += "<tr><td>" + esc(d.source) + "</td><td>" + esc(d.title) + "</td><td class='num'>"
+                    + d.chars + "</td><td class='num'>" + d.chunks + "</td></tr>";
+            });
+            kbBox.innerHTML = "<table><thead><tr><th>файл</th><th>заголовок</th>"
+                + "<th>символов</th><th>чанков</th></tr></thead><tbody>" + rows + "</tbody></table>";
+            toast("Документов: " + list.length);
+        } catch (e) { kbBox.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+            + esc(e.message) + "</div></div>"; toast("Ошибка: " + e.message); }
+        finally { kbBtn.disabled = false; }
+    }
+
+    async function loadUsers() {
+        usersBtn.disabled = true;
+        toast("Загружаем пользователей CRM…");
+        try {
+            const list = await json("/api/day33/users");
+            let rows = "";
+            list.forEach(u => {
+                rows += "<tr><td>" + esc(u.id) + "</td><td>" + esc(u.name) + "</td><td>" + esc(u.email)
+                    + "</td><td>" + esc(u.plan) + "</td><td>" + esc(u.company) + "</td><td class='num'>"
+                    + u.tickets + "</td></tr>";
+            });
+            usersBox.innerHTML = "<table><thead><tr><th>id</th><th>имя</th><th>email</th><th>тариф</th>"
+                + "<th>компания</th><th>обращений</th></tr></thead><tbody>" + rows + "</tbody></table>";
+            toast("Пользователей: " + list.length);
+        } catch (e) { usersBox.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+            + esc(e.message) + "</div></div>"; toast("Ошибка: " + e.message); }
+        finally { usersBtn.disabled = false; }
+    }
+
+    async function loadTickets() {
+        ticketsBtn.disabled = true;
+        toast("Загружаем обращения CRM…");
+        try {
+            const list = await json("/api/day33/tickets");
+            let rows = "";
+            list.forEach(t => {
+                rows += "<tr><td>" + esc(t.id) + "</td><td>" + esc(t.userId) + "</td><td>"
+                    + esc(t.subject) + "</td><td>" + esc(t.status) + "</td><td>" + esc(t.priority)
+                    + "</td><td>" + esc(t.product) + "</td><td>" + esc((t.tags || []).join(", "))
+                    + "</td></tr>";
+            });
+            ticketsBox.innerHTML = "<table><thead><tr><th>id</th><th>пользователь</th><th>тема</th>"
+                + "<th>статус</th><th>приоритет</th><th>продукт</th><th>теги</th></tr></thead><tbody>"
+                + rows + "</tbody></table>";
+            toast("Обращений: " + list.length);
+        } catch (e) { ticketsBox.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+            + esc(e.message) + "</div></div>"; toast("Ошибка: " + e.message); }
+        finally { ticketsBtn.disabled = false; }
+    }
+
+    async function loadTools() {
+        toolsBtn.disabled = true;
+        toast("Запрашиваем инструменты по MCP…");
+        try {
+            const t = await json("/api/day33/tools");
+            toolsBox.style.display = "block";
+            if (!t.available) {
+                toolsBox.innerHTML = "<div class='bad-line'>MCP недоступен: " + esc(t.reason) + "</div>";
+                toast("MCP недоступен");
+                return;
+            }
+            toolsBox.innerHTML = "<div>Эндпоинт: " + esc(t.endpoint) + " · инструментов: "
+                + t.count + "</div><div>" + t.tools.map(x => "<span class='pill ok'>" + esc(x.name)
+                + "</span>").join("") + "</div>";
+            toast("Инструментов: " + t.count);
+        } catch (e) { toast("Ошибка: " + e.message); }
+        finally { toolsBtn.disabled = false; }
+    }
+
+    async function fillSelectors() {
+        try {
+            const [users, tickets] = await Promise.all([
+                json("/api/day33/users"), json("/api/day33/tickets")
+            ]);
+            users.forEach(u => {
+                const o = document.createElement("option");
+                o.value = u.id; o.textContent = u.id + " · " + u.name;
+                userSelect.appendChild(o);
+            });
+            tickets.forEach(t => {
+                const o = document.createElement("option");
+                o.value = t.id; o.textContent = t.id + " · " + t.subject;
+                ticketSelect.appendChild(o);
+            });
+        } catch (e) { toast("Не удалось загрузить CRM: " + e.message); }
+    }
+
+    function renderAnswer(a) {
+        let html = "<div class='result'>";
+        html += "<div class='q'>" + esc(a.question) + "</div>";
+        html += "<div class='answer'>" + esc(a.answer) + "</div>";
+        html += "<div class='sources'>"
+            + (a.mcpUsed ? "<span class='pill ok'>CRM по MCP</span>" : "<span class='pill bad'>CRM нет</span>")
+            + (a.ticketId ? "<span class='pill'>тикет " + esc(a.ticketId) + "</span>" : "")
+            + (a.userId ? "<span class='pill'>клиент " + esc(a.userId)
+                + (a.userName ? " (" + esc(a.userName) + ")" : "") + "</span>" : "")
+            + "<span class='pill'>фрагментов " + a.retrieved + "</span>"
+            + (a.fallback ? "<span class='pill warn'>ответ из базы знаний</span>" : "")
+            + (a.groundingPercent !== null && a.groundingPercent !== undefined
+                ? "<span class='pill'>опора " + n0(a.groundingPercent) + "%</span>" : "")
+            + "</div>";
+        if (a.sourceFiles && a.sourceFiles.length) {
+            html += "<div class='sources'>" + a.sourceFiles.map(s => "<span class='pill'>" + esc(s)
+                + "</span>").join("") + "</div>";
+        }
+        html += "<div class='metrics'>" + n0(a.latencyMs) + " мс · токены " + a.promptTokens
+            + " вход / " + a.outputTokens + " выход · " + n1(a.tokensPerSecond) + " ток/с"
+            + " · модель " + esc(a.model)
+            + (a.note ? " · " + esc(a.note) : "") + "</div>";
+        html += "</div>";
+        answerBox.innerHTML = html;
+    }
+
+    async function ask() {
+        const text = askInput.value.trim();
+        if (!text) { toast("Введите вопрос"); return; }
+        askBtn.disabled = true;
+        answerBox.innerHTML = "<div class='result'><div class='metrics'>Ассистент думает…</div></div>";
+        toast("Запрос к ассистенту…");
+        try {
+            const a = await json("/api/day33/ask", "POST", {
+                question: text,
+                ticketId: ticketSelect.value || null,
+                userId: userSelect.value || null
+            });
+            renderAnswer(a);
+            toast("Ответ получен за " + n0(a.latencyMs) + " мс");
+        } catch (e) {
+            answerBox.innerHTML = "<div class='result'><div class='bad-line'>Ошибка: "
+                + esc(e.message) + "</div></div>";
+            toast("Ошибка: " + e.message);
+        } finally { askBtn.disabled = false; }
+    }
+
+    async function runTool() {
+        const tool = toolSelect.value;
+        const raw = argInput.value.trim();
+        const args = {};
+        if (raw) {
+            if (tool === "crm_user" || tool === "crm_user_tickets") { args.userId = raw; }
+            else if (tool === "crm_ticket") { args.ticketId = raw; }
+            else if (tool === "crm_search_tickets") { args.query = raw; }
+            else if (tool === "crm_open_tickets") { args.limit = Number(raw); }
+        }
+        runBtn.disabled = true;
+        toast("Вызываем " + tool + " по MCP…");
+        try {
+            const r = await json("/api/day33/crm", "POST", {tool, arguments: args});
+            crmOut.style.display = "block";
+            crmOut.textContent = "=== " + r.tool + (r.ok ? "" : " (ошибка)") + " ===\n" + r.content;
+            toast("Инструмент " + tool + " выполнен");
+        } catch (e) {
+            crmOut.style.display = "block";
+            crmOut.textContent = "Ошибка: " + e.message;
+            toast("Ошибка: " + e.message);
+        } finally { runBtn.disabled = false; }
+    }
+
+    checkBtn.addEventListener("click", check);
+    kbBtn.addEventListener("click", loadKb);
+    usersBtn.addEventListener("click", loadUsers);
+    ticketsBtn.addEventListener("click", loadTickets);
+    toolsBtn.addEventListener("click", loadTools);
+    askBtn.addEventListener("click", ask);
+    runBtn.addEventListener("click", runTool);
+    askInput.addEventListener("keydown", e => { if (e.key === "Enter") { ask(); } });
+    argInput.addEventListener("keydown", e => { if (e.key === "Enter") { runTool(); } });
+
+    check();
+    loadKb();
+    fillSelectors();
+</script>
+</body>
+</html>
