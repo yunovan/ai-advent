@@ -1,0 +1,34 @@
+[
+  {
+    "id": "U-1001",
+    "name": "Иван Петров",
+    "email": "ivan.petrov@example.com",
+    "plan": "Business",
+    "company": "ООО «Ромашка»",
+    "since": "2023-04-12"
+  },
+  {
+    "id": "U-1002",
+    "name": "Мария Соколова",
+    "email": "maria.sokolova@example.com",
+    "plan": "Pro",
+    "company": "ИП Соколова",
+    "since": "2024-01-30"
+  },
+  {
+    "id": "U-1003",
+    "name": "Алексей Смирнов",
+    "email": "alexey.smirnov@example.com",
+    "plan": "Free",
+    "company": "—",
+    "since": "2025-11-02"
+  },
+  {
+    "id": "U-1004",
+    "name": "Ольга Кузнецова",
+    "email": "olga.kuznetsova@example.com",
+    "plan": "Business",
+    "company": "АО «Вектор»",
+    "since": "2022-09-18"
+  }
+]

@@ -156,3 +156,17 @@ day32:
   max-files: 100
   answer-max-tokens: 700
   temperature: 0.1
+
+day33:
+  server-port: 0
+  path: /mcp
+  name: ai-advent-crm-mcp
+  version: 0.1.0
+  kb-dir: data/day33-kb
+  crm-dir: build/day33-tests-crm
+  top-k: 5
+  candidate-k: 12
+  chunk-size: 700
+  chunk-overlap: 80
+  answer-max-tokens: 400
+  temperature: 0.2

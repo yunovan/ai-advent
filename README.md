@@ -2717,3 +2717,139 @@ DAY32_MAX_FILES=100
 DAY32_ANSWER_MAX_TOKENS=700
 DAY32_TEMPERATURE=0.1
 ```
+
+## День 33. Ассистент поддержки пользователей
+
+День 33 развивает идею дня 31 от агента разработчика к **агенту поддержки**:
+мини-сервис отвечает на вопросы клиентов о продукте, опираясь на **базу знаний
+(RAG)** и **контекст CRM**, который он получает по **MCP**. Пример вопроса:
+«Почему не работает авторизация?» — ассистент видит обращение `T-1001` и
+пользователя `U-1001`, находит в документации раздел про 2FA и TOTP, и собирает
+персональный ответ с учётом тарифа клиента.
+
+Контекст CRM отдаёт **MCP-сервер** `ai-advent-crm-mcp` (день 33 повторяет схему
+MCP из дня 31: `2024-11-05`, заголовок `Mcp-Session-Id`). Пять инструментов:
+`crm_user`, `crm_ticket`, `crm_user_tickets`, `crm_search_tickets`,
+`crm_open_tickets`. Перед вызовом LLM сервис подтягивает обращение и владельца
+(пользователь выводится из тикета, если не задан явно), добавляет профиль и
+список обращений клиента. Затем — RAG по базе знаний: чанкование, эмбеддинги,
+dense-поиск + переранжирование (≤2 чанка на файл), и в промпт добавляются
+профиль клиента, обращение и найденные фрагменты. Если Ollama недоступна,
+ответ собирается из найденных фрагментов базы знаний (флаг `fallback`). Если
+MCP недоступен, ответ всё равно строится по базе знаний.
+
+Проверка на этой машине (Ollama 0.35.1, `qwen2.5:3b`, Q4_K_M, 3.1B): `--check`
+— статус `ok`, MCP доступен (5 инструментов), база знаний **7 документов,
+22 чанка, 7820 символов**, CRM — **4 пользователя, 5 обращений**, LLM
+`qwen2.5:3b`. Вопрос «авторизация» с `--ticket=T-1001` → обращение `T-1001`
+(«Не работает авторизация»), пользователь `U-1001` (Иван Петров), CRM
+использована, 5 фрагментов базы знаний, персональный ответ про тариф Business и
+синхронизацию времени для TOTP (61375 мс, 237 токенов выхода).
+
+Проверено:
+
+- `GET /api/day33/health` → статус, эндпоинт, каталог базы знаний, CRM,
+  сводка MCP и локальной модели/Ollama;
+- `GET /api/day33/kb` → список документов (источник, заголовок, размер, чанки);
+- `GET /api/day33/tools` → каталог MCP-инструментов;
+- `GET /api/day33/users`, `GET /api/day33/tickets` → данные CRM;
+- `POST /api/day33/crm` (`{tool, arguments}`) → вызов MCP-инструмента
+  (`crm_user`, `crm_ticket`, `crm_user_tickets`, `crm_search_tickets`,
+  `crm_open_tickets`);
+- `POST /api/day33/ask` (`{question, ticketId, userId}`) → ответ: текст,
+  обращение, пользователь, признак использования CRM, фрагменты, источники,
+  опора на источники, метрики. Неверный инструмент/пустой вопрос → 400,
+  ошибки MCP/LLM → 502.
+
+Запуск:
+
+```bash
+./gradlew bootRun --args="--day=33"
+# UI: http://localhost:8080/day33.html
+```
+
+CLI:
+
+```bash
+./gradlew bootRun --args="--day=33 --check --cli"
+./gradlew bootRun --args="--day=33 --kb --cli"
+./gradlew bootRun --args="--day=33 --tools --cli"
+./gradlew bootRun --args="--day=33 --users --cli"
+./gradlew bootRun --args="--day=33 --tickets --cli"
+./gradlew bootRun --args="--day=33 --ask=\"Почему не работает авторизация?\" --ticket=T-1001 --cli"
+./gradlew bootRun --args="--day=33 --crm=ticket --id=T-1001 --cli"
+```
+
+### Как посмотреть на день 33
+
+1. **Проверка стенда**  
+   `--day=33` → http://localhost:8080/day33.html → «Проверить»: статус, каталог
+   базы знаний, CRM, инструменты MCP и состояние Ollama.
+
+2. **Вопрос без обращения**  
+   Задайте вопрос (например «Как оплатить счёт?») — ассистент отвечает по базе
+   знаний; при желании укажите пользователя, чтобы учесть тариф.
+
+3. **Вопрос по обращению**  
+   Выберите обращение `T-1001` и спросите «Почему не работает авторизация?» —
+   в ответе появится пользователь, тема обращения, использованные документы и
+   признак использования CRM.
+
+4. **Прямой вызов MCP**  
+   Блок «Инструменты MCP»: `crm_ticket`/`crm_user`/`crm_user_tickets`/
+   `crm_search_tickets`/`crm_open_tickets` — сырой ответ сервера CRM.
+
+5. **CLI**  
+   `--check`, `--kb`, `--tools`, `--users`, `--tickets`, `--ask`,
+   `--crm` с печатью метрик и источников.
+
+### Что внутри дня 33
+
+| Файл | Роль |
+|---|---|
+| `day33/Day33Properties.java` | Настройки ассистента (порт/путь MCP-сервера, каталоги базы знаний и CRM, `topK`/`candidateK`, размер/перекрытие чанков, лимит токенов, температура) |
+| `day33/Day33CrmStore.java` | Хранилище CRM (`users.json`, `tickets.json`): нормализация id (`1001`→`U-1001`), поиск обращений по тексту, выборка открытых, описание профиля/тикета |
+| `day33/Day33SupportIndex.java` | RAG-индекс базы знаний: загрузка 7 документов, чанкование, dense-поиск + переранжирование (≤2 чанка на файл) |
+| `day33/Day33McpServer.java` | MCP-сервер CRM на `HttpServer` (`@PostConstruct`/`@PreDestroy`), 5 инструментов, протокол `2024-11-05` |
+| `day33/Day33McpClient.java` | MCP-клиент (`HttpClient`): `connect`, `listTools`, `callTool` |
+| `day33/Day33SupportService.java` | `health/kb/tools/users/tickets/crm/ask`: сбор контекста CRM → RAG → промпт → `Day26LocalLlmClient.chat`, фолбэк по базе знаний |
+| `day33/Day33Controller.java` | `GET /health`, `/kb`, `/tools`, `/users`, `/tickets`; `POST /crm`, `/ask`; 400/502 |
+| `day33/Day33CliRunner.java` | CLI: `--check`, `--kb`, `--tools`, `--users`, `--tickets`, `--ask`, `--crm`, `--id`, `--query`, `--limit`, `--cli` |
+| `day33/Day33UserInfo.java`, `Day33TicketInfo.java`, `Day33DocumentInfo.java`, `Day33CrmResponse.java`, `Day33SupportResponse.java`, `Day33HealthResponse.java`, `Day33McpStatus.java`, `Day33ModelStatus.java`, `Day33McpException.java`, `Day33SupportException.java` | DTO и исключения ответов/статусов |
+| `resources/day33-kb/*.md` | База знаний: обзор продукта, авторизация, биллинг, отчёты, интеграции, FAQ, диагностика |
+| `resources/day33/crm/users.json`, `tickets.json` | Демо-CRM: 4 пользователя, 5 обращений |
+| `day21/`, `day23/`, `day24/`, `day26/` | Переиспользуемые эмбеддинги/чанки (`Day21`), переранжирование (`Day23`), опора на источники (`Day24`), локальная LLM (`Day26`) |
+| `static/day33.html` | UI: health, база знаний, пользователи, обращения, вопрос ассистенту, запуск MCP-инструментов |
+
+Тесты: 59 новых тестов в восьми классах. `Day33SupportServiceTest` (12) —
+health, kb, users/tickets, tools, crm, ask с контекстом обращения и без, фолбэк
+без LLM, работа без MCP, пустой вопрос; `Day33CrmStoreTest` (10) — нормализация
+id, поиск по тексту и лимит, открытые обращения, описание тикета/пользователя;
+`Day33ControllerTest` (10) — HTTP-коды и jsonPath; `Day33CliRunnerTest` (10) —
+вывод `--check`/`--kb`/`--users`/`--tickets`/`--tools`/`--crm`/`--ask`, справка
+и `Ошибка:`; `Day33SupportIndexTest` (5) — загрузка документов, поиск, лимит
+чанков на файл; `Day33McpRoundTripTest` (5) — подключение, каталог, вызов
+инструментов; `Day33PropertiesTest` (4) — дефолты и нормализация;
+`Day33LocalLlmRealTest` (3) через `Assumptions.assumeTrue` гоняет проверку и
+вопрос на живой Ollama и пропускается без сервера. Всего в проекте 1174 теста.
+
+Настройки:
+
+```bash
+DAY33_SERVER_PORT=9096
+DAY33_PATH=/mcp
+DAY33_NAME=ai-advent-crm-mcp
+DAY33_VERSION=0.1.0
+DAY33_KB_DIR=data/day33-kb
+DAY33_CRM_DIR=data/day33-crm
+DAY33_TOP_K=5
+DAY33_CANDIDATE_K=12
+DAY33_CHUNK_SIZE=700
+DAY33_CHUNK_OVERLAP=80
+DAY33_ANSWER_MAX_TOKENS=400
+DAY33_TEMPERATURE=0.2
+```
+
+> Демо-корпус базы знаний и CRM лежит в `src/main/resources/day33-kb` и
+> `src/main/resources/day33/crm` и подхватывается как fallback, если каталоги
+> `DAY33_KB_DIR`/`DAY33_CRM_DIR` не заданы (каталог `data/` в `.gitignore`).
