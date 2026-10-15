@@ -28,8 +28,8 @@ import com.yunovan.aiadvent.day30.Day30Properties;
 import com.yunovan.aiadvent.day31.Day31Properties;
 import com.yunovan.aiadvent.day32.Day32Properties;
 import com.yunovan.aiadvent.day33.Day33Properties;
-import com.yunovan.aiadvent.llm.LlmHttpProperties;
-import com.yunovan.aiadvent.llm.LlmProperties;
+import com.yunovan.aiadvent.day34.Day34Properties;
+import com.yunovan.aiadvent.llm.LlmHttpProperties;import com.yunovan.aiadvent.llm.LlmProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -65,7 +65,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
     Day30Properties.class,
     Day31Properties.class,
     Day32Properties.class,
-    Day33Properties.class
+    Day33Properties.class,
+    Day34Properties.class
 })
 public class AiAdventApplication {
 

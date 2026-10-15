@@ -170,3 +170,24 @@ day33:
   chunk-overlap: 80
   answer-max-tokens: 400
   temperature: 0.2
+
+day34:
+  server-port: 0
+  path: /mcp
+  name: ai-advent-file-mcp
+  version: 0.1.0
+  workspace-dir: .
+  code-dir: src/main/java
+  docs-dir: docs
+  readme-path: README.md
+  output-dir: build/day34-tests-output
+  top-k: 6
+  candidate-k: 12
+  chunk-size: 700
+  chunk-overlap: 80
+  max-files: 200
+  max-file-bytes: 200000
+  max-read-lines: 400
+  search-max-results: 100
+  answer-max-tokens: 700
+  temperature: 0.2

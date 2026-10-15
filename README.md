@@ -2853,3 +2853,6 @@ DAY33_TEMPERATURE=0.2
 > Демо-корпус базы знаний и CRM лежит в `src/main/resources/day33-kb` и
 > `src/main/resources/day33/crm` и подхватывается как fallback, если каталоги
 > `DAY33_KB_DIR`/`DAY33_CRM_DIR` не заданы (каталог `data/` в `.gitignore`).
+
+## День 34
+Ассистент для работы с файлами проекта. Агент инициирует файловые операции (fs_list/fs_read/fs_grep/fs_write/fs_patch/fs_stat) через встроенный MCP или напрямую через workspace. Реализует типы задач: FIND_USAGES, GENERATE_ADR, GENERATE_CHANGELOG, GENERATE_README, CHECK_INVARIANTS, UPDATE_DOC. По умолчанию работает в режиме предпросмотра (diff без записи), с write=true сохраняет артефакты. Интеграция с Day26 LLM (Ollama) с graceful fallback. UI: /day34.html, API /api/day34/*, CLI --day=34 --run="...".
