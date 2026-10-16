@@ -190,4 +190,9 @@ day34:
   max-read-lines: 400
   search-max-results: 100
   answer-max-tokens: 700
+  temperature: 0.2day35:
+  serverPort: 0
+  path: /api/day35
+  maxProblems: 3
   temperature: 0.2
+  answerMaxTokens: 256

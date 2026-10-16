@@ -285,4 +285,11 @@ day34:
   max-read-lines: ${DAY34_MAX_READ_LINES:400}
   search-max-results: ${DAY34_SEARCH_MAX_RESULTS:100}
   answer-max-tokens: ${DAY34_ANSWER_MAX_TOKENS:700}
-  temperature: ${DAY34_TEMPERATURE:0.2}
+  temperature: ${DAY34_TEMPERATURE:0.2}day35:
+  serverPort: 
+  path: 
+  name: 
+  version: 
+  maxProblems: 
+  temperature: 
+  answerMaxTokens: 

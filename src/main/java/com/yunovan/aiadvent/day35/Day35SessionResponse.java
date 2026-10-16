@@ -1,0 +1,2 @@
+package com.yunovan.aiadvent.day35;
+public record Day35SessionResponse(String sessionId, String task, Day35Problem problem, Day35Solution solution, Day35ErrorAnalysis analysis, Day35Progress progress, boolean finished, String note, String model, long latencyMs, int promptTokens, int outputTokens, double tokensPerSecond){ }

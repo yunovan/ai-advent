@@ -35,7 +35,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({
+@EnableConfigurationProperties({ com.yunovan.aiadvent.day35.Day35Properties.class, 
     LlmProperties.class,
     LlmHttpProperties.class,
     Day5Properties.class,
