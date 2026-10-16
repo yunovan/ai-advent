@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Advent · День 34</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0d141f; --card: #16202e; --line: #26374a; --text: #eaf4ff; --muted: #8fa6c4; --accent: #7aa2f7; --ok: #7bd88f; --danger: #ff8d8d; --warn: #f0c850; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Georgia, "Times New Roman", serif; background: radial-gradient(circle at top, #1c2a4a, var(--bg) 55%); color: var(--text); }
+        main { max-width: 1080px; margin: 0 auto; padding: 48px 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+        .nav a { color: var(--accent); text-decoration: none; }
+        .nav a.here { color: var(--text); border-bottom: 1px solid var(--accent); }
+        h1 { margin: 16px 0 8px; font-size: 36px; }
+        p.lead { color: var(--muted); margin-bottom: 28px; }
+        h3 { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 0 12px; }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #0b1220; font-weight: 700; font-family: ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+        button.secondary { background: #26374a; color: var(--text); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+        input, select, textarea { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+        input, select { width: 100%; }
+        textarea { width: 100%; min-height: 80px; resize: vertical; }
+        .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .ask-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+        .ask-row .grow { flex: 1; min-width: 260px; }
+        .state { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.8; }
+        .ok-line { color: var(--ok); font-weight: 700; }
+        .bad-line { color: var(--danger); font-weight: 700; }
+        .result { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.7; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; margin: 0 6px 4px 0; }
+        .pill.ok { color: var(--ok); border-color: var(--ok); }
+        .pill.warn { color: var(--warn); border-color: var(--warn); }
+        .pill.bad { color: var(--danger); border-color: var(--danger); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        pre.out { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #101a29; overflow-x: auto; white-space: pre-wrap; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; line-height: 1.6; }
+        .hint { margin-top: 12px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+        .hint code { background: #101a29; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+        .meta { margin-top: 16px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<main>
+    <nav class="nav">
+        <a href="/day13.html">День 13</a><a href="/day14.html">День 14</a><a href="/day15.html">День 15</a><a href="/day16.html">День 16</a><a href="/day17.html">День 17</a><a href="/day18.html">День 18</a><a href="/day19.html">День 19</a><a href="/day20.html">День 20</a><a href="/day21.html">День 21</a><a href="/day22.html">День 22</a><a href="/day23.html">День 23</a><a href="/day24.html">День 24</a><a href="/day25.html">День 25</a><a href="/day26.html">День 26</a><a href="/day27.html">День 27</a><a href="/day28.html">День 28</a><a href="/day29.html">День 29</a><a href="/day30.html">День 30</a><a href="/day31.html">День 31</a><a href="/day32.html">День 32</a><a href="/day33.html">День 33</a><a href="/day34.html" class="here">День 34</a>
+    </nav>
+    <span class="badge">AI Advent · Day 34</span>
+    <h1>Ассистент для работы с файлами проекта</h1>
+    <p class="lead">Ассистент сам инициирует работу с файлами проекта: читает, ищет по нескольким файлам, анализирует, создаёт и изменяет. Работает через файловые инструменты MCP или напрямую через workspace. Минимум 2 сценария, работает с 2–3 файлами, изменения сохраняются или выводятся как diff.</p>
+
+    <div class="card">
+        <div class="row">
+            <h3>Состояние</h3>
+            <button id="checkBtn" type="button">Проверить</button>
+        </div>
+        <div class="state" id="health" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>Список файлов (fs_list)</h3>
+            <button id="filesBtn" type="button" class="secondary">Показать</button>
+        </div>
+        <div class="ask-row">
+            <input id="prefixInput" placeholder="Префикс пути, например src/main/java/com/yunovan/aiadvent/day34" value="src/main/java/com/yunovan/aiadvent/day34">
+        </div>
+        <div id="files"></div>
+    </div>
+
+    <div class="card">
+        <h3>Цель для агента</h3>
+        <div class="ask-row">
+            <div class="grow">
+                <input id="goalInput" placeholder='Например: "Найди использования Day34Workspace" или "Сгенерируй README для дня 34"'>
+            </div>
+            <select id="taskSelect">
+                <option value="">Автовыбор</option>
+                <option value="usages">FIND_USAGES</option>
+                <option value="adr">GENERATE_ADR</option>
+                <option value="changelog">GENERATE_CHANGELOG</option>
+                <option value="readme">GENERATE_README</option>
+                <option value="invariants">CHECK_INVARIANTS</option>
+                <option value="update">UPDATE_DOC</option>
+            </select>
+            <input id="targetInput" class="grow" placeholder="Тема/цель или путь файла (опц.)">
+            <label style="display:flex;align-items:center;gap:8px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;">
+                <input type="checkbox" id="writeCheck" style="width:auto"> записать (write=true)
+            </label>
+            <button id="runBtn" type="button">Выполнить</button>
+        </div>
+        <div class="hint">Агент классифицирует цель, составляет план, выполняет fs_* через MCP или локально, собирает контекст, при необходимости вызывает LLM и формирует артефакт/diff.</div>
+        <div id="runResult" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <h3>MCP-инструменты файлового сервера</h3>
+            <button id="toolsBtn" type="button" class="secondary">Показать инструменты</button>
+        </div>
+        <div class="state" id="tools" style="display:none"></div>
+    </div>
+
+    <div class="hint">CLI-примеры: <code>--day=34 --check</code>, <code>--day=34 --run="Найди использования Day34Workspace"</code>, <code>--day=34 --run="Проверь инварианты кода" --write</code>, <code>--day=34 --files --prefix=src/main/java</code>.</div>
+    <div class="meta" id="meta"></div>
+</main>
+<script>
+    const meta = document.getElementById("meta");
+    const healthBox = document.getElementById("health");
+    const checkBtn = document.getElementById("checkBtn");
+    const filesBtn = document.getElementById("filesBtn");
+    const filesBox = document.getElementById("files");
+    const prefixInput = document.getElementById("prefixInput");
+    const toolsBtn = document.getElementById("toolsBtn");
+    const toolsBox = document.getElementById("tools");
+    const goalInput = document.getElementById("goalInput");
+    const taskSelect = document.getElementById("taskSelect");
+    const targetInput = document.getElementById("targetInput");
+    const writeCheck = document.getElementById("writeCheck");
+    const runBtn = document.getElementById("runBtn");
+    const runResult = document.getElementById("runResult");
+
+    function esc(t){ return String(t===null||t===undefined?"":t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+    function toast(m){ meta.textContent=m; }
+    function n0(v){ return v===null||v===undefined?"—":Math.round(v); }
+    function n1(v){ return v===null||v===undefined?"—":Number(v).toFixed(1); }
+
+    async function json(url,method,body){
+        const opts=method?{method,headers:{"Content-Type":"application/json"}}:{};
+        if(body!==undefined) opts.body=JSON.stringify(body);
+        const resp=await fetch(url,opts);
+        let data=null; try{data=await resp.json();}catch(e){}
+        if(!resp.ok){ const message=(data&&(data.message||data.error))||("HTTP "+resp.status); throw new Error(message); }
+        return data;
+    }
+
+    async function check(){
+        checkBtn.disabled=true; toast("Запрашиваем состояние...");
+        try{
+            const h=await json("/api/day34/health");
+            const m=h.model;
+            healthBox.style.display="block";
+            let html="<div>Статус: <span class='"+(h.status==="ok"?"ok-line":"bad-line")+"'>"+esc(h.status)+"</span> · рабочий каталог <b>"+esc(h.workspaceDir)+"</b></div>";
+            html+="<div>Исходников: "+h.codeFiles+" · документов: "+h.documents+" · оценка чанков: "+h.chunks+" · символов: "+h.corpusChars+"</div>";
+            html+="<div>MCP: "+(h.mcp.available?"<span class='ok-line'>доступен</span> ("+h.mcp.tools+" инструментов)":"<span class='bad-line'>недоступен</span> — "+esc(h.mcp.reason))+"</div>";
+            html+="<div>Локальная LLM: "+esc(m.endpoint)+"/"+esc(m.model)+" — "+(m.available?"<span class='ok-line'>ок</span> (версия "+esc(m.version)+")":"<span class='bad-line'>недоступна</span>")+(m.reason?" · "+esc(m.reason):"")+"</div>";
+            healthBox.innerHTML=html; toast("Состояние получено");
+        }catch(e){toast("Ошибка: "+e.message);}finally{checkBtn.disabled=false;}
+    }
+
+    async function loadFiles(){
+        filesBtn.disabled=true; toast("Загружаем список файлов...");
+        try{
+            const list=await json("/api/day34/files?prefix="+encodeURIComponent(prefixInput.value||""));
+            let rows=""; list.forEach(f=>{
+                rows+="<tr><td>"+esc(f.path)+"</td><td class='num'>"+f.lines+"</td><td class='num'>"+f.sizeBytes+"</td><td>"+esc(f.modified||"")+"</td></tr>";
+            });
+            filesBox.innerHTML="<table><thead><tr><th>файл</th><th>строк</th><th>байт</th><th>изменён</th></tr></thead><tbody>"+rows+"</tbody></table>";
+            toast("Файлов: "+list.length);
+        }catch(e){filesBox.innerHTML="<div class='result'><div class='bad-line'>Ошибка: "+esc(e.message)+"</div></div>"; toast("Ошибка: "+e.message);}
+        finally{filesBtn.disabled=false;}
+    }
+
+    async function loadTools(){
+        toolsBtn.disabled=true; toast("Запрашиваем инструменты по MCP...");
+        try{
+            const list=await json("/api/day34/tools");
+            toolsBox.style.display="block";
+            toolsBox.innerHTML="<div>"+list.map(t=>"<span class='pill ok'>"+esc(t.name)+"</span>").join("")+"</div>";
+            toast("Инструментов: "+list.length);
+        }catch(e){toolsBox.innerHTML="<div class='result'><div class='bad-line'>Ошибка: "+esc(e.message)+"</div></div>"; toast("Ошибка: "+e.message);}
+        finally{toolsBtn.disabled=false;}
+    }
+
+    async function run(){
+        const goal=goalInput.value.trim(); if(!goal){toast("Укажите цель"); return;}
+        runBtn.disabled=true; toast("Запускаем агента...");
+        runResult.style.display="block";
+        runResult.innerHTML="<div class='result'>Агент работает...</div>";
+        try{
+            const r=await json("/api/day34/run","POST",{goal,task:taskSelect.value||null,target:targetInput.value||null,write:writeCheck.checked});
+            let html="<div class='result'>";
+            html+="<div><b>Задача:</b> "+esc(r.taskLabel)+" ("+esc(r.task)+")</div>";
+            html+="<div><b>Цель:</b> "+esc(r.goal)+(r.target? " · <b>тема/путь:</b> "+esc(r.target):"")+"</div>";
+            html+="<div><b>План ("+r.plan.length+"):</b> "+r.plan.map(p=>p.tool+":"+p.index).join(", ")+"</div>";
+            html+="<div><b>Шагов:</b> "+r.steps.length+" · <b>файлов затронуто:</b> "+r.filesTouched+" · <b>совпадений:</b> "+r.matches+" · <b>замечаний:</b> "+r.findings.length+"</div>";
+            if(r.artifacts.length){ html+="<div><b>Артефакты:</b> "+r.artifacts.map(a=>"<span class='pill'>"+esc(a.action)+" "+esc(a.path)+" ("+a.bytes+" байт)</span>").join("")+"</div>"; }
+            if(r.written.length){ html+="<div><b>Записано:</b> "+r.written.join(", ")+"</div>"; }
+            html+="<div class='pill'>"+esc(r.note)+"</div>"+(r.fallback?"<span class='pill warn'>без модели</span>":"<span class='pill ok'>с моделью: "+esc(r.model)+"</span>")+"<span class='pill'>"+n0(r.latencyMs)+" мс</span>";
+            html+="<pre class='out'>"+esc(r.markdown)+"</pre>";
+            if(r.diff){ html+="<pre class='out'>"+esc(r.diff)+"</pre>"; }
+            html+="</div>"; runResult.innerHTML=html; toast("Готово");
+        }catch(e){runResult.innerHTML="<div class='result'><div class='bad-line'>Ошибка: "+esc(e.message)+"</div></div>"; toast("Ошибка: "+e.message);}
+        finally{runBtn.disabled=false;}
+    }
+
+    checkBtn.addEventListener("click",check);
+    filesBtn.addEventListener("click",loadFiles);
+    toolsBtn.addEventListener("click",loadTools);
+    runBtn.addEventListener("click",run);
+    check();
+</script>
+</body>
+</html>

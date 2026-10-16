@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>AI Advent · День 35 · AI-тьютор по математике</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg: #0f141f;
+  --card: #16202f;
+  --line: #26374a;
+  --text: #eaf4ff;
+  --muted: #8fa6c4;
+  --accent: #7aa2f7;
+  --ok: #7bd88f;
+  --warn: #ffd76b;
+  --err: #ff8a8a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(circle at top, #1c2a4a, #0f141f 60%); color: var(--text); font-family: Georgia, 'Times New Roman', serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 20px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: system-ui, sans-serif; font-size: 14px; margin-bottom: 20px; }
+.nav a { color: var(--accent); text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+h1 { margin: 0 0 20px 0; font-size: clamp(24px, 5vw, 40px); }
+h2 { margin: 0 0 12px 0; font-size: clamp(18px, 4vw, 22px); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(16px, 4vw, 24px); margin-bottom: 20px; box-shadow: 0 10px 60px -20px rgba(122,162,247,0.35); }
+p { line-height: 1.7; margin: 0 0 12px 0; }
+.hint { color: var(--muted); font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.6; margin-top: 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+label { font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+input, select, textarea { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #101a29; color: var(--text); font-size: 14px; font-family: system-ui, sans-serif; }
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(122,162,247,0.5); outline-offset: 1px; }
+button { padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #0b1220; font-weight: 700; cursor: pointer; font-family: system-ui, sans-serif; transition: transform 0.08s ease, filter 0.2s ease; }
+button:hover { filter: brightness(1.05); }
+button:active { transform: scale(0.995); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.progress { display: flex; justify-content: space-between; align-items: center; font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.bar { width: 100%; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px; }
+.bar-inner { height: 100%; background: linear-gradient(90deg, #7aa2f7, #7bd88f); transition: width 0.25s ease; }
+.question { font-size: clamp(18px, 4vw, 24px); line-height: 1.6; white-space: pre-wrap; }
+.answer { width: 100%; min-height: 56px; resize: vertical; font-size: clamp(14px, 3.5vw, 16px); line-height: 1.6; }
+.result { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+.badge { padding: 2px 10px; border-radius: 999px; font-size: 11px; letter-spacing: 0.02em; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); font-family: system-ui, sans-serif; }
+.ok { color: #0b1220; background: var(--ok); border-color: rgba(0,0,0,0.15); }
+.err { color: #0b1220; background: var(--err); border-color: rgba(0,0,0,0.15); }
+.warn { color: #0b1220; background: var(--warn); border-color: rgba(0,0,0,0.15); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.muted { color: var(--muted); }
+.stat { text-align: center; }
+.stat .num { font-size: 36px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.ai-note { font-family: system-ui, sans-serif; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.footer { margin-top: 40px; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; font-size: 12px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+<nav class="nav">
+  <a href="/index.html">Главная</a>
+  <a href="/day34.html">День 34</a>
+  <a href="/day35.html">День 35</a>
+</nav>
+
+<h1>AI-тьютор по математике</h1>
+
+<div class="card">
+  <h2>Пошаговое обучение решению задач с разбором ошибок</h2>
+  <p><b>Задача:</b> автоматизировать обучение математике по курсу средней школы — от постановки задачи до проверки ответа, пошагового разбора и объяснения ошибок. <b>AI участвует</b> в генерации разбора решения и анализа ошибок через локальную LLM (Ollama).</p>
+  <div class="meta"><span class="badge" id="aiStatus">AI: проверяю…</span></div>
+
+  <div class="grid" style="margin-top: 16px;">
+    <div class="col">
+      <label for="topic">Тема</label>
+      <select id="topic">
+        <option value="algebra">Алгебра</option>
+        <option value="geometry">Геометрия</option>
+        <option value="fractions">Дроби</option>
+        <option value="trigonometry">Тригонометрия</option>
+      </select>
+    </div>
+    <div class="col">
+      <label for="level">Уровень</label>
+      <select id="level">
+        <option value="5-6">5–6 класс</option>
+        <option value="5-7" selected>5–7 класс</option>
+        <option value="7-8">7–8 класс</option>
+        <option value="8-9">8–9 класс</option>
+      </select>
+    </div>
+    <div class="col">
+      <label for="count">Количество задач</label>
+      <input id="count" type="number" min="1" max="5" value="3">
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 16px;">
+    <button id="start">Начать обучение</button>
+    <button id="reset" class="ghost">Сбросить сессию</button>
+  </div>
+  <div class="hint">Пошаговый процесс: задача → ответ ученика → проверка → объяснение решения → разбор ошибок → следующая задача.</div>
+</div>
+
+<div class="card hidden" id="taskCard">
+  <div class="progress">
+    <span id="progressText">—</span>
+    <span id="statusBadge" class="badge">Ожидание ответа</span>
+  </div>
+  <div class="bar"><div id="barInner" class="bar-inner" style="width: 0%"></div></div>
+
+  <div class="col" style="gap: 16px;">
+    <div>
+      <label>Условие задачи</label>
+      <div id="question" class="question">—</div>
+    </div>
+    <div class="col">
+      <label for="answer">Ваш ответ</label>
+      <textarea id="answer" class="answer" placeholder="Введите ответ (число или выражение)"></textarea>
+    </div>
+    <div class="row">
+      <button id="check">Проверить ответ</button>
+      <button id="next" class="ghost hidden">Следующая задача</button>
+    </div>
+  </div>
+</div>
+
+<div class="card hidden" id="resultCard">
+  <h2 id="resultTitle">Разбор решения</h2>
+  <div class="col" style="gap: 16px;">
+    <div>
+      <label>Объяснение решения</label>
+      <div id="explain" class="result">—</div>
+    </div>
+    <div>
+      <label>Анализ ошибки</label>
+      <div id="analysis" class="result muted">—</div>
+    </div>
+    <div>
+      <label>Пошаговое решение</label>
+      <div id="steps" class="result muted">—</div>
+    </div>
+  </div>
+  <div class="ai-note" id="aiMeta">AI участвует: пошаговое объяснение и анализ ошибок.</div>
+</div>
+
+<div class="card hidden" id="progressCard">
+  <h2>Прогресс обучения</h2>
+  <div class="grid">
+    <div class="card stat" style="margin-bottom: 0;"><div class="num" id="solvedCount">0</div><div class="muted">Решено</div></div>
+    <div class="card stat" style="margin-bottom: 0;"><div class="num" id="correctCount">0</div><div class="muted">Верно</div></div>
+    <div class="card stat" style="margin-bottom: 0;"><div class="num" id="totalCount">0</div><div class="muted">Всего</div></div>
+  </div>
+  <div class="hint" id="summaryText"></div>
+</div>
+
+<div class="footer">День 35 — AI-тьютор по математике. Работает в реальном окружении (локальная LLM Ollama), с graceful fallback при недоступности модели.</div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function post(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
+}
+
+let sessionId = null;
+let problems = [];
+let currentIndex = 0;
+let finished = false;
+
+function updateProgress(progress) {
+  if (!progress) return;
+  $('solvedCount').textContent = progress.solved || 0;
+  $('correctCount').textContent = progress.correct || 0;
+  $('totalCount').textContent = progress.total || problems.length || 0;
+  const total = progress.total || problems.length || 0;
+  const pct = total ? Math.round((progress.solved / total) * 100) : 0;
+  $('barInner').style.width = pct + '%';
+  let summary = '';
+  if (total > 0 && progress.solved > 0) {
+    const acc = Math.round((progress.correct / progress.solved) * 100);
+    summary = 'Решено ' + progress.solved + ' из ' + total + '. Точность: ' + acc + '%.';
+    if (acc >= 80) summary += ' Отличный результат!';
+    else if (acc >= 50) summary += ' Хорошо, но стоит проработать ошибки.';
+    else summary += ' Рекомендуется повторить тему с подсказками.';
+  }
+  $('summaryText').textContent = summary;
+}
+
+function showProblem(res) {
+  problems = res.problems || problems;
+  currentIndex = res.finished ? currentIndex : res.problems.findIndex(p => p.id === res.problem.id);
+  $('question').textContent = res.problem.question;
+  $('answer').value = '';
+  $('answer').focus();
+  $('answer').disabled = false;
+  $('check').disabled = false;
+  $('next').classList.add('hidden');
+  $('progressText').textContent = res.task;
+  $('statusBadge').textContent = 'Ожидание ответа';
+  $('statusBadge').className = 'badge';
+}
+
+async function startSession() {
+  try {
+    const req = {
+      topic: $('topic').value,
+      level: $('level').value,
+      count: parseInt($('count').value) || 3
+    };
+    const res = await post('/api/day35/sessions', req);
+    sessionId = res.sessionId;
+    problems = res.problems || [];
+    finished = false;
+    $('taskCard').classList.remove('hidden');
+    $('progressCard').classList.remove('hidden');
+    $('resultCard').classList.add('hidden');
+    showProblem(res);
+    updateProgress(res.progress);
+  } catch (e) {
+    alert('Не удалось начать сессию: ' + e.message);
+  }
+}
+
+async function checkAnswer() {
+  if (!sessionId) return;
+  const userAnswer = $('answer').value.trim();
+  const res = await post('/api/day35/sessions/' + encodeURIComponent(sessionId) + '/answer', { userAnswer });
+  finished = res.finished;
+
+  $('resultCard').classList.remove('hidden');
+  $('resultTitle').textContent = res.correct ? 'Верно! Разбор решения' : 'Есть ошибка. Разбор решения';
+
+  if (res.solution) {
+    $('explain').textContent = res.solution.explanation || '—';
+    $('steps').textContent = res.solution.steps || '—';
+  }
+  if (res.analysis) {
+    const parts = [res.analysis.mistake];
+    if (res.analysis.fix) parts.push('Исправление: ' + res.analysis.fix);
+    if (res.analysis.suggestion) parts.push('Совет: ' + res.analysis.suggestion);
+    $('analysis').textContent = parts.join('\n\n');
+  } else {
+    $('analysis').textContent = '—';
+  }
+  const metaModel = res.model || (res.solution && res.solution.model) || '';
+  const metaLatency = res.latencyMs || (res.solution && res.solution.latencyMs) || 0;
+  $('aiMeta').textContent = metaModel
+    ? 'AI (' + metaModel + '): ответ за ' + metaLatency + ' мс, токенов ' + (res.outputTokens || 0) + '.'
+    : 'AI-модель недоступна — показан встроенный разбор (graceful fallback).';
+
+  if (res.progress) updateProgress(res.progress);
+
+  if (res.finished) {
+    $('statusBadge').textContent = 'Обучение завершено';
+    $('statusBadge').className = 'badge ok';
+    $('progressText').textContent = res.task;
+    $('answer').disabled = true;
+    $('check').disabled = true;
+    $('next').classList.add('hidden');
+  } else {
+    $('statusBadge').textContent = res.correct ? 'Верно' : 'Проверено';
+    $('statusBadge').className = 'badge ' + (res.correct ? 'ok' : 'warn');
+    pendingNext = res.problem;
+    $('next').classList.remove('hidden');
+  }
+}
+
+let pendingNext = null;
+$('next').addEventListener('click', () => {
+  if (!pendingNext) return;
+  const idx = problems.findIndex(p => p.id === pendingNext.id);
+  const probe = {
+    problem: pendingNext,
+    problems: problems,
+    task: 'Задача ' + (idx + 1) + ' из ' + problems.length,
+    progress: {
+      solved: parseInt($('solvedCount').textContent),
+      correct: parseInt($('correctCount').textContent),
+      total: problems.length
+    }
+  };
+  showProblem(probe);
+  pendingNext = null;
+});
+
+function resetSession() {
+  sessionId = null;
+  problems = [];
+  currentIndex = 0;
+  finished = false;
+  pendingNext = null;
+  ['taskCard', 'resultCard', 'progressCard'].forEach(id => $(id).classList.add('hidden'));
+  $('barInner').style.width = '0%';
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch('/api/day35/health');
+    const data = await res.json();
+    $('aiStatus').textContent = data.available
+      ? 'AI доступен: модель ' + (data.model || 'локальная LLM')
+      : 'AI недоступен (fallback). Причина: ' + (data.detail || 'нет соединения');
+    $('aiStatus').className = 'badge ' + (data.available ? 'ok' : 'warn');
+  } catch (e) {
+    $('aiStatus').textContent = 'AI: не удалось проверить';
+    $('aiStatus').className = 'badge warn';
+  }
+}
+
+$('start').addEventListener('click', startSession);
+$('reset').addEventListener('click', resetSession);
+$('check').addEventListener('click', checkAnswer);
+loadHealth();
+</script>
+</body>
+</html>
