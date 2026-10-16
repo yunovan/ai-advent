@@ -285,11 +285,13 @@ day34:
   max-read-lines: ${DAY34_MAX_READ_LINES:400}
   search-max-results: ${DAY34_SEARCH_MAX_RESULTS:100}
   answer-max-tokens: ${DAY34_ANSWER_MAX_TOKENS:700}
-  temperature: ${DAY34_TEMPERATURE:0.2}day35:
-  serverPort: 
-  path: 
-  name: 
-  version: 
-  maxProblems: 
-  temperature: 
-  answerMaxTokens: 
+  temperature: ${DAY34_TEMPERATURE:0.2}
+
+day35:
+  serverPort: ${DAY35_SERVER_PORT:18119}
+  path: ${DAY35_PATH:/api/day35}
+  name: ${DAY35_NAME:ai-advent-math-tutor}
+  version: ${DAY35_VERSION:0.1.0}
+  maxProblems: ${DAY35_MAX_PROBLEMS:5}
+  temperature: ${DAY35_TEMPERATURE:0.3}
+  answerMaxTokens: ${DAY35_ANSWER_MAX_TOKENS:600}
