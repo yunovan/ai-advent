@@ -1,55 +1,148 @@
 package com.yunovan.aiadvent.day35;
 
-import com.yunovan.aiadvent.day26.Day26Answer;
-import com.yunovan.aiadvent.day26.Day26ChatMessage;
-import com.yunovan.aiadvent.day26.Day26ChatOptions;
-import com.yunovan.aiadvent.day26.Day26LocalLlmClient;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 @Service
 public class Day35MathTutorService {
-    private final Day35Properties props;
-    private final Day35ProblemGenerator gen;
-    private final Day35LessonRepository repo;
+
+    private final Day35Properties properties;
+    private final Day35ProblemGenerator generator;
+    private final Day35LessonRepository lessons;
     private final Day35Tutor tutor;
-    private final Day26LocalLlmClient llm;
+    private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
-    public Day35MathTutorService(Day35Properties props, Day35ProblemGenerator gen, Day35LessonRepository repo, Day35Tutor tutor, Day26LocalLlmClient llm) {
-        this.props = props; this.gen = gen; this.repo = repo; this.tutor = tutor; this.llm = llm;
+    public Day35MathTutorService(Day35Properties properties,
+                                 Day35ProblemGenerator generator,
+                                 Day35LessonRepository lessons,
+                                 Day35Tutor tutor) {
+        this.properties = properties;
+        this.generator = generator;
+        this.lessons = lessons;
+        this.tutor = tutor;
     }
 
-    public List<Day35Lesson> lessons() { return repo.all(); }
+    public List<Day35Lesson> lessons() {
+        return lessons.all();
+    }
 
-    public Day35SessionResponse start(Day35SessionRequest req) {
-        long start = System.nanoTime();
-        String topic = req.topic()==null||req.topic().isBlank()?"algebra":req.topic();
-        String level = req.level()==null||req.level().isBlank()?"5-7":req.level();
-        int count = req.count()==null||req.count()<1?props.maxProblems():Math.min(req.count(), props.maxProblems());
+    public Day35SessionResponse start(Day35SessionRequest request) {
+        long started = System.nanoTime();
+        String topic = blankTo(request == null ? null : request.topic(), "algebra");
+        String level = blankTo(request == null ? null : request.level(), "5-7");
+        int count = clamp(request == null ? null : request.count(), properties.maxProblems());
+
         List<Day35Problem> problems = new ArrayList<>();
-        for(int i=0;i<count;i++) problems.add(gen.generate(topic,level));
-        String sid = UUID.randomUUID().toString();
-        Day35Problem cur = problems.getFirst();
-        String task = "Тема: " + topic + ". Уровень: " + level + ". Задача " + 1 + " из " + count;
-        Day35Progress p = new Day35Progress(count,0,0, List.of(topic));
-        Day35Solution sol = new Day35Solution(cur.id(), "", "", "Подумайте и дайте ответ.", "");
-        Day35Answer ans = null;
-        long latency = (System.nanoTime()-start)/1_000_000L;
-        return new Day35SessionResponse(sid,task,cur,sol,null,p,false,"Сессия начата. AI участвует через локальную модель при генерации/объяснении.","",latency,0,0,0.0);
+        Map<String, String> expected = new LinkedHashMap<>();
+        for (int i = 0; i < count; i++) {
+            Day35ProblemGenerator.Generated generated = generator.generate(topic, level);
+            problems.add(generated.problem());
+            expected.put(generated.problem().id(), generated.expectedAnswer());
+        }
+
+        Session session = new Session(UUID.randomUUID().toString(), topic, level, problems, expected);
+        sessions.put(session.id, session);
+        long latency = elapsed(started);
+        return response(session, session.problems.get(0), null, null, false, false,
+                "Сессия начата. AI-тьютор будет разбирать каждое решение по шагам.",
+                "", latency, 0, 0, 0.0);
     }
 
-    public Day35SessionResponse answer(Day35SessionRequest req, String sid, Day35State state) {
-        long start = System.nanoTime();
-        Day35Problem cur = state.problems().stream().filter(x->x.id().equals(state.currentProblemId())).findFirst().orElse(state.problems().get(state.step()));
-        Day35Solution sol = tutor.explain(cur, req.userAnswer());
-        Day35ErrorAnalysis anal = tutor.analyze(cur, req.userAnswer());
-        Day35Progress prog = new Day35Progress(state.problems().size(), state.step()+1, (sol.check()!=null&&sol.check().equals("correct"))?1:0, List.of(req.topic()==null?"algebra":req.topic()));
-        boolean finished = (state.step()+1)>=state.problems().size();
-        String task = "Шаг " + (state.step()+1) + " из " + state.problems().size();
-        String note = finished?"Обучение завершено. Проверьте прогресс.":"Продолжайте решать задачи с пошаговым разбором.";
-        long latency = (System.nanoTime()-start)/1_000_000L;
-        return new Day35SessionResponse(sid,task,cur,sol,anal,prog,finished,note,"",latency,0,0,0.0);
+    public Day35SessionResponse answer(String sessionId, Day35SessionRequest request) {
+        Session session = sessions.get(sessionId);
+        if (session == null) {
+            throw new Day35Exception("Сессия не найдена: " + sessionId);
+        }
+        long started = System.nanoTime();
+        if (session.step >= session.problems.size()) {
+            return response(session, null, null, null, true, false,
+                    "Обучение уже завершено.", "", elapsed(started), 0, 0, 0.0);
+        }
+
+        Day35Problem current = session.problems.get(session.step);
+        String expectedAnswer = session.expected.get(current.id());
+        String userAnswer = request == null ? null : request.userAnswer();
+        Day35TutorResult result = tutor.review(current, userAnswer, expectedAnswer);
+
+        session.solved = Math.min(session.problems.size(), session.solved + 1);
+        if (result.solution().check().equals("correct")) {
+            session.correct++;
+        }
+
+        boolean finished = session.step + 1 >= session.problems.size();
+        Day35Problem next = finished ? null : session.problems.get(session.step + 1);
+        if (!finished) {
+            session.step++;
+        }
+        String note = finished
+                ? "Обучение завершено. Посмотрите прогресс и разбор ошибок."
+                : "Готово. Разберите объяснение и переходите к следующей задаче.";
+        return response(session, next, result.solution(), result.analysis(), finished,
+                result.solution().check().equals("correct"), note,
+                result.model(), result.latencyMs(), result.promptTokens(),
+                result.outputTokens(), result.tokensPerSecond());
+    }
+
+    private Day35SessionResponse response(Session session,
+                                          Day35Problem problem,
+                                          Day35Solution solution,
+                                          Day35ErrorAnalysis analysis,
+                                          boolean finished,
+                                          boolean correct,
+                                          String note,
+                                          String model,
+                                          long latencyMs,
+                                          int promptTokens,
+                                          int outputTokens,
+                                          double tokensPerSecond) {
+        int total = session.problems.size();
+        String task = finished
+                ? "Задача " + total + " из " + total + " (обучение завершено)"
+                : "Задача " + (session.step + 1) + " из " + total;
+        Day35Progress progress = new Day35Progress(total, session.solved, session.correct,
+                List.of(session.topic));
+        return new Day35SessionResponse(session.id, task, problem, List.copyOf(session.problems),
+                solution, analysis, progress, finished, correct, note,
+                model, latencyMs, promptTokens, outputTokens, tokensPerSecond);
+    }
+
+    private static int clamp(Integer value, int max) {
+        if (value == null || value < 1) {
+            return max;
+        }
+        return Math.min(value, max);
+    }
+
+    private static String blankTo(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private static long elapsed(long startedNanos) {
+        return Math.max(0L, (System.nanoTime() - startedNanos) / 1_000_000L);
+    }
+
+    private static final class Session {
+        private final String id;
+        private final String topic;
+        private final String level;
+        private final List<Day35Problem> problems;
+        private final Map<String, String> expected;
+        private int step;
+        private int solved;
+        private int correct;
+
+        private Session(String id, String topic, String level,
+                        List<Day35Problem> problems, Map<String, String> expected) {
+            this.id = id;
+            this.topic = topic;
+            this.level = level;
+            this.problems = problems;
+            this.expected = expected;
+        }
     }
 }

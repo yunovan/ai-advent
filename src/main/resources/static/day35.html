@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>AI Advent · День 35</title>
+<title>AI Advent · День 35 · AI-тьютор по математике</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 :root {
@@ -14,18 +14,18 @@
   --accent: #7aa2f7;
   --ok: #7bd88f;
   --warn: #ffd76b;
-  --err: #ff6b6b;
+  --err: #ff8a8a;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: radial-gradient(circle at top, #1c2a4a, #0f141f 60%); color: var(--text); font-family: Georgia, 'Times New Roman', serif; }
 main { max-width: 980px; margin: 0 auto; padding: 48px 20px; }
-.nav { display: flex; gap: 12px; flex-wrap: wrap; font-family: system-ui, sans-serif; font-size: 14px; margin-bottom: 20px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: system-ui, sans-serif; font-size: 14px; margin-bottom: 20px; }
 .nav a { color: var(--accent); text-decoration: none; }
 .nav a:hover { text-decoration: underline; }
 h1 { margin: 0 0 20px 0; font-size: clamp(24px, 5vw, 40px); }
 h2 { margin: 0 0 12px 0; font-size: clamp(18px, 4vw, 22px); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(16px, 4vw, 24px); margin-bottom: 20px; box-shadow: 0 10px 60px -20px rgba(122,162,247,0.3); }
-p { line-height: 1.7; margin: 0 0 12px 0; color: var(--text); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(16px, 4vw, 24px); margin-bottom: 20px; box-shadow: 0 10px 60px -20px rgba(122,162,247,0.35); }
+p { line-height: 1.7; margin: 0 0 12px 0; }
 .hint { color: var(--muted); font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.6; margin-top: 10px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .col { display: flex; flex-direction: column; gap: 8px; }
@@ -38,19 +38,23 @@ button:active { transform: scale(0.995); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
 .progress { display: flex; justify-content: space-between; align-items: center; font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
-.bar { width: 100%; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; }
+.bar { width: 100%; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px; }
 .bar-inner { height: 100%; background: linear-gradient(90deg, #7aa2f7, #7bd88f); transition: width 0.25s ease; }
 .question { font-size: clamp(18px, 4vw, 24px); line-height: 1.6; white-space: pre-wrap; }
-.answer { width: 100%; min-height: 60px; resize: vertical; font-size: clamp(14px, 3.5vw, 16px); line-height: 1.6; }
+.answer { width: 100%; min-height: 56px; resize: vertical; font-size: clamp(14px, 3.5vw, 16px); line-height: 1.6; }
 .result { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
-.badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; letter-spacing: 0.02em; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+.badge { padding: 2px 10px; border-radius: 999px; font-size: 11px; letter-spacing: 0.02em; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); font-family: system-ui, sans-serif; }
 .ok { color: #0b1220; background: var(--ok); border-color: rgba(0,0,0,0.15); }
 .err { color: #0b1220; background: var(--err); border-color: rgba(0,0,0,0.15); }
 .warn { color: #0b1220; background: var(--warn); border-color: rgba(0,0,0,0.15); }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .muted { color: var(--muted); }
+.stat { text-align: center; }
+.stat .num { font-size: 36px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .ai-note { font-family: system-ui, sans-serif; font-size: 12px; color: var(--muted); margin-top: 10px; }
 .footer { margin-top: 40px; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; font-size: 12px; }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -65,9 +69,10 @@ button.ghost { background: transparent; color: var(--text); border: 1px solid va
 
 <div class="card">
   <h2>Пошаговое обучение решению задач с разбором ошибок</h2>
-  <p>Реальная задача: автоматизировать процесс обучения математике по курсу средней школы. AI участвует в генерации объяснений, пошагового разбора и анализе ошибок.</p>
-  
-  <div class="grid">
+  <p><b>Задача:</b> автоматизировать обучение математике по курсу средней школы — от постановки задачи до проверки ответа, пошагового разбора и объяснения ошибок. <b>AI участвует</b> в генерации разбора решения и анализа ошибок через локальную LLM (Ollama).</p>
+  <div class="meta"><span class="badge" id="aiStatus">AI: проверяю…</span></div>
+
+  <div class="grid" style="margin-top: 16px;">
     <div class="col">
       <label for="topic">Тема</label>
       <select id="topic">
@@ -96,43 +101,34 @@ button.ghost { background: transparent; color: var(--text); border: 1px solid va
     <button id="start">Начать обучение</button>
     <button id="reset" class="ghost">Сбросить сессию</button>
   </div>
-  
-  <div class="hint">
-    Приложение демонстрирует пошаговый процесс обучения: от постановки задачи → ответ ученика → проверка с объяснением → разбор ошибок → переход к следующей. AI помогает структурировать объяснение и дать корректные подсказки.
-  </div>
+  <div class="hint">Пошаговый процесс: задача → ответ ученика → проверка → объяснение решения → разбор ошибок → следующая задача.</div>
 </div>
 
-<div class="card" id="taskCard" style="display: none;">
+<div class="card hidden" id="taskCard">
   <div class="progress">
-    <span id="progressText">Задача 0 из 0</span>
+    <span id="progressText">—</span>
     <span id="statusBadge" class="badge">Ожидание ответа</span>
   </div>
-  <div class="bar">
-    <div id="barInner" class="bar-inner" style="width: 0%"></div>
-  </div>
-  
+  <div class="bar"><div id="barInner" class="bar-inner" style="width: 0%"></div></div>
+
   <div class="col" style="gap: 16px;">
     <div>
       <label>Условие задачи</label>
-      <div id="question" class="question muted">—</div>
+      <div id="question" class="question">—</div>
     </div>
-    
     <div class="col">
       <label for="answer">Ваш ответ</label>
       <textarea id="answer" class="answer" placeholder="Введите ответ (число или выражение)"></textarea>
     </div>
-    
     <div class="row">
       <button id="check">Проверить ответ</button>
-      <button id="hintBtn" class="ghost">Показать подсказку</button>
-      <button id="next" class="ghost" disabled>Следующая задача</button>
-      <button id="finish" class="ghost" style="display: none;">Завершить обучение</button>
+      <button id="next" class="ghost hidden">Следующая задача</button>
     </div>
   </div>
 </div>
 
-<div class="card" id="resultCard" style="display: none;">
-  <h2>Разбор решения и объяснение ошибок</h2>
+<div class="card hidden" id="resultCard">
+  <h2 id="resultTitle">Разбор решения</h2>
   <div class="col" style="gap: 16px;">
     <div>
       <label>Объяснение решения</label>
@@ -147,203 +143,185 @@ button.ghost { background: transparent; color: var(--text); border: 1px solid va
       <div id="steps" class="result muted">—</div>
     </div>
   </div>
-  <div class="ai-note">AI участвует: пошаговое объяснение, анализ типовых ошибок, рекомендации по исправлению.</div>
+  <div class="ai-note" id="aiMeta">AI участвует: пошаговое объяснение и анализ ошибок.</div>
 </div>
 
-<div class="card" id="progressCard" style="display: none;">
+<div class="card hidden" id="progressCard">
   <h2>Прогресс обучения</h2>
   <div class="grid">
-    <div class="card" style="margin-bottom: 0;">
-      <div class="col" style="align-items: center; text-align: center;">
-        <div style="font-size: 36px;" id="solvedCount">0</div>
-        <div class="muted">Решено задач</div>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom: 0;">
-      <div class="col" style="align-items: center; text-align: center;">
-        <div style="font-size: 36px;" id="correctCount">0</div>
-        <div class="muted">Правильных ответов</div>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom: 0;">
-      <div class="col" style="align-items: center; text-align: center;">
-        <div style="font-size: 36px;" id="totalCount">0</div>
-        <div class="muted">Всего задач</div>
-      </div>
-    </div>
+    <div class="card stat" style="margin-bottom: 0;"><div class="num" id="solvedCount">0</div><div class="muted">Решено</div></div>
+    <div class="card stat" style="margin-bottom: 0;"><div class="num" id="correctCount">0</div><div class="muted">Верно</div></div>
+    <div class="card stat" style="margin-bottom: 0;"><div class="num" id="totalCount">0</div><div class="muted">Всего</div></div>
   </div>
   <div class="hint" id="summaryText"></div>
 </div>
 
-<div class="footer">
-  День 35 — AI-тьютор по математике. Работает в реальном окружении, может использовать локальную LLM (Ollama).
-</div>
+<div class="footer">День 35 — AI-тьютор по математике. Работает в реальном окружении (локальная LLM Ollama), с graceful fallback при недоступности модели.</div>
 </main>
 
 <script>
+const $ = (id) => document.getElementById(id);
+
 async function post(url, body) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body || {})
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
 }
 
 let sessionId = null;
 let problems = [];
 let currentIndex = 0;
-let currentProblem = null;
-let progress = { total: 0, solved: 0, correct: 0, topics: [] };
-let hintShown = false;
+let finished = false;
 
-function updateProgressBar() {
+function updateProgress(progress) {
+  if (!progress) return;
+  $('solvedCount').textContent = progress.solved || 0;
+  $('correctCount').textContent = progress.correct || 0;
+  $('totalCount').textContent = progress.total || problems.length || 0;
   const total = progress.total || problems.length || 0;
-  const done = currentIndex; // index of current
-  const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-  document.getElementById('barInner').style.width = pct + '%';
-}
-
-function updateUI() {
-  const total = problems.length;
-  document.getElementById('progressText').textContent = 'Задача ' + (total ? (currentIndex + 1) : 0) + ' из ' + total;
-  const badge = document.getElementById('statusBadge');
-  badge.textContent = progress.solved > currentIndex ? 'Проверено' : 'Ожидание ответа';
-  badge.className = 'badge ' + (progress.solved > currentIndex ? 'warn' : '');
-  document.getElementById('next').disabled = progress.solved <= currentIndex;
-  updateProgressBar();
-  updateProgressCard();
-}
-
-function updateProgressCard() {
-  document.getElementById('solvedCount').textContent = progress.solved || 0;
-  document.getElementById('correctCount').textContent = progress.correct || 0;
-  document.getElementById('totalCount').textContent = progress.total || problems.length || 0;
-  const total = progress.total || problems.length || 0;
-  const corr = progress.correct || 0;
+  const pct = total ? Math.round((progress.solved / total) * 100) : 0;
+  $('barInner').style.width = pct + '%';
   let summary = '';
-  if (total > 0) {
-    const pct = Math.round((corr / total) * 100);
-    summary = 'Результат: ' + corr + ' из ' + total + ' (' + pct + '%) правильных ответов.';
-    if (pct >= 80) summary += ' Отличная работа — уверенно идёте вперёд.';
-    else if (pct >= 50) summary += ' Неплохой результат — полезно проработать ошибки.';
-    else summary += ' Рекомендуется повторить тему с подсказками и пошаговым разбором.';
+  if (total > 0 && progress.solved > 0) {
+    const acc = Math.round((progress.correct / progress.solved) * 100);
+    summary = 'Решено ' + progress.solved + ' из ' + total + '. Точность: ' + acc + '%.';
+    if (acc >= 80) summary += ' Отличный результат!';
+    else if (acc >= 50) summary += ' Хорошо, но стоит проработать ошибки.';
+    else summary += ' Рекомендуется повторить тему с подсказками.';
   }
-  document.getElementById('summaryText').textContent = summary;
+  $('summaryText').textContent = summary;
 }
 
-function showProblem(p) {
-  currentProblem = p;
-  document.getElementById('question').textContent = p.question || '';
-  document.getElementById('answer').value = '';
-  document.getElementById('answer').focus();
-  document.getElementById('resultCard').style.display = 'none';
-  document.getElementById('explain').textContent = '—';
-  document.getElementById('analysis').textContent = '—';
-  document.getElementById('steps').textContent = '—';
-  hintShown = false;
-  updateUI();
+function showProblem(res) {
+  problems = res.problems || problems;
+  currentIndex = res.finished ? currentIndex : res.problems.findIndex(p => p.id === res.problem.id);
+  $('question').textContent = res.problem.question;
+  $('answer').value = '';
+  $('answer').focus();
+  $('answer').disabled = false;
+  $('check').disabled = false;
+  $('next').classList.add('hidden');
+  $('progressText').textContent = res.task;
+  $('statusBadge').textContent = 'Ожидание ответа';
+  $('statusBadge').className = 'badge';
 }
 
 async function startSession() {
   try {
-    const topic = document.getElementById('topic').value;
-    const level = document.getElementById('level').value;
-    const count = parseInt(document.getElementById('count').value) || 3;
-    const req = { topic, level, count, userAnswer: null, hint: false };
+    const req = {
+      topic: $('topic').value,
+      level: $('level').value,
+      count: parseInt($('count').value) || 3
+    };
     const res = await post('/api/day35/sessions', req);
     sessionId = res.sessionId;
-    problems = [];
-    if (res.problem) problems.push(res.problem);
-    currentIndex = 0;
-    progress = res.progress || { total: problems.length, solved: 0, correct: 0, topics: [topic] };
-    document.getElementById('taskCard').style.display = 'block';
-    document.getElementById('progressCard').style.display = 'block';
-    if (problems.length > 0) {
-      showProblem(problems[0]);
-    } else {
-      document.getElementById('question').textContent = 'Задачи не сгенерированы (демо-режим).';
-    }
+    problems = res.problems || [];
+    finished = false;
+    $('taskCard').classList.remove('hidden');
+    $('progressCard').classList.remove('hidden');
+    $('resultCard').classList.add('hidden');
+    showProblem(res);
+    updateProgress(res.progress);
   } catch (e) {
     alert('Не удалось начать сессию: ' + e.message);
   }
 }
 
 async function checkAnswer() {
-  if (!sessionId || !currentProblem) return;
-  const userAnswer = document.getElementById('answer').value.trim();
-  if (userAnswer.length === 0) {
-    alert('Введите ответ перед проверкой');
-    return;
-  }
-  const topic = document.getElementById('topic').value;
-  const state = { step: currentIndex, problems: problems, currentProblemId: currentProblem.id };
-  const req = { topic, level: document.getElementById('level').value, count: problems.length, userAnswer, hint: hintShown };
-  try {
-    const res = await post('/api/day35/sessions/' + encodeURIComponent(sessionId) + '/answer', req, state);
-    document.getElementById('resultCard').style.display = 'block';
-    if (res.solution) {
-      document.getElementById('explain').textContent = res.solution.explanation || 'Объяснение будет сформировано с использованием AI.';
-      document.getElementById('steps').textContent = res.solution.steps || 'Шаги решения: проанализируйте условие, выберите правило, выполните вычисления, проверьте результат.';
-    }
-    if (res.analysis) {
-      document.getElementById('analysis').textContent = res.analysis.mistake + (res.analysis.fix ? '\n\nИсправление: ' + res.analysis.fix : '') + (res.analysis.suggestion ? '\n\nСовет: ' + res.analysis.suggestion : '');
-    } else {
-      document.getElementById('analysis').textContent = 'Ответ обработан. При ошибке AI даст подробный разбор и рекомендации.';
-    }
-    if (res.progress) progress = res.progress;
-    progress.solved = Math.max(progress.solved, currentIndex + 1);
-    updateUI();
-  } catch (e) {
-    alert('Не удалось проверить ответ: ' + e.message);
-  }
-}
+  if (!sessionId) return;
+  const userAnswer = $('answer').value.trim();
+  const res = await post('/api/day35/sessions/' + encodeURIComponent(sessionId) + '/answer', { userAnswer });
+  finished = res.finished;
 
-function showHint() {
-  if (!currentProblem) return;
-  hintShown = true;
-  const hint = currentProblem.solutionHint || 'Внимательно прочитайте условие, выделите данные, примените подходящее правило.';
-  document.getElementById('explain').textContent = 'Подсказка: ' + hint;
-  document.getElementById('resultCard').style.display = 'block';
-}
+  $('resultCard').classList.remove('hidden');
+  $('resultTitle').textContent = res.correct ? 'Верно! Разбор решения' : 'Есть ошибка. Разбор решения';
 
-function nextProblem() {
-  if (currentIndex + 1 < problems.length) {
-    currentIndex++;
-    showProblem(problems[currentIndex]);
+  if (res.solution) {
+    $('explain').textContent = res.solution.explanation || '—';
+    $('steps').textContent = res.solution.steps || '—';
+  }
+  if (res.analysis) {
+    const parts = [res.analysis.mistake];
+    if (res.analysis.fix) parts.push('Исправление: ' + res.analysis.fix);
+    if (res.analysis.suggestion) parts.push('Совет: ' + res.analysis.suggestion);
+    $('analysis').textContent = parts.join('\n\n');
   } else {
-    finishSession();
+    $('analysis').textContent = '—';
+  }
+  const metaModel = res.model || (res.solution && res.solution.model) || '';
+  const metaLatency = res.latencyMs || (res.solution && res.solution.latencyMs) || 0;
+  $('aiMeta').textContent = metaModel
+    ? 'AI (' + metaModel + '): ответ за ' + metaLatency + ' мс, токенов ' + (res.outputTokens || 0) + '.'
+    : 'AI-модель недоступна — показан встроенный разбор (graceful fallback).';
+
+  if (res.progress) updateProgress(res.progress);
+
+  if (res.finished) {
+    $('statusBadge').textContent = 'Обучение завершено';
+    $('statusBadge').className = 'badge ok';
+    $('progressText').textContent = res.task;
+    $('answer').disabled = true;
+    $('check').disabled = true;
+    $('next').classList.add('hidden');
+  } else {
+    $('statusBadge').textContent = res.correct ? 'Верно' : 'Проверено';
+    $('statusBadge').className = 'badge ' + (res.correct ? 'ok' : 'warn');
+    pendingNext = res.problem;
+    $('next').classList.remove('hidden');
   }
 }
 
-function finishSession() {
-  document.getElementById('next').style.display = 'none';
-  document.getElementById('finish').style.display = 'none';
-  document.getElementById('statusBadge').textContent = 'Обучение завершено';
-  document.getElementById('statusBadge').className = 'badge ok';
-  updateProgressCard();
-}
+let pendingNext = null;
+$('next').addEventListener('click', () => {
+  if (!pendingNext) return;
+  const idx = problems.findIndex(p => p.id === pendingNext.id);
+  const probe = {
+    problem: pendingNext,
+    problems: problems,
+    task: 'Задача ' + (idx + 1) + ' из ' + problems.length,
+    progress: {
+      solved: parseInt($('solvedCount').textContent),
+      correct: parseInt($('correctCount').textContent),
+      total: problems.length
+    }
+  };
+  showProblem(probe);
+  pendingNext = null;
+});
 
 function resetSession() {
   sessionId = null;
   problems = [];
   currentIndex = 0;
-  currentProblem = null;
-  progress = { total: 0, solved: 0, correct: 0, topics: [] };
-  hintShown = false;
-  document.getElementById('taskCard').style.display = 'none';
-  document.getElementById('resultCard').style.display = 'none';
-  document.getElementById('progressCard').style.display = 'none';
-  document.getElementById('answer').value = '';
+  finished = false;
+  pendingNext = null;
+  ['taskCard', 'resultCard', 'progressCard'].forEach(id => $(id).classList.add('hidden'));
+  $('barInner').style.width = '0%';
 }
 
-document.getElementById('start').addEventListener('click', startSession);
-document.getElementById('reset').addEventListener('click', resetSession);
-document.getElementById('check').addEventListener('click', checkAnswer);
-document.getElementById('hintBtn').addEventListener('click', showHint);
-document.getElementById('next').addEventListener('click', nextProblem);
-document.getElementById('finish').addEventListener('click', finishSession);
+async function loadHealth() {
+  try {
+    const res = await fetch('/api/day35/health');
+    const data = await res.json();
+    $('aiStatus').textContent = data.available
+      ? 'AI доступен: модель ' + (data.model || 'локальная LLM')
+      : 'AI недоступен (fallback). Причина: ' + (data.detail || 'нет соединения');
+    $('aiStatus').className = 'badge ' + (data.available ? 'ok' : 'warn');
+  } catch (e) {
+    $('aiStatus').textContent = 'AI: не удалось проверить';
+    $('aiStatus').className = 'badge warn';
+  }
+}
+
+$('start').addEventListener('click', startSession);
+$('reset').addEventListener('click', resetSession);
+$('check').addEventListener('click', checkAnswer);
+loadHealth();
 </script>
 </body>
 </html>
